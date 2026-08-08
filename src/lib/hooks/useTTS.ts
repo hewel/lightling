@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useImmutableCallback } from 'react-elegant-ui/esm/hooks/useImmutableCallback';
 
+import { trackClientEvent } from '../../requests/backend/telemetry';
 import { getTTS } from '../../requests/backend/tts/getTTS';
+
+import { TELEMETRY_EVENT_NAME } from '../telemetry';
 
 type PlayerSignal = {
 	active: symbol | null;
@@ -114,10 +117,15 @@ export const useTTS = (
 
 			player.current.src = urls[0];
 			player.current.play();
+
+			trackClientEvent(TELEMETRY_EVENT_NAME.TTS_STARTED, {
+				lang,
+				length: text.length,
+			});
 		})();
 	}, [lang, stopOtherPlayers, text]);
 
-	const stop = useImmutableCallback(() => {
+	const stop = useImmutableCallback((synthetic = false) => {
 		contextSymbol.current = {};
 
 		player.current.pause();
@@ -130,6 +138,10 @@ export const useTTS = (
 		}
 
 		setIsPlayed(false);
+
+		if (!synthetic) {
+			trackClientEvent(TELEMETRY_EVENT_NAME.TTS_STOPPED);
+		}
 	}, []);
 
 	const toggle = useImmutableCallback(() => {
@@ -158,7 +170,7 @@ export const useTTS = (
 	useEffect(() => {
 		contextSymbol.current = {};
 		ttsPlaylist.current = null;
-		stop();
+		stop(true);
 	}, [stop, lang, text]);
 
 	// Stop player by unmount

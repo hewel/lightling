@@ -1,13 +1,15 @@
 // Translators
 import {
+	createFallbackTranslator,
 	GoogleTranslator,
-	MicrosoftTranslator,
+	GoogleTranslatorTokenFree,
 	TranslatorConstructor,
-	YandexTranslator,
 } from 'anylang/translators';
 import { isEqual } from 'lodash';
 
 import { createSelector } from '../../lib/effector/createSelector';
+import { TELEMETRY_EVENT_NAME } from '../../lib/telemetry';
+import { telemetry } from '../../lib/telemetry/singleton';
 import { BergamotTranslator } from '../../lib/translators/bergamot/BergamotTranslator';
 import {
 	createPromiseWithControls,
@@ -21,10 +23,50 @@ import { TranslatorManager } from './TranslatorManager';
 import { TTSController } from './TTS/TTSController';
 import { TTSManager } from './TTS/TTSManager';
 
+// Use one of the available Google API
+const AggregatedGoogleTranslator = class extends createFallbackTranslator([
+	{
+		translator: new GoogleTranslator(),
+		languages: new Set(GoogleTranslator.getSupportedLanguages()),
+		languageDetection: GoogleTranslator.isSupportedAutoFrom(),
+	},
+	{
+		translator: new GoogleTranslatorTokenFree(),
+		languages: new Set(GoogleTranslatorTokenFree.getSupportedLanguages()),
+		languageDetection: GoogleTranslatorTokenFree.isSupportedAutoFrom(),
+	},
+]) {
+	static translatorName = 'Google';
+};
+
+const AutoTranslator = class extends createFallbackTranslator([
+	{
+		translator: new AggregatedGoogleTranslator(),
+		languages: new Set(AggregatedGoogleTranslator.getSupportedLanguages()),
+		languageDetection: AggregatedGoogleTranslator.isSupportedAutoFrom(),
+	},
+	{
+		translator: new BergamotTranslator(),
+		languages: new Set(BergamotTranslator.getSupportedLanguages()),
+		languageDetection: BergamotTranslator.isSupportedAutoFrom(),
+	},
+]) {
+	static translatorName = 'Auto';
+	constructor() {
+		super({
+			onTranslatorError(error) {
+				telemetry.track(TELEMETRY_EVENT_NAME.ERROR_CAPTURED, {
+					scope: 'auto translator',
+					error: String(error),
+				});
+			},
+		});
+	}
+};
+
 export const embeddedTranslators = {
-	MicrosoftTranslator,
-	GoogleTranslator,
-	YandexTranslator,
+	AutoTranslator,
+	GoogleTranslator: AggregatedGoogleTranslator,
 	BergamotTranslator,
 } as const;
 

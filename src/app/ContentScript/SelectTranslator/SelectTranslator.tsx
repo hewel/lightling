@@ -1,6 +1,8 @@
 import React from 'react';
 
 import { ShadowDOMContainerManager } from '../../../lib/ShadowDOMContainerManager';
+import { TELEMETRY_EVENT_NAME } from '../../../lib/telemetry';
+import { trackClientEvent } from '../../../requests/backend/telemetry';
 import { translate } from '../../../requests/backend/translate';
 
 import { TextTranslatorPopup } from './components/TextTranslatorPopup/TextTranslatorPopup';
@@ -78,6 +80,7 @@ export const getSelectedTextOfInput = (elm: HTMLInputElement | HTMLTextAreaEleme
 
 export const getAbsolutePositionOfElement = (element: HTMLElement) => {
 	const bounds = element.getBoundingClientRect();
+	// eslint-disable-next-line @typescript-eslint/no-useless-default-assignment
 	const { scrollX = 0, scrollY = 0 } = window;
 	return {
 		x: bounds.x + scrollX,
@@ -377,6 +380,10 @@ export class SelectTranslator {
 				}}
 			/>,
 		);
+
+		trackClientEvent(TELEMETRY_EVENT_NAME.SELECTED_TEXT_POPUP_SHOWN, {
+			length: trimmedText.length,
+		});
 	};
 
 	private readonly hidePopup = () => {

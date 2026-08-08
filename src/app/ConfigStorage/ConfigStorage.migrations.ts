@@ -186,6 +186,33 @@ const migrations: Migration[] = [
 			await browser.storage.local.set({ [storageName]: updatedConfig });
 		},
 	},
+	{
+		version: 10,
+		async migrate() {
+			const storageName = 'appConfig';
+
+			let { [storageName]: actualData } =
+				await browser.storage.local.get(storageName);
+			if (
+				actualData === null ||
+				typeof actualData !== 'object' ||
+				Array.isArray(actualData)
+			) {
+				actualData = {};
+			}
+
+			// Replace removed translators to new default translator
+			if (
+				actualData.translatorModule === 'MicrosoftTranslator' ||
+				actualData.translatorModule === 'YandexTranslator'
+			) {
+				actualData.translatorModule = 'AutoTranslator';
+			}
+
+			// Write data
+			await browser.storage.local.set({ [storageName]: actualData });
+		},
+	},
 ];
 
 export const ConfigStorageMigration = createMigrationTask(migrations, {
