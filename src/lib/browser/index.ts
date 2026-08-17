@@ -78,7 +78,8 @@ export const isBackgroundContext = () => {
 	];
 
 	return backgroundPaths.some(
-		(path) => path !== undefined && location.href === browser.runtime.getURL(path),
+		(path) =>
+			typeof path === 'string' && location.href === browser.runtime.getURL(path),
 	);
 };
 
