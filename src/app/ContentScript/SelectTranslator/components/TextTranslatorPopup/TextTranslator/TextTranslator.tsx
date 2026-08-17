@@ -1,4 +1,4 @@
-import React, { FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import browser from 'webextension-polyfill';
 import { cn } from '@bem-react/classname';
 

@@ -1,10 +1,11 @@
-import React, { FC, ReactEventHandler, ReactNode, useCallback } from 'react';
+import { FC, ReactEventHandler, ReactNode, useCallback } from 'react';
 
 export interface ISpoilerProps {
 	title: ReactNode;
 
 	onToggle?: (state: boolean) => void;
 	open?: boolean;
+	children?: ReactNode;
 }
 
 // TODO: add styles

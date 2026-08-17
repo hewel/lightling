@@ -25,5 +25,5 @@
 		"packages/**/*.mjs",
 		"packages/**/*.cjs"
 	],
-	"exclude": ["node_modules", "build", "dist", "thirdparty"]
+	"exclude": ["node_modules", "**/.docusaurus", "**/build", "**/dist", "thirdparty"]
 }

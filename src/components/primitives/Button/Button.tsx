@@ -1,11 +1,10 @@
-import React, { FC } from 'react';
+import { FC } from 'react';
 import {
 	cnButton,
 	IButtonProps as IButtonPropsDefault,
 } from 'react-elegant-ui/esm/components/Button/Button';
 import { IButtonRegistry } from 'react-elegant-ui/esm/components/Button/Button.registry';
 import { useComponentRegistry } from 'react-elegant-ui/esm/lib/di';
-import { Defaultize } from 'react-elegant-ui/esm/types/utility-types';
 import { usePress } from '@react-aria/interactions';
 import { mergeProps } from '@react-aria/utils';
 
@@ -21,14 +20,11 @@ export interface IButtonProps extends IButtonPropsDefault {
 	preventFocusOnPress?: boolean;
 }
 
-type DefaultProps = keyof typeof defaultProps;
-type ButtonProps = Defaultize<IButtonProps, DefaultProps>;
-
 /**
  * This is library implementation of button, but with fix for prevent focus
  */
 export const Button: FC<IButtonProps> = (({
-	as,
+	as = defaultProps.as,
 	disabled,
 	raw,
 	icon,
@@ -46,7 +42,7 @@ export const Button: FC<IButtonProps> = (({
 	onPressUp,
 	preventFocusOnPress,
 	...props
-}: ButtonProps) => {
+}: IButtonProps) => {
 	const { isPressed, pressProps } = usePress({
 		isDisabled: disabled,
 		onPress,
@@ -93,4 +89,3 @@ export const Button: FC<IButtonProps> = (({
 }) as FC<IButtonProps>;
 
 Button.displayName = cnButton();
-Button.defaultProps = defaultProps;

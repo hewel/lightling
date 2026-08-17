@@ -1,4 +1,4 @@
-import React, { FC, ReactNode, useMemo } from 'react';
+import { FC, ReactNode, useMemo } from 'react';
 import { cn } from '@bem-react/classname';
 
 import './LayoutFlow.css';

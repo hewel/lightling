@@ -1,4 +1,4 @@
-import React, { FC } from 'react';
+import { FC, ReactNode } from 'react';
 
 import { cnOptionsPage } from '../OptionsPage';
 
@@ -8,6 +8,7 @@ export interface PageSection {
 	title?: string;
 	level?: 1 | 2 | 3 | 4 | 5 | 6;
 	className?: string;
+	children?: ReactNode;
 }
 
 export const PageSection: FC<PageSection> = ({

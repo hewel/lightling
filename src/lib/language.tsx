@@ -1,5 +1,5 @@
 import { isLanguageCodeISO639v1 } from 'anylang/languages';
-import React, { ComponentType, FC, ReactNode } from 'react';
+import { ComponentType, FC, ReactNode } from 'react';
 import browser from 'webextension-polyfill';
 
 import { isMobileBrowser } from './browser';
@@ -39,7 +39,7 @@ export const getLocalizedNode = ({
 }: {
 	messageName: string;
 	substitutions?: string | string[];
-	slots: Record<string, ComponentType>;
+	slots: Record<string, ComponentType<{ children?: ReactNode }>>;
 }): ReactNode => {
 	const message = getMessage(messageName, substitutions);
 
@@ -113,7 +113,7 @@ export const detectLanguage = async (text: string, reliableOnly = false) => {
 export const isValidLanguage = (language: string) => isLanguageCodeISO639v1(language);
 
 export const buildLink =
-	(url: string): FC =>
+	(url: string): FC<{ children?: ReactNode }> =>
 	({ children }) => (
 		<a href={url} target="_blank" rel="noopener noreferrer">
 			{children}

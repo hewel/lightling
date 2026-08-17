@@ -24,7 +24,7 @@
 		"sourceMap": true,
 		"lib": ["esnext", "dom", "dom.iterable"],
 		"rootDir": ".",
-		"jsx": "react",
+		"jsx": "react-jsx",
 		"allowJs": true,
 		"resolveJsonModule": true,
 		"types": ["vitest/globals"]

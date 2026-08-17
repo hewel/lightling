@@ -1,5 +1,6 @@
 export * from 'react-elegant-ui/esm/components/Select/Select.bundle/desktop';
 
+import { createElement, FC } from 'react';
 // _listboxSize
 import { withModSelectListboxSizeMax } from 'react-elegant-ui/esm/components/Select/_listboxSize/Select_listboxSize_max';
 // _width
@@ -17,7 +18,7 @@ import { SelectDesktopRegistry } from '../Select.registry/desktop';
 
 export * from 'react-elegant-ui/esm/components/Select/Select@desktop';
 
-export const Select = compose(
+const ComposedSelect = compose(
 	withOpenedStateManager,
 	composeU(withModSelectWidthMax),
 	composeU(withModSelectListboxSizeMax),
@@ -25,6 +26,7 @@ export const Select = compose(
 	withRegistry(SelectDesktopRegistry),
 )(SelectDesktop);
 
-Select.defaultProps = { listboxSize: 'max' };
+export type ISelectProps = ExtractProps<typeof ComposedSelect>;
 
-export type ISelectProps = ExtractProps<typeof Select>;
+export const Select: FC<ISelectProps> = ({ listboxSize = 'max', ...props }) =>
+	createElement(ComposedSelect, { ...props, listboxSize });

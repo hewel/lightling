@@ -1,3 +1,4 @@
+import { createElement, FC } from 'react';
 import { withModButtonPressAnimation } from 'react-elegant-ui/esm/components/Button/_pressAnimation/Button_pressAnimation';
 import { withModButtonSizeL } from 'react-elegant-ui/esm/components/Button/_size/Button_size_l';
 import { withModButtonSizeM } from 'react-elegant-ui/esm/components/Button/_size/Button_size_m';
@@ -21,7 +22,7 @@ export * from '../Button';
 
 const DesktopButton = withFocusVisible(cnButton())(PatchedButton);
 
-export const Button = compose(
+const ComposedButton = compose(
 	withRegistry(ButtonDesktopRegistry),
 	composeU(
 		withModButtonViewDefault,
@@ -36,10 +37,17 @@ export const Button = compose(
 	withModButtonPressAnimation,
 )(DesktopButton);
 
-Button.defaultProps = {
-	view: 'default',
-	pressAnimation: true,
-	size: 'm',
-};
+export type IButtonProps = ExtractProps<typeof ComposedButton>;
 
-export type IButtonProps = ExtractProps<typeof Button>;
+export const Button: FC<IButtonProps> = ({
+	view = 'default',
+	pressAnimation = true,
+	size = 'm',
+	...props
+}) =>
+	createElement(ComposedButton, {
+		...props,
+		view,
+		pressAnimation,
+		size,
+	});

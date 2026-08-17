@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { PageTranslatorStats } from '../../../../app/ContentScript/PageTranslator/PageTranslator';
 import { pageTranslatorStatsUpdatedHandler } from '../../../../app/ContentScript/PageTranslator/requests/pageTranslatorStatsUpdated';

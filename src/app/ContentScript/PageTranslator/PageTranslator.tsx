@@ -6,7 +6,6 @@ import {
 	PersistentDOMTranslator,
 } from 'domtranslator';
 import { createNodesFilter, isElementNode, isTextNode } from 'domtranslator/utils/nodes';
-import React from 'react';
 
 import { getContentScriptStyles } from '../../../lib/browser';
 import { ShadowDOMContainerManager } from '../../../lib/ShadowDOMContainerManager';

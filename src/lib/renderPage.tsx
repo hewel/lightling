@@ -1,8 +1,8 @@
 // Resources
 import '../polyfills/scrollfix';
 
-import React, { ComponentType } from 'react';
-import ReactDOM from 'react-dom';
+import { ComponentType } from 'react';
+import { createRoot } from 'react-dom/client';
 import { configureRootTheme, ThemeWhitepaper } from 'react-elegant-ui/esm/theme';
 
 type Options = {
@@ -33,7 +33,7 @@ export const renderPage = ({
 
 	function render() {
 		if (rootNode !== null && rootNode instanceof HTMLElement) {
-			ReactDOM.render(<PageComponent />, rootNode);
+			createRoot(rootNode).render(<PageComponent />);
 		}
 	}
 

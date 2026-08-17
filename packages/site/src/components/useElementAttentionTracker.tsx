@@ -5,7 +5,7 @@ export const useElementAttentionTracker = <T extends HTMLElement>({
 	minTime,
 	onEngagement,
 }: {
-	ref: React.RefObject<T>;
+	ref: React.RefObject<T | null>;
 	minTime: number;
 	onEngagement: () => void;
 }) => {

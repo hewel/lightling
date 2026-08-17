@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import { withClassnameHOC, withHOCConstructor } from 'react-elegant-ui/esm/lib/compose';
 
 import { isMobileBrowser } from '../../../../lib/browser';

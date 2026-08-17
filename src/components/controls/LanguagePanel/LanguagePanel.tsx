@@ -1,4 +1,4 @@
-import React, { FC, useCallback, useEffect, useMemo, useState } from 'react';
+import { FC, useCallback, useEffect, useMemo, useState } from 'react';
 import { cn } from '@bem-react/classname';
 
 import { getLanguageNameByCode, getMessage } from '../../../lib/language';
@@ -111,7 +111,7 @@ export const LanguagePanel: FC<LanguagePanelProps> = ({
 				options={optionsFrom}
 				value={fromValue}
 				setValue={useCallback(
-					(value) => {
+					(value?: string | string[]) => {
 						if (typeof value !== 'string' || setFrom === undefined) return;
 
 						setFrom(value);
@@ -137,7 +137,7 @@ export const LanguagePanel: FC<LanguagePanelProps> = ({
 				options={options}
 				value={toValue}
 				setValue={useCallback(
-					(value) => {
+					(value?: string | string[]) => {
 						if (typeof value !== 'string' || setTo === undefined) return;
 
 						setTo(value);

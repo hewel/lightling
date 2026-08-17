@@ -1,7 +1,7 @@
 import '../../polyfills/scrollfix';
 
-import React, { FC, useCallback, useEffect, useMemo, useState } from 'react';
-import ReactDOM from 'react-dom';
+import { FC, useCallback, useEffect, useMemo, useState } from 'react';
+import { createRoot } from 'react-dom/client';
 import { configureRootTheme } from 'react-elegant-ui/esm/theme';
 
 import { isMobileBrowser } from '../../lib/browser';
@@ -177,7 +177,7 @@ const PopupPage: FC<PopupPageProps> = ({ rootElement }) => {
 function renderPage() {
 	const rootElement = document.body.querySelector('#root');
 	if (rootElement !== null && rootElement instanceof HTMLElement) {
-		ReactDOM.render(<PopupPage rootElement={rootElement} />, rootElement);
+		createRoot(rootElement).render(<PopupPage rootElement={rootElement} />);
 	}
 }
 

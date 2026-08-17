@@ -1,5 +1,5 @@
-import React from 'react';
-import ReactDOM from 'react-dom';
+import { CSSProperties, ReactNode } from 'react';
+import { createRoot, Root } from 'react-dom/client';
 import root from 'react-shadow';
 import browser from 'webextension-polyfill';
 
@@ -9,13 +9,14 @@ const rootContainerStyles = {
 	position: 'absolute',
 	top: 0,
 	left: 0,
-} satisfies React.CSSProperties;
+} satisfies CSSProperties;
 
 /**
  * Shadow DOM container manager
  */
 export class ShadowDOMContainerManager {
 	private root: HTMLElement | null = null;
+	private reactRoot: Root | null = null;
 
 	private readonly styles: string[];
 
@@ -53,7 +54,7 @@ export class ShadowDOMContainerManager {
 		return this.root;
 	}
 
-	public mountComponent = (child?: React.ReactNode) => {
+	public mountComponent = (child?: ReactNode) => {
 		// Skip when root node is not exist
 		if (this.root === null) return;
 
@@ -62,7 +63,8 @@ export class ShadowDOMContainerManager {
 			document.body.appendChild(this.root);
 		}
 
-		ReactDOM.render(
+		this.reactRoot ??= createRoot(this.root);
+		this.reactRoot.render(
 			<root.div style={{ ...rootContainerStyles }} mode="closed">
 				{/* Include styles and scripts */}
 				{this.styles.map((path, index) => (
@@ -74,13 +76,13 @@ export class ShadowDOMContainerManager {
 				))}
 				{child}
 			</root.div>,
-			this.root,
 		);
 	};
 
 	public unmountComponent = () => {
-		if (this.root !== null) {
-			ReactDOM.unmountComponentAtNode(this.root);
+		if (this.reactRoot !== null) {
+			this.reactRoot.unmount();
+			this.reactRoot = null;
 		}
 	};
 }

@@ -1,4 +1,4 @@
-import React, { FC, ReactNode } from 'react';
+import { FC, ReactNode } from 'react';
 import { cn } from '@bem-react/classname';
 
 import { LayoutFlow } from '../LayoutFlow/LayoutFlow';
@@ -10,6 +10,7 @@ export const cnModalLayout = cn('ModalLayout');
 export const ModalLayout: FC<{
 	title?: string | ReactNode;
 	footer?: ReactNode | ReactNode[];
+	children?: ReactNode;
 }> = ({ title, footer, children }) => {
 	return (
 		<div className={cnModalLayout({})}>

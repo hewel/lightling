@@ -1,4 +1,4 @@
-import React, { FC } from 'react';
+import { FC } from 'react';
 
 import { getMessage } from '../../../lib/language';
 import { ITranslation } from '../../../types/translation/Translation';

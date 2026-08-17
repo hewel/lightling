@@ -1,5 +1,3 @@
-import React from 'react';
-
 import { getContentScriptStyles } from '../../../lib/browser';
 import { ShadowDOMContainerManager } from '../../../lib/ShadowDOMContainerManager';
 import { TELEMETRY_EVENT_NAME } from '../../../lib/telemetry';

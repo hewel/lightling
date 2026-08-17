@@ -1,4 +1,4 @@
-import React, {
+import {
 	ComponentType,
 	createContext,
 	FC,
@@ -133,7 +133,7 @@ export const PopupWindow: FC<PopupWindowProps> = ({
 	}, []);
 
 	// Resize window
-	const resizeObserver = useRef<XResizeObserver>();
+	const resizeObserver = useRef<XResizeObserver | undefined>(undefined);
 	useEffect(() => {
 		// Disable on mobile browsers
 		if (isMobileBrowser()) return;

@@ -1,7 +1,6 @@
-import React, { FC, useCallback, useEffect, useRef, useState } from 'react';
+import { FC, useCallback, useEffect, useRef, useState } from 'react';
 import { Checkbox } from 'react-elegant-ui/esm/components/Checkbox/Checkbox.bundle/desktop';
 import { Spinner } from 'react-elegant-ui/esm/components/Spinner/Spinner.bundle/desktop';
-import InfiniteScroll from 'react-infinite-scroller';
 import { cn } from '@bem-react/classname';
 
 import { DictionaryButton } from '../../../../components/controls/DictionaryButton/DictionaryButton';
@@ -77,6 +76,34 @@ export const TranslationsHistory: FC<TranslationsHistoryProps> = ({
 
 		updateTranslations();
 	}, [translations, updateTranslations]);
+
+	const loadMoreSentinelRef = useRef<HTMLDivElement>(null);
+	const lastInfiniteScrollRequestRef = useRef<string | null>(null);
+	useEffect(() => {
+		const sentinel = loadMoreSentinelRef.current;
+		if (!hasMoreTranslations || sentinel === null) return;
+
+		const lastItemKey =
+			translations.length === 0
+				? 'empty'
+				: String(translations[translations.length - 1].key);
+		const requestKey = `${search}:${translations.length}:${lastItemKey}`;
+		const observer = new IntersectionObserver(
+			(entries) => {
+				if (!entries.some(({ isIntersecting }) => isIntersecting)) return;
+				if (lastInfiniteScrollRequestRef.current === requestKey) return;
+
+				lastInfiniteScrollRequestRef.current = requestKey;
+				getMoreTranslations();
+			},
+			{ rootMargin: '50px 0px' },
+		);
+
+		observer.observe(sentinel);
+		return () => {
+			observer.disconnect();
+		};
+	}, [getMoreTranslations, hasMoreTranslations, search, translations]);
 
 	useEffect(() => {
 		getMoreTranslations();
@@ -311,19 +338,7 @@ export const TranslationsHistory: FC<TranslationsHistoryProps> = ({
 					</div>
 				)}
 
-				<InfiniteScroll
-					loadMore={getMoreTranslations}
-					hasMore={hasMoreTranslations}
-					threshold={50}
-					loader={
-						<div
-							className={cnTranslationsHistory('InfinityScrollLoader')}
-							key="loader"
-						>
-							<Spinner view="primitive" progress />
-						</div>
-					}
-				>
+				<div>
 					{translations.map(({ data, key }) => {
 						const { translation, timestamp } = data;
 						return (
@@ -376,7 +391,16 @@ export const TranslationsHistory: FC<TranslationsHistoryProps> = ({
 							/>
 						);
 					})}
-				</InfiniteScroll>
+
+					{hasMoreTranslations && (
+						<div
+							ref={loadMoreSentinelRef}
+							className={cnTranslationsHistory('InfinityScrollLoader')}
+						>
+							<Spinner view="primitive" progress />
+						</div>
+					)}
+				</div>
 			</LayoutFlow>
 		</div>
 	);

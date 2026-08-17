@@ -2,7 +2,6 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import Head from '@docusaurus/Head';
 import { useBaseUrlUtils } from '@docusaurus/useBaseUrl';
-import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import {
 	PageAltVersionsContext,
 	useAltPageVersions,
@@ -81,14 +80,12 @@ const MetaTags = () => {
 	);
 };
 
-export default function Page({ i18n }: { i18n: i18nContext }): JSX.Element {
-	const { siteConfig } = useDocusaurusContext();
-
+export default function Page({ i18n }: { i18n: i18nContext }): React.JSX.Element {
 	return (
 		<PageLayout i18n={createI18nInstance(i18n.lang, i18n.resources)}>
 			<PageAltVersionsContext.Provider value={i18n.altVersions}>
 				<MetaTags />
-				<Landing baseUrl={siteConfig.baseUrl} />
+				<Landing />
 			</PageAltVersionsContext.Provider>
 		</PageLayout>
 	);

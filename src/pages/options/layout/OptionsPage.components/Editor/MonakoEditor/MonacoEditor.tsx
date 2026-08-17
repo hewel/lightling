@@ -1,6 +1,6 @@
 import { editor, languages } from 'monaco-editor-core';
 /* cspell:disable */
-import React, { FC, RefObject, useCallback, useEffect, useMemo, useRef } from 'react';
+import { FC, RefObject, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useRefHost } from 'react-elegant-ui/hooks/useRefHost';
 
 import { isMobileBrowser } from '../../../../../../lib/browser';

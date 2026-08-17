@@ -1,4 +1,4 @@
-// import { compose, composeU, ExtractProps } from '@bem-react/core';
+import { createElement, FC } from 'react';
 import { withModIconGlyphCancel } from 'react-elegant-ui/esm/components/Icon/_glyph/Icon_glyph_cancel';
 import { withModIconGlyphCheck } from 'react-elegant-ui/esm/components/Icon/_glyph/Icon_glyph_check';
 import { withModIconGlyphClose } from 'react-elegant-ui/esm/components/Icon/_glyph/Icon_glyph_close';
@@ -19,7 +19,7 @@ import { withGlyphSettings } from '../_glyph/Icon_glyph_settings';
 import { withGlyphSwapHoriz } from '../_glyph/Icon_glyph_swap-horiz';
 import { withGlyphVolumeUp } from '../_glyph/Icon_glyph_volume-up';
 
-export const Icon = compose(
+const ComposedIcon = compose(
 	composeU(
 		withGlyphSettings,
 		withGlyphSwapHoriz,
@@ -41,9 +41,7 @@ export const Icon = compose(
 	composeU(withModIconSizeM, withModIconSizeS),
 )(BaseIcon);
 
-Icon.defaultProps = {
-	size: 'm',
-	scalable: true,
-};
+export type IIconProps = ExtractProps<typeof ComposedIcon>;
 
-export type IIconProps = ExtractProps<typeof Icon>;
+export const Icon: FC<IIconProps> = ({ size = 'm', scalable = true, ...props }) =>
+	createElement(ComposedIcon, { ...props, size, scalable });

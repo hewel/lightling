@@ -1,4 +1,4 @@
-import React, { FC, useEffect, useState } from 'react';
+import { FC, useEffect, useState } from 'react';
 
 import { getMessage } from '../../../lib/language';
 import { LayoutFlow } from '../../layouts/LayoutFlow/LayoutFlow';

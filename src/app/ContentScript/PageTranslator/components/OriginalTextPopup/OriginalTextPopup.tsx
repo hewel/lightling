@@ -1,4 +1,4 @@
-import React, { FC, RefObject } from 'react';
+import { FC, ReactNode, RefObject } from 'react';
 import { cn } from '@bem-react/classname';
 
 import { Popup } from '../../../../../components/primitives/Popup/Popup';
@@ -8,7 +8,8 @@ import './OriginalTextPopup.css';
 export const cnOriginalTextPopup = cn('OriginalTextPopup');
 
 export interface IOriginalTextPopupProps {
-	target: RefObject<HTMLElement>;
+	target: RefObject<HTMLElement | null>;
+	children?: ReactNode;
 }
 
 export const OriginalTextPopup: FC<IOriginalTextPopupProps> = ({ target, children }) => {

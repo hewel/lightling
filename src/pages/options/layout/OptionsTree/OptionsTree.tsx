@@ -1,5 +1,5 @@
 import { get, isEqual } from 'lodash';
-import React, { FC, ReactNode, useCallback } from 'react';
+import { FC, ReactNode, useCallback } from 'react';
 import { Checkbox } from 'react-elegant-ui/esm/components/Checkbox/Checkbox.bundle/desktop';
 
 import { Hotkey } from '../../../../components/controls/Hotkey';
@@ -214,7 +214,7 @@ export const OptionsTree: FC<OptionsTreeProps> = ({
 						<Select
 							options={option.options}
 							value={value}
-							setValue={(newValue) => {
+							setValue={(newValue?: string | string[]) => {
 								setOptionValueProxy(path, newValue);
 							}}
 						/>

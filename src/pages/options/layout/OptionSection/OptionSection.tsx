@@ -1,4 +1,4 @@
-import React, { FC, ReactNode } from 'react';
+import { FC, ReactNode } from 'react';
 
 import { cnOptionsPage } from '../OptionsPage';
 
@@ -9,6 +9,7 @@ export interface OptionSection {
 	description?: ReactNode;
 	changed?: boolean;
 	error?: string;
+	children?: ReactNode;
 }
 
 export const OptionSection: FC<OptionSection> = ({

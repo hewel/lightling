@@ -1,13 +1,6 @@
 import { getLanguageCodesISO639 } from 'anylang/languages';
 import Papa from 'papaparse';
-import React, {
-	FC,
-	useCallback,
-	useEffect,
-	useLayoutEffect,
-	useMemo,
-	useState,
-} from 'react';
+import { FC, useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { useImmutableCallback } from 'react-elegant-ui/esm/hooks/useImmutableCallback';
 import { cn } from '@bem-react/classname';
 

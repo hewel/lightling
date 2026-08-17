@@ -1,4 +1,4 @@
-import React, { FC, useContext, useEffect, useRef, useState } from 'react';
+import { FC, useContext, useEffect, useRef, useState } from 'react';
 import { useImmutableCallback } from 'react-elegant-ui/esm/hooks/useImmutableCallback';
 import { cn } from '@bem-react/classname';
 
@@ -108,7 +108,7 @@ export const Editor: FC<EditorProps> = ({ data, onClose, onSave, error }) => {
 					<Button key="save" view="action" onPress={onSavePress}>
 						{getMessage('editorWindow_save')}
 					</Button>
-					<Button key="close" onPress={onClose as any}>
+					<Button key="close" onPress={onClose}>
 						{getMessage('editorWindow_close')}
 					</Button>
 				</div>

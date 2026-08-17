@@ -1,7 +1,8 @@
 import { get, isEqual } from 'lodash';
-import React, {
+import {
 	createContext,
 	FC,
+	RefObject,
 	useCallback,
 	useEffect,
 	useLayoutEffect,
@@ -43,7 +44,7 @@ import './OptionsPage.css';
 export const cnOptionsPage = cn('OptionsPage');
 
 export const OptionsModalsContext = createContext<
-	React.RefObject<HTMLDivElement> | undefined
+	RefObject<HTMLDivElement | null> | undefined
 >(undefined);
 
 type Errors = null | Record<string, string>;
