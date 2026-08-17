@@ -74,7 +74,7 @@ export class BergamotTranslator {
 
 	static isSupportedAutoFrom = () => true;
 
-	// prettier-ignore
+	// oxfmt-ignore
 	static getSupportedLanguages = () => [
 		"fr", "en", "it", "pt", "ru", "cs",
 		"de", "es", "et", "bg", "uk"

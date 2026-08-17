@@ -273,7 +273,7 @@ export const PageTranslatorTab: TabComponent<InitFn<InitData>> = ({
 
 			setCounters(counters);
 		});
-		// eslint-disable-next-line react-hooks/exhaustive-deps
+		// oxlint-disable-next-line react/exhaustive-deps
 	}, []);
 
 	const pageTranslationStorage = useMemo(() => new PageTranslationStorage(), []);
@@ -283,7 +283,7 @@ export const PageTranslatorTab: TabComponent<InitFn<InitData>> = ({
 			// Update data
 			if (typeof state !== 'function') {
 				pageTranslationStorage.updateData({
-					// eslint-disable-next-line @typescript-eslint/no-unnecessary-type-conversion
+					// oxlint-disable-next-line typescript/no-unnecessary-type-conversion
 					optionsSpoilerState: Boolean(state),
 				});
 			}

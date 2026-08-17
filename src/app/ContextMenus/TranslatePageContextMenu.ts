@@ -133,7 +133,7 @@ export class TranslatePageContextMenu {
 			const retriesLimit = 30;
 
 			// Retry loop
-			// eslint-disable-next-line no-constant-condition
+			// oxlint-disable-next-line no-constant-condition
 			for (let retry = 0; true; retry++) {
 				// Handle case if user have changed tab while waiting
 				if (this.updateMenuContext !== currentContext) break;

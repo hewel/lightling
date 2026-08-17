@@ -30,7 +30,8 @@ export const sitePreferenceOptions = {
 } as const;
 
 export interface PageTranslatorProps
-	extends MutableValue<'from', string | undefined>,
+	extends
+		MutableValue<'from', string | undefined>,
 		MutableValue<'to', string | undefined>,
 		MutableValue<'isShowOptions', boolean>,
 		// TODO: use literals

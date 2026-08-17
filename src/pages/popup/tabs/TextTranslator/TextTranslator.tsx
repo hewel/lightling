@@ -45,7 +45,8 @@ export type TranslationState = {
 };
 
 export interface TextTranslatorProps
-	extends MutableValue<'userInput', string>,
+	extends
+		MutableValue<'userInput', string>,
 		MutableValue<'from', string>,
 		MutableValue<'to', string>,
 		// It must be null only when translate result never be set or after reset input

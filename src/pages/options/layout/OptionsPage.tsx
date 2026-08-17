@@ -1,3 +1,4 @@
+import { get, isEqual } from 'lodash';
 import React, {
 	createContext,
 	FC,
@@ -8,7 +9,6 @@ import React, {
 	useRef,
 	useState,
 } from 'react';
-import { get, isEqual } from 'lodash';
 import { cn } from '@bem-react/classname';
 
 import { LayoutFlow } from '../../../components/layouts/LayoutFlow/LayoutFlow';
@@ -269,7 +269,7 @@ export const OptionsPage: FC<OptionsPageProps> = ({ messageHideDelay }) => {
 	// Init
 	useEffect(() => {
 		ping().then(updateConfig);
-		// eslint-disable-next-line react-hooks/exhaustive-deps
+		// oxlint-disable-next-line react/exhaustive-deps
 	}, []);
 
 	// Update config tree

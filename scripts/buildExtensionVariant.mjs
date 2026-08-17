@@ -32,7 +32,7 @@ function runExtensionBuild(browser) {
 		child.once('error', reject);
 		child.once('exit', (code, signal) => {
 			if (code === 0) {
-				resolvePromise();
+				resolvePromise(undefined);
 				return;
 			}
 

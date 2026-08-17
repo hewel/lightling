@@ -6,8 +6,8 @@ import { telemetry } from '../../../lib/telemetry/singleton';
 import { AppConfigType } from '../../../types/runtime';
 import { RecordValues } from '../../../types/utils';
 
-import { TranslatorsCacheStorage } from '../TranslatorsCacheStorage';
 import { TranslatorsMap } from '..';
+import { TranslatorsCacheStorage } from '../TranslatorsCacheStorage';
 
 export type Config = Pick<AppConfigType, 'translatorModule' | 'scheduler' | 'cache'>;
 

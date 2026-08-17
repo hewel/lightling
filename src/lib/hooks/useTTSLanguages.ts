@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
 import { isEqual } from 'lodash';
+import { useCallback, useEffect, useState } from 'react';
 
 import { getTTSLanguages } from '../../requests/backend/tts/getTTSLanguages';
 import { onAppConfigUpdated } from '../../requests/global/appConfigUpdate';

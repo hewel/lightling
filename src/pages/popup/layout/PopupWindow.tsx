@@ -203,7 +203,7 @@ export const PopupWindow: FC<PopupWindowProps> = ({
 				resizeObserver.current.purgeHandlers(rootElement);
 			}
 		};
-		// eslint-disable-next-line react-hooks/exhaustive-deps
+		// oxlint-disable-next-line react/exhaustive-deps
 	}, []);
 
 	// Render panes

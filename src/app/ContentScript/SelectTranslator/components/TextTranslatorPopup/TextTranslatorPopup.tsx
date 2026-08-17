@@ -16,8 +16,10 @@ import { fixPosToPreventOverflow } from './TextTranslatorPopup.utils/fixPosToPre
 
 import './TextTranslatorPopup.css';
 
-export interface TextTranslatorPopupProps
-	extends Omit<TextTranslatorComponentProps, 'updatePopup'> {
+export interface TextTranslatorPopupProps extends Omit<
+	TextTranslatorComponentProps,
+	'updatePopup'
+> {
 	x: number;
 	y: number;
 	timeoutForHideButton?: number;
@@ -90,7 +92,7 @@ export const TextTranslatorPopup: FC<TextTranslatorPopupProps> = ({
 		return () => {
 			isUnmount.current = true;
 		};
-		// eslint-disable-next-line react-hooks/exhaustive-deps
+		// oxlint-disable-next-line react/exhaustive-deps
 	}, []);
 
 	useEffect(() => {

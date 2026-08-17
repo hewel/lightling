@@ -1,5 +1,6 @@
 import { Command } from 'commander';
 import { readdirSync } from 'fs';
+import { readFile, writeFile } from 'fs/promises';
 import path from 'path';
 import { z } from 'zod';
 
@@ -7,8 +8,6 @@ import { BasicLLMFetcher } from '../../BasicLLMFetcher';
 import { LLMJsonProcessor } from '../../LLMJsonProcessor';
 import { orderKeysInLocalizationObject } from '../../utils/localeObject';
 import { codeBlock } from '../../utils/prompts';
-
-import { readFile, writeFile } from 'fs/promises';
 
 const command = new Command('proofread');
 

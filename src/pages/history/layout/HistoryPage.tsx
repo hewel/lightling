@@ -1,5 +1,5 @@
-import React, { FC, useCallback, useEffect, useLayoutEffect, useState } from 'react';
 import { isEqual } from 'lodash';
+import React, { FC, useCallback, useEffect, useLayoutEffect, useState } from 'react';
 import { cn } from '@bem-react/classname';
 
 import { Page } from '../../../components/layouts/Page/Page';

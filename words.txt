@@ -15,3 +15,16 @@ Rybbit
 indexeddb
 webextension
 ollama
+anylang
+Chakra
+Defaultize
+domtranslator
+hocs
+Horiz
+Monako
+oxfmt
+oxlint
+papaparse
+penpal
+popperjs
+unparse

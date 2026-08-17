@@ -1,6 +1,6 @@
+import { clsx } from 'clsx';
 import React, { Fragment, useRef } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
-import { clsx } from 'clsx';
 import {
 	Accordion,
 	AccordionButton,
@@ -30,8 +30,8 @@ import screenshotDictionary from './screenshots/dictionary.png';
 import screenshotPageTranslation from './screenshots/page-translation.png';
 import screenshotSelectedTextTranslation from './screenshots/selected-text-translation.png';
 import screenshotSettings from './screenshots/settings.png';
-import screenshotTextTranslation from './screenshots/text-translation.png';
 import screenshotAppPreview from './screenshots/text-translation-popup.png';
+import screenshotTextTranslation from './screenshots/text-translation.png';
 
 import styles from './Landing.module.css';
 

@@ -1,3 +1,5 @@
+import { getLanguageCodesISO639 } from 'anylang/languages';
+import Papa from 'papaparse';
 import React, {
 	FC,
 	useCallback,
@@ -7,8 +9,6 @@ import React, {
 	useState,
 } from 'react';
 import { useImmutableCallback } from 'react-elegant-ui/esm/hooks/useImmutableCallback';
-import { getLanguageCodesISO639 } from 'anylang/languages';
-import Papa from 'papaparse';
 import { cn } from '@bem-react/classname';
 
 import { LayoutFlow } from '../../../components/layouts/LayoutFlow/LayoutFlow';
@@ -82,7 +82,7 @@ export const DictionaryPage: FC<IDictionaryPageProps> = ({ confirmDelete = true 
 	useEffect(() => {
 		updateData();
 
-		// eslint-disable-next-line react-hooks/exhaustive-deps
+		// oxlint-disable-next-line react/exhaustive-deps
 	}, []);
 
 	//

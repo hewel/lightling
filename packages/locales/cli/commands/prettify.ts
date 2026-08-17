@@ -1,11 +1,10 @@
 import { Command } from 'commander';
 import { readdirSync } from 'fs';
+import { readFile, writeFile } from 'fs/promises';
 import path from 'path';
 import { z } from 'zod';
 
 import { orderKeysInLocalizationObject } from '../../utils/localeObject';
-
-import { readFile, writeFile } from 'fs/promises';
 
 const command = new Command('prettify');
 

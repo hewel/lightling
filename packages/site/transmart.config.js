@@ -1,4 +1,4 @@
-/* eslint-disable @cspell/spellchecker */
+/* cspell:disable */
 const context = `
 Context:
 - Product: Linguist, a privacy-first all-in-one browser extension for translate content in browser.

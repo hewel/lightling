@@ -1,5 +1,5 @@
-/* eslint-disable no-useless-escape */
-/* eslint-disable @cspell/spellchecker */
+/* oxlint-disable no-useless-escape */
+/* cspell:disable */
 // File copied from https://github.com/microsoft/monaco-editor/blob/84d1bed101c30355d2ad4115e7c7d91882b578d5/src/basic-languages/typescript/typescript.ts
 
 /*---------------------------------------------------------------------------------------------
@@ -9,7 +9,6 @@
 
 import { languages } from 'monaco-editor-core/esm/vs/editor/editor.api';
 
-/* eslint-disable camelcase */
 export const language: languages.IMonarchLanguage = {
 	// Set defaultToken to invalid to see what you do not tokenize yet
 	defaultToken: 'invalid',

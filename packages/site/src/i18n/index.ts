@@ -1,5 +1,5 @@
-import { initReactI18next } from 'react-i18next';
 import { createInstance, type ResourceKey } from 'i18next';
+import { initReactI18next } from 'react-i18next';
 
 export type i18nContext = {
 	lang: string;

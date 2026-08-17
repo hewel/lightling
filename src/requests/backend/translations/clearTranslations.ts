@@ -1,7 +1,7 @@
 import { buildBackendRequest } from '../../utils/requestBuilder';
 
-import { flush } from './data';
 import { notifyDictionaryClear } from '.';
+import { flush } from './data';
 
 export const [clearTranslationsFactory, clearTranslations] = buildBackendRequest(
 	'clearTranslations',

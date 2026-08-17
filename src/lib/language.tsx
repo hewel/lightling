@@ -1,5 +1,5 @@
-import React, { ComponentType, FC, ReactNode } from 'react';
 import { isLanguageCodeISO639v1 } from 'anylang/languages';
+import React, { ComponentType, FC, ReactNode } from 'react';
 import browser from 'webextension-polyfill';
 
 import { isMobileBrowser } from './browser';

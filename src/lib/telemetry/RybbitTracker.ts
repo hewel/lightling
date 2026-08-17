@@ -1,5 +1,3 @@
-/* eslint-disable camelcase */
-
 import { EventPayload, EventTracker } from '.';
 
 export type RybbitConfig = {

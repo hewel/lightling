@@ -275,7 +275,7 @@ export const TextTranslator: FC<TextTranslatorComponentProps> = ({
 			isUnmount.current = true;
 			translateContext.current = Symbol('TranslateContext');
 		};
-		// eslint-disable-next-line react-hooks/exhaustive-deps
+		// oxlint-disable-next-line react/exhaustive-deps
 	}, []);
 
 	// Set init state
@@ -315,7 +315,7 @@ export const TextTranslator: FC<TextTranslatorComponentProps> = ({
 		if (!isInited) return;
 		translateText();
 
-		// eslint-disable-next-line react-hooks/exhaustive-deps
+		// oxlint-disable-next-line react/exhaustive-deps
 	}, [isInited, originalText]);
 
 	const [activeTTS, setActiveTTS] = useState<symbol | null>(null);

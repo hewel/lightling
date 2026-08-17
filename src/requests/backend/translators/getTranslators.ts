@@ -1,7 +1,7 @@
 import { buildBackendRequest } from '../../utils/requestBuilder';
 
-import * as db from './data';
 import { CustomTranslator } from '.';
+import * as db from './data';
 
 export const [getTranslatorsFactory, getTranslators] = buildBackendRequest(
 	'getTranslators',

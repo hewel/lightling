@@ -3,8 +3,8 @@ import path from 'node:path';
 
 import type { ResourceKey } from 'i18next';
 
-import { getNativeLanguageName } from './utils';
 import { i18nContext } from '.';
+import { getNativeLanguageName } from './utils';
 
 export class LocalesController {
 	constructor(private readonly localesDir: string) {}

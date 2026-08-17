@@ -81,7 +81,7 @@ export const TranslationsHistory: FC<TranslationsHistoryProps> = ({
 	useEffect(() => {
 		getMoreTranslations();
 		// Call once to init component
-		// eslint-disable-next-line react-hooks/exhaustive-deps
+		// oxlint-disable-next-line react/exhaustive-deps
 	}, []);
 
 	useEffect(() => {
@@ -126,7 +126,7 @@ export const TranslationsHistory: FC<TranslationsHistoryProps> = ({
 		}
 
 		// Not depends of checkedItems, required only `checkedItems` while `translations` change
-		// eslint-disable-next-line react-hooks/exhaustive-deps
+		// oxlint-disable-next-line react/exhaustive-deps
 	}, [translations]);
 
 	const keyboardModifiers = useKeyboardModifiers();

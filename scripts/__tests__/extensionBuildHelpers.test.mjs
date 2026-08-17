@@ -55,7 +55,7 @@ await module[exportName](...serializedArguments.map(JSON.parse));
 			runner,
 			pathToFileURL(resolve(projectDirectory, 'scripts', scriptName)).href,
 			exportName,
-			...argumentsList.map(JSON.stringify),
+			...argumentsList.map((argument) => JSON.stringify(argument)),
 		],
 		{ cwd: projectDirectory },
 	);
@@ -113,7 +113,6 @@ afterEach(async () => {
 });
 
 describe('extension build helpers', () => {
-	/* eslint-disable camelcase -- WebExtension manifest keys use snake case. */
 	test('keeps content styles web-accessible without injecting them into pages', () => {
 		const webAccessibleResources = [
 			{
@@ -248,5 +247,4 @@ describe('extension build helpers', () => {
 			safari: { strict_min_version: '17.0' },
 		});
 	});
-	/* eslint-enable camelcase */
 });

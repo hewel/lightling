@@ -1,5 +1,6 @@
 import { Command } from 'commander';
 import { existsSync, readdirSync } from 'fs';
+import { mkdir, readFile, writeFile } from 'fs/promises';
 import path from 'path';
 import { z } from 'zod';
 
@@ -10,8 +11,6 @@ import { LocalesManager } from '../../LocalesManager';
 import { getFileVersion } from '../../utils/git';
 import { postprocessLocale } from '../../utils/localeObject';
 import { getJsonTranslationPrompt } from '../../utils/prompts';
-
-import { mkdir, readFile, writeFile } from 'fs/promises';
 
 const command = new Command('sync');
 

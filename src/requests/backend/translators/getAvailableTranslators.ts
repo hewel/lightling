@@ -2,8 +2,8 @@ import { embeddedTranslators } from '../../../app/Background';
 import { type } from '../../../lib/types';
 import { buildBackendRequest } from '../../utils/requestBuilder';
 
-import * as db from './data';
 import { formatToCustomTranslatorId } from '.';
+import * as db from './data';
 
 /**
  * Return all available translators both, embedded and custom

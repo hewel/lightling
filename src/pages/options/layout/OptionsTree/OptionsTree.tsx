@@ -1,6 +1,6 @@
+import { get, isEqual } from 'lodash';
 import React, { FC, ReactNode, useCallback } from 'react';
 import { Checkbox } from 'react-elegant-ui/esm/components/Checkbox/Checkbox.bundle/desktop';
-import { get, isEqual } from 'lodash';
 
 import { Hotkey } from '../../../../components/controls/Hotkey';
 import { Button } from '../../../../components/primitives/Button/Button.bundle/desktop';

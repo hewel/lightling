@@ -95,7 +95,7 @@ export const TextTranslatorTab: TabComponent<InitFn<InitData>> = ({
 		) {
 			inputControl.current.focus();
 		}
-		// eslint-disable-next-line react-hooks/exhaustive-deps
+		// oxlint-disable-next-line react/exhaustive-deps
 	}, [activeTab, tabId]);
 
 	// It need to prevent translating while init state,

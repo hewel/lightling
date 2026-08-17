@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/only-throw-error */
+/* oxlint-disable typescript/only-throw-error */
 import deepmerge from 'deepmerge';
 
 import { LLMFetcher, MessageObject } from './LLMFetcher';
@@ -98,7 +98,7 @@ export class LLMJsonProcessor {
 						];
 						let correctionMessages: null | MessageObject[] = null;
 						// Retry loop
-						// eslint-disable-next-line no-constant-condition
+						// oxlint-disable-next-line no-constant-condition
 						for (let retry = 0; true; retry++) {
 							if (abort.signal.aborted) return;
 

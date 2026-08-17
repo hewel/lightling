@@ -1,8 +1,8 @@
 import { type } from '../../../lib/types';
 import { buildBackendRequest } from '../../utils/requestBuilder';
 
-import { deleteEntry } from './data';
 import { notifyDictionaryEntryDelete } from '.';
+import { deleteEntry } from './data';
 
 export const [deleteTranslationFactory, deleteTranslationReq] = buildBackendRequest(
 	'deleteTranslation',

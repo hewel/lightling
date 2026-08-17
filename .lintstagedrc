@@ -1,16 +1,10 @@
 {
-	"*.{js,ts,tsx}": [
-		"prettier --write",
-		"eslint --fix"
+	"*.{js,jsx,mjs,cjs,ts,tsx,mts,cts}": [
+		"oxlint --fix --deny-warnings --no-error-on-unmatched-pattern",
+		"oxlint --config .oxlintrc.json --type-aware --fix --deny-warnings --ignore-pattern=packages/site/** --no-error-on-unmatched-pattern",
+		"cspell lint --no-progress --no-summary --no-must-find-files",
+		"oxfmt --write --no-error-on-unmatched-pattern"
 	],
-	"*.css": [
-		"prettier --write",
-		"stylelint --fix"
-	],
-	"*.md": [
-		"prettier --write --parser markdown"
-	],
-	"*.json": [
-		"prettier --write --parser json"
-	]
+	"*.css": ["stylelint --fix", "oxfmt --write --no-error-on-unmatched-pattern"],
+	"*.{json,jsonc}": ["oxfmt --write --no-error-on-unmatched-pattern"]
 }
