@@ -22,6 +22,9 @@ jobs:
       - name: Run tests
         run: npm test
 
+      - name: Typecheck extension sources
+        run: npm run typecheck
+
   lint:
     runs-on: ubuntu-latest
     steps:
@@ -56,8 +59,8 @@ jobs:
           path: ./thirdparty/bergamot/build
           key: ${{ steps.cache-thirdparty-restore.outputs.cache-primary-key }}
 
-      - name: Build some targets for test
-        run: make prepare buildFirefox buildFirefoxStandalone packAll lintBuilds
+      - name: Build extension targets
+        run: make prepare buildFirefox buildFirefoxStandalone buildChromium buildChrome packAll lintBuilds
 
       - name: Archive build files
         uses: actions/upload-artifact@v4

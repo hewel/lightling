@@ -19,7 +19,7 @@ import { Button } from '../../../components/primitives/Button/Button.bundle/desk
 import { Icon } from '../../../components/primitives/Icon/Icon.bundle/desktop';
 import { Loader } from '../../../components/primitives/Loader/Loader';
 import { TabsMenu } from '../../../components/primitives/TabsMenu/TabsMenu.bundle/desktop';
-import { isMobileBrowser } from '../../../lib/browser';
+import { getOptionsPageUrl, isMobileBrowser } from '../../../lib/browser';
 import { getMessage } from '../../../lib/language';
 import { TELEMETRY_EVENT_NAME } from '../../../lib/telemetry';
 import { telemetry } from '../../../lib/telemetry/singleton';
@@ -328,7 +328,7 @@ export const PopupWindow: FC<PopupWindowProps> = ({
 					<Button
 						as="a"
 						type="link"
-						url="/pages/options/options.html"
+						url={getOptionsPageUrl()}
 						target="_blank"
 						title={getMessage('settings_pageTitle')}
 						iconRight={SettingsIcon}

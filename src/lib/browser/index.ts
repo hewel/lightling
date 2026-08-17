@@ -23,6 +23,25 @@ export const injectStyles = (paths: string[], parent?: Node) => {
 	});
 };
 
+type WebAccessibleResource = string | { resources?: string[] };
+
+export const getContentScriptStyles = () => {
+	const manifest = browser.runtime.getManifest() as ReturnType<
+		typeof browser.runtime.getManifest
+	> & {
+		web_accessible_resources?: WebAccessibleResource[];
+	};
+
+	return (manifest.web_accessible_resources ?? [])
+		.flatMap((entry) => (typeof entry === 'string' ? entry : (entry.resources ?? [])))
+		.filter((path) => path.endsWith('.css'));
+};
+
+export const getOptionsPageUrl = () => {
+	const optionsPage = browser.runtime.getManifest().options_ui?.page;
+	return browser.runtime.getURL(optionsPage ?? 'options/index.html');
+};
+
 export function getPageLanguageFromMeta() {
 	const html = document.documentElement;
 
@@ -43,10 +62,25 @@ export function getPageLanguageFromMeta() {
 
 export const isFirefox = () => /firefox/i.test(navigator.userAgent);
 export const isChromium = () => /chrome/i.test(navigator.userAgent);
-export const isBackgroundContext = () =>
-	['background-script.js', '_generated_background_page.html'].some(
-		(path) => location.href === browser.runtime.getURL(path),
+export const isBackgroundContext = () => {
+	const manifest = browser.runtime.getManifest() as ReturnType<
+		typeof browser.runtime.getManifest
+	> & {
+		background?: {
+			scripts?: string[];
+			service_worker?: string;
+		};
+	};
+	const backgroundPaths = [
+		manifest.background?.service_worker,
+		...(manifest.background?.scripts ?? []),
+		'_generated_background_page.html',
+	];
+
+	return backgroundPaths.some(
+		(path) => path !== undefined && location.href === browser.runtime.getURL(path),
 	);
+};
 
 const extensionHostname = new URL(browser.runtime.getURL('')).host;
 export const isExtensionContext = location.host === extensionHostname;

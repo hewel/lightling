@@ -9,8 +9,16 @@ debug.log
 
 # Temporary files
 /build
+/dist
+/public/static/logo.png
+/public/static/logo.svg
+/public/thirdparty/bergamot
+/src/static/logo.png
 /tmp
 
 # Local files
 .env
 .local
+
+# extension.js local session state
+.extension-js

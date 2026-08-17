@@ -5,19 +5,22 @@ prepare:
 	npm install
 
 dev: prepare
-	npm run build:dev
+	npm run dev
 devFirefox: prepare
-	EXT_TARGET=firefox npx webpack-cli -wc ./webpack.config.js
+	npm run prepare:extension
+	npx extension dev --browser=firefox
 devChromium: prepare
-	EXT_TARGET=chromium npx webpack-cli -wc ./webpack.config.js
+	npm run prepare:extension
+	npx extension dev --browser=chromium
 devChrome: prepare
-	EXT_TARGET=chrome npx webpack-cli -wc ./webpack.config.js
+	npm run prepare:extension
+	npx extension dev --browser=chrome
 
 devAndroidFirefox:
-	cd build/dev/firefox && npx web-ext run -t firefox-android --adb-device "${ADB_DEVICE_TO_DEBUG}" --firefox-apk org.mozilla.fenix
+	cd build/firefox && npx web-ext run -t firefox-android --adb-device "${ADB_DEVICE_TO_DEBUG}" --firefox-apk org.mozilla.fenix
 
 clean:
-	rm -rf ./build
+	rm -rf ./build ./dist
 
 # Build section
 build: clean prepare buildThirdparty buildAll packAll lintBuilds
@@ -32,16 +35,17 @@ buildAll:
 	${DOCKER_COMPOSE} run --rm linguist make buildFirefox buildFirefoxStandalone buildChromium buildChrome
 
 buildFirefox:
-	NODE_ENV=production EXT_TARGET=firefox npx webpack-cli -c ./webpack.config.js
+	npm run build:variant -- firefox
 buildFirefoxStandalone:
-	NODE_ENV=production EXT_TARGET=firefox-standalone npx webpack-cli -c ./webpack.config.js
+	npm run build:variant -- firefox-standalone
 buildChromium:
-	NODE_ENV=production EXT_TARGET=chromium npx webpack-cli -c ./webpack.config.js
+	npm run build:variant -- chromium
 buildChrome:
-	NODE_ENV=production EXT_TARGET=chrome npx webpack-cli -c ./webpack.config.js
+	npm run build:variant -- chrome
 
 packAll:
 	cd build && ../scripts/zipAll.sh
 
 lintBuilds:
+	node scripts/validateExtensionBuilds.mjs
 	cd build && ../scripts/testBuildArchives.sh

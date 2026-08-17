@@ -1,4 +1,5 @@
 import { Connection, connectToChild } from 'penpal';
+import browser from 'webextension-polyfill';
 
 import {
 	CustomTranslatorInfo,
@@ -15,6 +16,12 @@ type CustomTranslatorsContext = {
 			controller: Connection<TranslatorWorkerApi>;
 		}
 	>;
+};
+
+type ManifestWithSandbox = ReturnType<typeof browser.runtime.getManifest> & {
+	sandbox?: {
+		pages?: string[];
+	};
 };
 
 export const customTranslatorCreate = buildBackendRequest<
@@ -43,7 +50,11 @@ export const customTranslatorCreate = buildBackendRequest<
 			const iframe = document.createElement('iframe', {});
 			iframe.setAttribute('sandbox', 'allow-scripts');
 			document.body.appendChild(iframe);
-			iframe.src = '/offscreen-documents/translator/translator.html';
+			const manifest = browser.runtime.getManifest() as ManifestWithSandbox;
+			const translatorPage = manifest.sandbox?.pages?.[0];
+			iframe.src = browser.runtime.getURL(
+				translatorPage ?? 'pages/offscreen-documents/translator/translator.html',
+			);
 
 			// Connect controller
 			const controller = connectToChild<TranslatorWorkerApi>({

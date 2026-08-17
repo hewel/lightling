@@ -1,53 +1,91 @@
-# Build from sources
+# Development and release builds
 
-The build scripts are designed to run on a Unix platform (Linux, macOS, BSD, etc.). If you are on Windows, try installing [Cygwin](https://www.cygwin.com/).
+The extension is developed and bundled with [Extension.js](https://extension.js.org/). The release workflow also uses Docker to build the embedded Bergamot translator and produce the browser-specific archives.
 
 ## Prerequisites
 
-- AMD64 platform. ARM platform is currently not tested, so the build may fail there
-- UNIX-like OS
-- make installed
-- Docker installed
+For local extension development, install:
 
-If you have an ARM CPU and want to build the code, you can emulate AMD64 and run the build there. You may also try to [enable emulation](https://stackoverflow.com/questions/65612411/forcing-docker-to-use-linux-amd64-platform-by-default-on-macos) at the Docker level. If you use Docker, set the variable `export DOCKER_DEFAULT_PLATFORM=linux/amd64` or add the option `platform: linux/amd64` to a `docker-compose.yml` file.
+- Node.js 22.12 or newer
+- npm
+- A supported browser
 
-## Build
+The full release build additionally requires:
 
-- Create a `.env` file. You may copy the `.env.example` file and configure it with your options
-- Run `make build` to build the whole project, package it, and check it with a linter
-- Artifacts will be placed in the `build` directory
+- A Unix-like operating system (Linux, macOS, BSD, etc.)
+- make
+- Docker with Docker Compose
 
+Release builds currently target AMD64. ARM platforms are not tested and may require AMD64 emulation. With Docker, you can set `DOCKER_DEFAULT_PLATFORM=linux/amd64` or add `platform: linux/amd64` to `docker-compose.yml`.
 
-## Partial build
+## Local development
 
-To build the extension for specific browsers only, you may run `make` with a specific target such as `buildFirefox`, `buildChromium`, etc. (see `makefile` for details). Some targets:
-- firefox
-- chrome
-- chromium: special build with auto updates not from the Google Store
+Install the dependencies:
 
-You must install dependencies and build third party code with `make prepare buildThirdparty` before running a specific target.
+```sh
+npm install
+```
 
-Example command to build only the Firefox version: `make prepare buildThirdparty buildFirefox`.
+Start the default Extension.js development server:
 
+```sh
+npm run dev
+```
 
-# Development
+The equivalent Make target is `make dev`. To launch a specific browser, use one of the explicit targets:
 
-You may run development mode with `make dev`.
+```sh
+make devFirefox
+make devChromium
+make devChrome
+```
 
-If you change theme tokens, you also have to compile the theme files: `npm run build:tokens`
+Each browser-specific target prepares the extension assets and runs `extension dev` with the matching `--browser` option. The same flow can be run directly, for example:
 
-To debug on Android, [see instructions](./AndroidDebug.md).
+```sh
+npm run prepare:extension
+npx extension dev --browser=firefox
+```
+
+If you change theme tokens, rebuild them with `npm run build:tokens`.
+
+To debug on Android, first stage the Firefox variant with `make buildFirefox`, then run `make devAndroidFirefox`. The Android command loads the extension from `build/firefox`. See the [Android debugging instructions](./AndroidDebug.md) for device setup.
 
 To make a custom translator, see the [translator API](../CustomTranslator.md).
 
-# Tests
+## Production builds
 
-When you change code that touches any user data and interacts with browser storages (`localStorage`, `indexedDB`, `browser.storage`, etc.) or some external API, you must add or update tests for it.
+Create a `.env` file by copying `.env.example` and configure it as needed. Then run:
 
-The general rule is that any code which simply transforms data should be tested.
+```sh
+make build
+```
 
-You may not need to add tests for UI, but you should add tests for data.
+This builds Bergamot in Docker, builds all extension variants in the Node builder container, packages the results, and validates the release archives. The staged extension directories retain the release layout expected by the packaging scripts:
 
-# Migrations
+- `build/firefox`
+- `build/firefox-standalone`
+- `build/chromium`
+- `build/chrome`
 
-Migrations must have app version.
+To build only one variant after installing dependencies and building Bergamot, use its Make target. For example:
+
+```sh
+make prepare buildThirdparty buildFirefox
+```
+
+The available production targets are `buildFirefox`, `buildFirefoxStandalone`, `buildChromium`, and `buildChrome`. Each delegates to the corresponding Extension.js variant build; the direct npm form is:
+
+```sh
+npm run build:variant -- firefox
+```
+
+The supported variant arguments are `firefox`, `firefox-standalone`, `chromium`, and `chrome`.
+
+## Tests
+
+When code touches user data and interacts with browser storage (`localStorage`, `indexedDB`, `browser.storage`, etc.) or an external API, add or update tests. As a general rule, transformations of data should be covered by tests. UI-only changes may not require data tests.
+
+## Migrations
+
+Migrations must include an app version.

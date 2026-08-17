@@ -11,6 +11,7 @@ import { Button } from '../../../../components/primitives/Button/Button.bundle/u
 import { Icon } from '../../../../components/primitives/Icon/Icon.bundle/desktop';
 import { Notification } from '../../../../components/primitives/Notification/Notification.bundle/universal';
 import { Textinput } from '../../../../components/primitives/Textinput/Textinput.bundle/desktop';
+import { getOptionsPageUrl } from '../../../../lib/browser';
 import { useConcurrentTTS } from '../../../../lib/hooks/useConcurrentTTS';
 import { useConfirm } from '../../../../lib/hooks/useConfirm';
 import { useDebouncedInput } from '../../../../lib/hooks/useDebouncedInput';
@@ -262,7 +263,7 @@ export const TranslationsHistory: FC<TranslationsHistoryProps> = ({
 						{getLocalizedNode({
 							messageName: 'history_notification_disabled',
 							slots: {
-								preferences: buildLink(`/pages/options/options.html`),
+								preferences: buildLink(getOptionsPageUrl()),
 							},
 						})}
 					</Notification>

@@ -1,4 +1,5 @@
-! Basic tags
+// cspell:ignore contenteditable enlighter
+const noTranslateSelectors = `! Basic tags
 meta
 link
 script
@@ -49,4 +50,6 @@ i.fa
 i[class^=fa-]
 
 ! Other
-visuallyhidden
+visuallyhidden`;
+
+export default noTranslateSelectors;

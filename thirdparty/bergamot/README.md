@@ -9,7 +9,7 @@ To build bergamot run `make build`, this command will build WASM code and compil
 To build only WASM module run `make buildWasm` and then `make exportWasm` to copy files to a `build` directory.
 First build of WASM may take about 20 minutes.
 
-Directory `src` contains a code of worker that must be compiled with webpack from project root directory.
+Directory `src` contains the worker source that Extension.js compiles from the project root.
 
 # Usage
 

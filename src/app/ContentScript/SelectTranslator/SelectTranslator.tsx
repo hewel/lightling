@@ -1,5 +1,6 @@
 import React from 'react';
 
+import { getContentScriptStyles } from '../../../lib/browser';
 import { ShadowDOMContainerManager } from '../../../lib/ShadowDOMContainerManager';
 import { TELEMETRY_EVENT_NAME } from '../../../lib/telemetry';
 import { trackClientEvent } from '../../../requests/backend/telemetry';
@@ -121,7 +122,7 @@ export class SelectTranslator {
 	};
 
 	private readonly shadowRoot = new ShadowDOMContainerManager({
-		styles: ['contentscript.css'],
+		styles: getContentScriptStyles(),
 	});
 
 	public start() {

@@ -1,10 +1,10 @@
 {
 	"name": "locales",
 	"scripts": {
-		"proofread": "tsx cli proofread -l en ../../src/_locales/",
-		"proofread:all": "tsx cli proofread ../../src/_locales/",
-		"sync": "tsx cli sync en ../../src/_locales/",
-		"prettify": "tsx cli prettify ../../src/_locales/",
+		"proofread": "tsx cli proofread -l en ../../_locales/",
+		"proofread:all": "tsx cli proofread ../../_locales/",
+		"sync": "tsx cli sync en ../../_locales/",
+		"prettify": "tsx cli prettify ../../_locales/",
 		"update": "npm run proofread && npm run sync"
 	},
 	"version": "1.0.0",

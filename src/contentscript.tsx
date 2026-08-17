@@ -1,3 +1,5 @@
 import { ContentScript } from './app/ContentScript';
 
-ContentScript.main();
+export default function main() {
+	void ContentScript.main();
+}

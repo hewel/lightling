@@ -8,6 +8,7 @@ import {
 } from 'domtranslator';
 import { createNodesFilter, isElementNode, isTextNode } from 'domtranslator/utils/nodes';
 
+import { getContentScriptStyles } from '../../../lib/browser';
 import { ShadowDOMContainerManager } from '../../../lib/ShadowDOMContainerManager';
 import { translate } from '../../../requests/backend/translate';
 import { AppConfigType } from '../../../types/runtime';
@@ -185,7 +186,7 @@ export class PageTranslator {
 	}
 
 	private readonly shadowRoot = new ShadowDOMContainerManager({
-		styles: ['contentscript.css'],
+		styles: getContentScriptStyles(),
 	});
 
 	private readonly showOriginalTextHandler = (evt: MouseEvent) => {

@@ -1,11 +1,10 @@
 import browser from 'webextension-polyfill';
 
 import { DEFAULT_TRANSLATOR, DEFAULT_TTS, defaultConfig } from '../../config';
+import noTranslateSelectors from '../../config/no-translate-selectors';
 import { createMigrationTask, Migration } from '../../lib/migrations/createMigrationTask';
 import { decodeStruct } from '../../lib/types';
 import { AppConfig } from '../../types/runtime';
-
-import noTranslateSelectors from './no-translate-selectors.txt';
 
 const migrations: Migration[] = [
 	{

@@ -124,7 +124,7 @@ export class App {
 			// so we create only one "main" document, that creates embedded iframes
 			try {
 				offscreen.createDocument({
-					url: 'offscreen-documents/main/main.html',
+					url: 'pages/offscreen-documents/main/main.html',
 					reasons: ['WORKERS', 'IFRAME_SCRIPTING', 'MATCH_MEDIA'],
 					justification:
 						'Main offscreen document, to run WASM and custom translators code in sandbox',
@@ -231,6 +231,10 @@ export class App {
 
 		// Inject content scripts for chrome, to make page translation available just after install
 		if (isChromium()) {
+			const contentScriptFiles =
+				browser.runtime.getManifest().content_scripts?.[0]?.js;
+			if (!contentScriptFiles?.length) return;
+
 			const tabs = await getAllTabs();
 			tabs.forEach((tab) => {
 				if (tab.status === 'unloaded') return;
@@ -245,7 +249,7 @@ export class App {
 
 				browser.scripting.executeScript({
 					target: { tabId: tab.id },
-					files: ['contentscript.js'],
+					files: contentScriptFiles,
 				});
 			});
 		}

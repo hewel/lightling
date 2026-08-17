@@ -9,6 +9,8 @@ debug.log
 
 # Build
 /build
+/dist
+/public
 
 # Local files
 .ADB_DEVICE

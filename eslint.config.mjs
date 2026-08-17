@@ -195,7 +195,7 @@ export default tseslint.config(
 
 	// Pure JS
 	{
-		files: ['**/*.js', '*.{js,mjs,cjs}'],
+		files: ['**/*.{js,mjs,cjs}'],
 		extends: [tseslint.configs.disableTypeChecked],
 		rules: {
 			'@typescript-eslint/no-require-imports': 'off',
