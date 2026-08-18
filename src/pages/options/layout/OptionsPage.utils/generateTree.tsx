@@ -41,6 +41,7 @@ export const generateTree = ({
 }: Options): OptionsGroup[] => {
   return [
     {
+      id: 'general',
       title: getMessage('settings_option_commonSettings'),
       groupContent: [
         {
@@ -62,6 +63,7 @@ export const generateTree = ({
       ],
     },
     {
+      id: 'translator',
       title: getMessage('settings_option_translatePreferences'),
       groupContent: [
         Object.keys(translatorModules).length === 0
@@ -92,62 +94,63 @@ export const generateTree = ({
             action: toggleCustomTranslatorsWindow,
           },
         },
+      ],
+    },
+    {
+      id: 'scheduler',
+      title: getMessage('settings_option_translateScheduler'),
+      groupContent: [
         {
-          title: getMessage('settings_option_translateScheduler'),
-          groupContent: [
-            {
-              title: getMessage('settings_option_translateScheduler_delay'),
-              description: getMessage('settings_option_translateScheduler_delay_desc'),
-              path: 'scheduler.translatePoolDelay',
-              optionContent: {
-                type: 'InputNumber',
-              },
-            },
-            {
-              title: getMessage('settings_option_translateScheduler_retryLimit'),
-              description: getMessage(
-                'settings_option_translateScheduler_retryLimit_desc',
-              ),
-              path: 'scheduler.translateRetryAttemptLimit',
-              optionContent: {
-                type: 'InputNumber',
-              },
-            },
-          ],
+          title: getMessage('settings_option_translateScheduler_delay'),
+          description: getMessage('settings_option_translateScheduler_delay_desc'),
+          path: 'scheduler.translatePoolDelay',
+          optionContent: {
+            type: 'InputNumber',
+          },
         },
         {
-          title: getMessage('settings_option_cache'),
-          groupContent: [
-            {
-              description: getMessage('settings_option_cache_enable_desc'),
-              path: 'scheduler.useCache',
-              optionContent: {
-                type: 'Checkbox',
-                text: getMessage('settings_option_cache_enable'),
-              },
-            },
-            {
-              description: getMessage('settings_option_cache_ignoreCase_desc'),
-              path: 'cache.ignoreCase',
-              optionContent: {
-                type: 'Checkbox',
-                text: getMessage('settings_option_cache_ignoreCase'),
-              },
-            },
-            {
-              description: getMessage('settings_option_cache_clear_desc'),
-              optionContent: {
-                type: 'Button',
-                text: getMessage('settings_option_cache_clear'),
-                disabled: clearCacheProcess,
-                action: clearCache,
-              },
-            },
-          ],
+          title: getMessage('settings_option_translateScheduler_retryLimit'),
+          description: getMessage('settings_option_translateScheduler_retryLimit_desc'),
+          path: 'scheduler.translateRetryAttemptLimit',
+          optionContent: {
+            type: 'InputNumber',
+          },
         },
       ],
     },
     {
+      id: 'cache',
+      title: getMessage('settings_option_cache'),
+      groupContent: [
+        {
+          description: getMessage('settings_option_cache_enable_desc'),
+          path: 'scheduler.useCache',
+          optionContent: {
+            type: 'Checkbox',
+            text: getMessage('settings_option_cache_enable'),
+          },
+        },
+        {
+          description: getMessage('settings_option_cache_ignoreCase_desc'),
+          path: 'cache.ignoreCase',
+          optionContent: {
+            type: 'Checkbox',
+            text: getMessage('settings_option_cache_ignoreCase'),
+          },
+        },
+        {
+          description: getMessage('settings_option_cache_clear_desc'),
+          optionContent: {
+            type: 'Button',
+            text: getMessage('settings_option_cache_clear'),
+            disabled: clearCacheProcess,
+            action: clearCache,
+          },
+        },
+      ],
+    },
+    {
+      id: 'tts',
       title: getMessage('settings_option_tts'),
       groupContent: [
         Object.keys(ttsModules).length === 0
@@ -181,6 +184,7 @@ export const generateTree = ({
       ],
     },
     {
+      id: 'page-translation',
       title: getMessage('settings_option_pageTranslation'),
       groupContent: [
         {
@@ -264,6 +268,7 @@ export const generateTree = ({
       ],
     },
     {
+      id: 'select-translation',
       title: getMessage('settings_option_selectTranslation'),
       groupContent: [
         {
@@ -387,6 +392,51 @@ export const generateTree = ({
             },
           ],
         },
+      ],
+    },
+    {
+      id: 'text-translation',
+      title: getMessage('settings_option_textTranslator'),
+      groupContent: [
+        {
+          description: getMessage('settings_option_textTranslator_rememberText_desc'),
+          path: 'textTranslator.rememberText',
+          optionContent: {
+            type: 'Checkbox',
+            text: getMessage('settings_option_textTranslator_rememberText'),
+          },
+        },
+        {
+          path: 'textTranslator.spellCheck',
+          optionContent: {
+            type: 'Checkbox',
+            text: getMessage('settings_option_textTranslator_spellCheck'),
+          },
+        },
+        {
+          path: 'textTranslator.suggestLanguage',
+          optionContent: {
+            type: 'Checkbox',
+            text: getMessage('settings_option_textTranslator_suggestLanguage'),
+          },
+        },
+        {
+          description: getMessage(
+            'settings_option_textTranslator_suggestLanguageAlways_desc',
+          ),
+          path: 'textTranslator.suggestLanguageAlways',
+          optionContent: {
+            type: 'Checkbox',
+            text: getMessage('settings_option_textTranslator_suggestLanguageAlways'),
+          },
+        },
+      ],
+    },
+
+    {
+      id: 'popup-history',
+      title: getMessage('settings_section_popupAndHistory'),
+      groupContent: [
         {
           title: 'Popup button',
           groupContent: [
@@ -434,49 +484,6 @@ export const generateTree = ({
             },
           ],
         },
-      ],
-    },
-    {
-      title: getMessage('settings_option_textTranslator'),
-      groupContent: [
-        {
-          description: getMessage('settings_option_textTranslator_rememberText_desc'),
-          path: 'textTranslator.rememberText',
-          optionContent: {
-            type: 'Checkbox',
-            text: getMessage('settings_option_textTranslator_rememberText'),
-          },
-        },
-        {
-          path: 'textTranslator.spellCheck',
-          optionContent: {
-            type: 'Checkbox',
-            text: getMessage('settings_option_textTranslator_spellCheck'),
-          },
-        },
-        {
-          path: 'textTranslator.suggestLanguage',
-          optionContent: {
-            type: 'Checkbox',
-            text: getMessage('settings_option_textTranslator_suggestLanguage'),
-          },
-        },
-        {
-          description: getMessage(
-            'settings_option_textTranslator_suggestLanguageAlways_desc',
-          ),
-          path: 'textTranslator.suggestLanguageAlways',
-          optionContent: {
-            type: 'Checkbox',
-            text: getMessage('settings_option_textTranslator_suggestLanguageAlways'),
-          },
-        },
-      ],
-    },
-
-    {
-      title: getMessage('settings_section_popup'),
-      groupContent: [
         {
           title: getMessage('settings_option_pageTranslation'),
           groupContent: [
@@ -492,24 +499,23 @@ export const generateTree = ({
             },
           ],
         },
-      ],
-    },
-
-    {
-      title: getMessage('settings_section_history'),
-      groupContent: [
         {
-          description: getLocalizedNode({
-            messageName: 'settings_option_history_enable_desc',
-            slots: {
-              historyPage: buildLink(`/pages/history/history.html`),
+          title: getMessage('settings_section_history'),
+          groupContent: [
+            {
+              description: getLocalizedNode({
+                messageName: 'settings_option_history_enable_desc',
+                slots: {
+                  historyPage: buildLink(`/pages/history/history.html`),
+                },
+              }),
+              path: 'history.enabled',
+              optionContent: {
+                type: 'Checkbox',
+                text: getMessage('settings_option_history_enable'),
+              },
             },
-          }),
-          path: 'history.enabled',
-          optionContent: {
-            type: 'Checkbox',
-            text: getMessage('settings_option_history_enable'),
-          },
+          ],
         },
       ],
     },

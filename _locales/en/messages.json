@@ -538,6 +538,9 @@
   "settings_option_userLanguage_desc": {
     "message": "The language that texts will be translated into"
   },
+  "settings_pageDescription": {
+    "message": "Manage translation engines, cache and interface preferences"
+  },
   "settings_pageTitle": {
     "message": "Settings"
   },
@@ -546,6 +549,9 @@
   },
   "settings_section_popup": {
     "message": "Popup"
+  },
+  "settings_section_popupAndHistory": {
+    "message": "Popup and history"
   },
   "textTranslator_suggestLanguage": {
     "message": "It seems the text language is <slot id=languageSuggest>$language_name$</slot>",

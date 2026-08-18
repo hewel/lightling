@@ -13,6 +13,7 @@ import {
 } from 'react';
 import { Spinner } from '@astryxdesign/core/Spinner';
 import { HStack, VStack } from '@astryxdesign/core/Stack';
+import { Text } from '@astryxdesign/core/Text';
 import { useToast } from '@astryxdesign/core/Toast';
 import * as stylex from '@stylexjs/stylex';
 
@@ -35,6 +36,7 @@ import { getSpeakers } from '@/requests/backend/tts/getSpeakers';
 import { updateConfig as updateConfigReq } from '@/requests/backend/updateConfig';
 import type { AppConfigType } from '@/types/runtime';
 
+import { OptionsNav } from './OptionsNav/OptionsNav';
 import { optionsPageStyles } from './OptionsPage.stylex';
 import { generateTree } from './OptionsPage.utils/generateTree';
 import { type OptionsGroup, OptionsTree } from './OptionsTree/OptionsTree';
@@ -294,6 +296,46 @@ export const OptionsPage: FC<OptionsPageProps> = () => {
   }, [translatorModules, clearCacheProcess, clearCache, ttsModules]);
 
   //
+  // Section navigation
+  //
+
+  const sections = useMemo(
+    () => configTree?.map(({ id, title }) => ({ id: id!, title })) ?? [],
+    [configTree],
+  );
+
+  const [activeSection, setActiveSection] = useState<string | null>(null);
+
+  // Scroll-spy: highlight the section crossing the upper viewport band
+  useEffect(() => {
+    if (!loaded || sections.length === 0) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            setActiveSection(entry.target.id);
+          }
+        }
+      },
+      { rootMargin: '-20% 0px -70% 0px' },
+    );
+
+    for (const { id } of sections) {
+      const element = document.getElementById(id);
+      if (element !== null) {
+        observer.observe(element);
+      }
+    }
+
+    return () => observer.disconnect();
+  }, [loaded, sections]);
+
+  const handleSelectSection = useCallback((id: string) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, []);
+
+  //
   // Render
   //
 
@@ -310,15 +352,11 @@ export const OptionsPage: FC<OptionsPageProps> = () => {
       <div>
         <div {...stylex.props(optionsPageStyles.page)}>
           <PageSection title={getMessage('settings_pageTitle')} level={1}>
+            <Text as="p" color="secondary" xstyle={optionsPageStyles.headerSubtitle}>
+              {getMessage('settings_pageDescription')}
+            </Text>
             <div {...stylex.props(optionsPageStyles.indentHorizontal)}>
               <ActionsStack gap={3}>
-                <Button
-                  view="action"
-                  onPress={resetConfig}
-                  width={isMobile ? 'max' : undefined}
-                >
-                  {getMessage('settings_button_reset')}
-                </Button>
                 <Button onPress={importConfig} width={isMobile ? 'max' : undefined}>
                   {getMessage('settings_button_import')}
                 </Button>
@@ -327,18 +365,34 @@ export const OptionsPage: FC<OptionsPageProps> = () => {
                     {getMessage('settings_button_export')}
                   </Button>
                 )}
+                <Button
+                  view="action"
+                  onPress={resetConfig}
+                  width={isMobile ? 'max' : undefined}
+                >
+                  {getMessage('settings_button_reset')}
+                </Button>
               </ActionsStack>
             </div>
 
-            <div {...stylex.props(optionsPageStyles.optionsTree)}>
-              <OptionsTree
-                tree={configTree}
-                errors={errors ?? undefined}
-                config={config}
-                modifiedConfig={modifiedConfig}
-                setOptionValue={setOptionValue}
-              />
-            </div>
+            <HStack gap={6} align="start" xstyle={optionsPageStyles.optionsTree}>
+              <VStack gap={0} xstyle={optionsPageStyles.navColumn}>
+                <OptionsNav
+                  sections={sections}
+                  activeId={activeSection}
+                  onSelect={handleSelectSection}
+                />
+              </VStack>
+              <VStack gap={0} xstyle={optionsPageStyles.contentColumn}>
+                <OptionsTree
+                  tree={configTree}
+                  errors={errors ?? undefined}
+                  config={config}
+                  modifiedConfig={modifiedConfig}
+                  setOptionValue={setOptionValue}
+                />
+              </VStack>
+            </HStack>
           </PageSection>
         </div>
 

@@ -91,6 +91,7 @@ export interface OptionItem {
 }
 
 export interface OptionsGroup {
+  id?: string;
   title: string;
   titleSize?: HeadingLevel;
   groupContent: (OptionsGroup | OptionItem | undefined)[];
@@ -305,7 +306,7 @@ export const OptionsTree: FC<OptionsTreeProps> = ({
           const localLevel = item.titleSize ?? normalizeHeadingLevel(globalLevel);
 
           return (
-            <PageSection title={item.title} level={localLevel} key={index}>
+            <PageSection id={item.id} title={item.title} level={localLevel} key={index}>
               <div
                 {...stylex.props(
                   globalLevel > 2
