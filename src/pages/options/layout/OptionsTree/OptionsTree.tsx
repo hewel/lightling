@@ -2,6 +2,8 @@ import { get, isEqual } from 'lodash';
 import { FC, ReactNode, useCallback } from 'react';
 import { CheckboxInput } from '@astryxdesign/core/CheckboxInput';
 import { Selector } from '@astryxdesign/core/Selector';
+import { VStack } from '@astryxdesign/core/Stack';
+import * as stylex from '@stylexjs/stylex';
 
 import { Hotkey } from '@/components/controls/Hotkey';
 import { Button } from '@/components/primitives/Button/Button.bundle/desktop';
@@ -10,7 +12,7 @@ import { Textinput } from '@/components/primitives/Textinput/Textinput.bundle/de
 import { AppConfigType } from '@/types/runtime';
 
 import { OptionSection } from '../OptionSection/OptionSection';
-import { cnOptionsPage } from '../OptionsPage';
+import { optionsPageStyles } from '../OptionsPage.stylex';
 import { PageSection } from '../PageSection/PageSection';
 
 export interface OptionSelectList {
@@ -126,6 +128,7 @@ export const OptionsTree: FC<OptionsTreeProps> = ({
 						<CheckboxInput
 							label={label}
 							isLabelHidden={!option.text}
+							className={stylex.props(optionsPageStyles.checkbox).className}
 							value={checked ?? false}
 							onChange={(checked) => {
 								setOptionValueProxy(path, reverse != checked);
@@ -151,11 +154,7 @@ export const OptionsTree: FC<OptionsTreeProps> = ({
 					}
 
 					return (
-						<div
-							className={cnOptionsPage('IndentMixin', {
-								horizontal: true,
-							})}
-						>
+						<div {...stylex.props(optionsPageStyles.indentHorizontal)}>
 							{option.options.map((checkbox, index) => {
 								const optionName = option.valueMap[index];
 								const valueIndex = value.indexOf(optionName);
@@ -170,6 +169,10 @@ export const OptionsTree: FC<OptionsTreeProps> = ({
 											`${title ?? path ?? 'Option'} ${index + 1}`
 										}
 										isLabelHidden={!checkbox.text}
+										className={
+											stylex.props(optionsPageStyles.checkbox)
+												.className
+										}
 										value={checked}
 										onChange={(checked) => {
 											setOptionValueProxy(
@@ -206,6 +209,7 @@ export const OptionsTree: FC<OptionsTreeProps> = ({
 							autoResize
 							label={title ?? path ?? 'Option value'}
 							isLabelHidden
+							xstyle={optionsPageStyles.textarea}
 							status={
 								error !== undefined
 									? { type: 'error', message: error }
@@ -317,18 +321,13 @@ export const OptionsTree: FC<OptionsTreeProps> = ({
 						item.titleSize ?? normalizeHeadingLevel(globalLevel);
 
 					return (
-						<PageSection
-							title={item.title}
-							level={localLevel}
-							key={index}
-							className={cnOptionsPage(
-								globalLevel > 2 ? 'Subgroup' : 'MainGroup',
-							)}
-						>
+						<PageSection title={item.title} level={localLevel} key={index}>
 							<div
-								className={cnOptionsPage('Container', {}, [
-									cnOptionsPage('IndentMixin', { vertical: true }),
-								])}
+								{...stylex.props(
+									globalLevel > 2
+										? optionsPageStyles.indentVertical
+										: optionsPageStyles.subgroups,
+								)}
 							>
 								{renderTree(
 									item.groupContent,
@@ -345,5 +344,9 @@ export const OptionsTree: FC<OptionsTreeProps> = ({
 		[config, errors, modifiedConfig, renderOption],
 	);
 
-	return <>{renderTree(tree, 2)}</>;
+	return (
+		<VStack gap={0} xstyle={optionsPageStyles.mainGroups}>
+			{renderTree(tree, 2)}
+		</VStack>
+	);
 };

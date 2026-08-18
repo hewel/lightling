@@ -1,8 +1,7 @@
 import { FC, ReactNode } from 'react';
+import * as stylex from '@stylexjs/stylex';
 
-import { cnOptionsPage } from '../OptionsPage';
-
-import './OptionSection.css';
+import { optionsPageStyles } from '../OptionsPage.stylex';
 
 export interface OptionSection {
 	title?: string;
@@ -20,25 +19,29 @@ export const OptionSection: FC<OptionSection> = ({
 	error,
 }) => (
 	<div
-		className={cnOptionsPage('Container', {}, [
-			cnOptionsPage('IndentMixin', { vertical: true }),
-		])}
+		{...stylex.props(
+			optionsPageStyles.optionSection,
+			changed && optionsPageStyles.changedOptionSection,
+		)}
 	>
-		<div className={cnOptionsPage('OptionSection', { changed })}>
-			<div className={cnOptionsPage('OptionTitle')}>{title}</div>
-			<div className={cnOptionsPage('OptionContainer')}>
-				{children}
+		<div {...stylex.props(optionsPageStyles.optionTitle)}>{title}</div>
+		<div
+			{...stylex.props(
+				optionsPageStyles.optionContainer,
+				changed && optionsPageStyles.changedOptionContainer,
+			)}
+		>
+			{children}
 
-				{error !== undefined ? (
-					<div className={cnOptionsPage('OptionErrorMessage')}>{error}</div>
-				) : undefined}
+			{error !== undefined ? (
+				<div {...stylex.props(optionsPageStyles.optionErrorMessage)}>{error}</div>
+			) : undefined}
 
-				{description !== undefined ? (
-					<div className={cnOptionsPage('OptionDescription')}>
-						{description}
-					</div>
-				) : undefined}
-			</div>
+			{description !== undefined ? (
+				<div {...stylex.props(optionsPageStyles.optionDescription)}>
+					{description}
+				</div>
+			) : undefined}
 		</div>
 	</div>
 );

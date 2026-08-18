@@ -1,6 +1,6 @@
 import { isEqual } from 'lodash';
 import { FC, useCallback, useEffect, useLayoutEffect, useState } from 'react';
-import { cn } from '@bem-react/classname';
+import * as stylex from '@stylexjs/stylex';
 
 import { Page } from '@/components/layouts/Page/Page';
 import { TELEMETRY_EVENT_NAME } from '@/lib/telemetry';
@@ -14,9 +14,11 @@ import {
 	TranslationsHistoryFetcher,
 } from './TranslationsHistory/TranslationsHistory';
 
-import './HistoryPage.css';
-
-export const cnHistoryPage = cn('HistoryPage');
+const styles = stylex.create({
+	root: {
+		padding: '1rem',
+	},
+});
 
 export const HistoryPage: FC = () => {
 	useLayoutEffect(() => {
@@ -61,7 +63,7 @@ export const HistoryPage: FC = () => {
 
 	return (
 		<Page loading={!isLoaded} renderWhileLoading>
-			<div className={cnHistoryPage()}>
+			<div {...stylex.props(styles.root)}>
 				<TranslationsHistory
 					{...{
 						translations: translations || [],

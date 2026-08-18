@@ -1,11 +1,16 @@
 import { FC, ReactNode, RefObject } from 'react';
-import { cn } from '@bem-react/classname';
+import * as stylex from '@stylexjs/stylex';
 
 import { Popup } from '@/components/primitives/Popup/Popup';
 
-import './OriginalTextPopup.css';
-
-export const cnOriginalTextPopup = cn('OriginalTextPopup');
+const styles = stylex.create({
+	root: {
+		background: 'var(--color-background-muted)',
+		color: 'var(--color-text-primary)',
+		padding: '1rem',
+		maxWidth: '25rem',
+	},
+});
 
 export interface IOriginalTextPopupProps {
 	target: RefObject<HTMLElement | null>;
@@ -21,7 +26,7 @@ export const OriginalTextPopup: FC<IOriginalTextPopupProps> = ({ target, childre
 			visible={true}
 			zIndex={999999999}
 		>
-			<div className={cnOriginalTextPopup()}>{children}</div>
+			<div {...stylex.props(styles.root)}>{children}</div>
 		</Popup>
 	);
 };

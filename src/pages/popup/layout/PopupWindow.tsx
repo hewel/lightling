@@ -10,7 +10,7 @@ import {
 } from 'react';
 import { Spinner } from '@astryxdesign/core/Spinner';
 import { Tab, TabList } from '@astryxdesign/core/TabList';
-import { cn } from '@bem-react/classname';
+import * as stylex from '@stylexjs/stylex';
 import { IconBook2, IconHistory, IconSettings } from '@tabler/icons-react';
 
 import { Button } from '@/components/primitives/Button/Button.bundle/desktop';
@@ -22,9 +22,64 @@ import { XResizeObserver } from '@/lib/XResizeObserver';
 import LogoElement from '@/res/logo-base.svg';
 import { AppConfigType } from '@/types/runtime';
 
-import './PopupWindow.css';
-
-export const cnPopupWindow = cn('PopupWindow');
+const styles = stylex.create({
+	root: {
+		minWidth: 'max-content',
+		width: '100%',
+	},
+	mobile: {
+		maxWidth: '100vw',
+	},
+	header: {
+		display: 'flex',
+		background: 'var(--popup-window-header-fill-color)',
+		lineHeight: '4rem',
+		padding: '0 var(--typography-layout-indent-l-all)',
+		gap: 'var(--typography-layout-indent-l-all)',
+	},
+	logo: {
+		display: 'inline-block',
+	},
+	logoIcon: {
+		display: 'inline-block',
+		verticalAlign: 'middle',
+		width: '5rem',
+		height: 'auto',
+	},
+	headerMenu: {
+		display: 'block',
+		fontFamily: 'var(--typography-font-family)',
+		textAlign: 'right',
+		width: '100%',
+		float: 'right',
+		lineHeight: 'inherit',
+	},
+	headerIcon: {
+		width: 'var(--spacing-8)',
+		height: 'var(--spacing-8)',
+		margin: '0 0.2rem',
+	},
+	tabs: {
+		padding: '0.5rem',
+		overflowX: 'auto',
+	},
+	tabsMenu: {
+		display: 'flex',
+		minWidth: 'max-content',
+	},
+	content: {
+		padding: '0.5rem',
+	},
+	errorMessage: {
+		minWidth: '100%',
+	},
+	plainText: {
+		padding: '2rem 0',
+		fontFamily: 'var(--typography-font-family)',
+		fontSize: 'var(--typography-layout-size-l-font-size)',
+		textAlign: 'center',
+	},
+});
 
 export type TranslatorFeatures = {
 	supportedLanguages: string[];
@@ -240,16 +295,14 @@ export const PopupWindow: FC<PopupWindowProps> = ({
 	let content: ReactNode;
 	if (error !== undefined) {
 		content = (
-			<div className={cnPopupWindow('ErrorMessage', { plainText: true })}>
-				{error}
-			</div>
+			<div {...stylex.props(styles.errorMessage, styles.plainText)}>{error}</div>
 		);
 	} else if (tabs !== undefined && activeTabId !== undefined && panes !== null) {
 		content = (
 			<>
-				<div className={cnPopupWindow('Tabs')}>
+				<div {...stylex.props(styles.tabs)}>
 					<TabList
-						className={cnPopupWindow('TabsMenu')}
+						xstyle={styles.tabsMenu}
 						layout="fill"
 						hasDivider
 						value={activeTabId}
@@ -266,7 +319,7 @@ export const PopupWindow: FC<PopupWindowProps> = ({
 					</TabList>
 				</div>
 
-				<div className={cnPopupWindow('Content')}>
+				<div {...stylex.props(styles.content)}>
 					<PopupWindowContext.Provider value={{ activeTab: activeTabId }}>
 						{panes.map(({ id, content }) => (
 							<section
@@ -291,21 +344,19 @@ export const PopupWindow: FC<PopupWindowProps> = ({
 	);
 
 	return (
-		<div className={cnPopupWindow({ view: isMobile ? 'mobile' : undefined })}>
-			<div className={cnPopupWindow('Header')}>
-				<div className={cnPopupWindow('Logo')}>
-					<LogoElement />
+		<div {...stylex.props(isMobile ? styles.mobile : styles.root)}>
+			<div {...stylex.props(styles.header)}>
+				<div {...stylex.props(styles.logo)}>
+					<LogoElement {...stylex.props(styles.logoIcon)} />
 				</div>
-				<div className={cnPopupWindow('HeaderMenu')}>
+				<div {...stylex.props(styles.headerMenu)}>
 					<Button
 						as="a"
 						type="link"
 						url="/pages/history/history.html"
 						target="_blank"
 						title={getMessage('history_pageTitle')}
-						iconRight={
-							<IconHistory className={cnPopupWindow('HeaderIcon')} />
-						}
+						iconRight={<IconHistory {...stylex.props(styles.headerIcon)} />}
 						view="clear"
 					/>
 					<Button
@@ -314,7 +365,7 @@ export const PopupWindow: FC<PopupWindowProps> = ({
 						url="/pages/dictionary/dictionary.html"
 						target="_blank"
 						title={getMessage('dictionary_pageTitle')}
-						iconRight={<IconBook2 className={cnPopupWindow('HeaderIcon')} />}
+						iconRight={<IconBook2 {...stylex.props(styles.headerIcon)} />}
 						view="clear"
 					/>
 					<Button
@@ -323,9 +374,7 @@ export const PopupWindow: FC<PopupWindowProps> = ({
 						url={getOptionsPageUrl()}
 						target="_blank"
 						title={getMessage('settings_pageTitle')}
-						iconRight={
-							<IconSettings className={cnPopupWindow('HeaderIcon')} />
-						}
+						iconRight={<IconSettings {...stylex.props(styles.headerIcon)} />}
 						view="clear"
 					/>
 				</div>

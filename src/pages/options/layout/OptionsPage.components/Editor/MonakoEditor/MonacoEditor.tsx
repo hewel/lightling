@@ -1,12 +1,18 @@
 import { editor, languages } from 'monaco-editor-core';
 /* cspell:disable */
 import { FC, RefObject, useCallback, useEffect, useMemo, useRef } from 'react';
+import * as stylex from '@stylexjs/stylex';
 
 import { isMobileBrowser } from '@/lib/browser';
 import { useRefHost } from '@/lib/hooks/useRefHost';
 
-import { cnEditor } from '../Editor';
 import { language as tslanguage } from './languages/typescript';
+
+const styles = stylex.create({
+	code: {
+		width: '100%',
+	},
+});
 
 // Configure monako
 languages.register({
@@ -130,5 +136,5 @@ export const MonacoEditor: FC<MonacoEditorProps> = ({
 		}
 	});
 
-	return <div className={cnEditor('Code')} ref={editorContainerRef}></div>;
+	return <div {...stylex.props(styles.code)} ref={editorContainerRef} />;
 };

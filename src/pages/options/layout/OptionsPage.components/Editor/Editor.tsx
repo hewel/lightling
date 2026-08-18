@@ -1,5 +1,5 @@
 import { FC, useContext, useEffect, useRef, useState } from 'react';
-import { cn } from '@bem-react/classname';
+import * as stylex from '@stylexjs/stylex';
 
 import { Button } from '@/components/primitives/Button/Button.bundle/universal';
 import { IModalProps, Modal } from '@/components/primitives/Modal/Modal.bundle/desktop';
@@ -11,9 +11,39 @@ import { OptionsModalsContext } from '../../OptionsPage';
 
 import { EditorObject, MonacoEditor } from './MonakoEditor/MonacoEditor';
 
-import './Editor.css';
-
-export const cnEditor = cn('Editor');
+const styles = stylex.create({
+	modalContent: {
+		display: 'flex',
+		minHeight: 'calc(100vh - var(--modal-size-m-content-indent) * 2)',
+		boxSizing: 'border-box',
+		padding: '1rem',
+	},
+	container: {
+		display: 'flex',
+		flexDirection: 'column',
+		width: {
+			default: '56.25rem',
+			'@media (width <= 950px)': '95vw',
+		},
+		gap: '0.5rem',
+		minHeight: '18.75rem',
+	},
+	controls: {
+		display: 'flex',
+		gap: '0.5rem',
+		justifyContent: 'right',
+	},
+	editorContainer: {
+		display: 'flex',
+		flexGrow: 5,
+	},
+	error: {
+		borderRadius: 'var(--typography-layout-border-radius)',
+		padding: '0.6rem',
+		background: 'var(--color-error)',
+		color: 'var(--color-on-error)',
+	},
+});
 
 export type EditorEntry = {
 	readonly name: string;
@@ -77,14 +107,14 @@ export const Editor: FC<EditorProps> = ({ data, onClose, onSave, error }) => {
 
 	return (
 		<Modal
-			className={cnEditor({})}
+			contentXstyle={styles.modalContent}
 			visible={true}
 			onClose={onClose}
 			scope={scope}
 			preventBodyScroll
 		>
-			<div className={cnEditor('Container')}>
-				<div className={cnEditor('Name')}>
+			<div {...stylex.props(styles.container)}>
+				<div>
 					<Textinput
 						value={name}
 						onInputText={setName}
@@ -93,7 +123,7 @@ export const Editor: FC<EditorProps> = ({ data, onClose, onSave, error }) => {
 					/>
 				</div>
 
-				<div className={cnEditor('EditorContainer')}>
+				<div {...stylex.props(styles.editorContainer)}>
 					<MonacoEditor
 						value={code}
 						setValue={setCode}
@@ -101,9 +131,9 @@ export const Editor: FC<EditorProps> = ({ data, onClose, onSave, error }) => {
 					/>
 				</div>
 
-				{actualError && <div className={cnEditor('Error')}>{actualError}</div>}
+				{actualError && <div {...stylex.props(styles.error)}>{actualError}</div>}
 
-				<div className={cnEditor('Controls')}>
+				<div {...stylex.props(styles.controls)}>
 					<Button key="save" view="action" onPress={onSavePress}>
 						{getMessage('editorWindow_save')}
 					</Button>

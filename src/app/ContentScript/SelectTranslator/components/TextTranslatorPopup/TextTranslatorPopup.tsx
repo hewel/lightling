@@ -1,5 +1,5 @@
 import React, { FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { cn } from '@bem-react/classname';
+import * as stylex from '@stylexjs/stylex';
 
 import { Modal } from '@/components/primitives/Modal/Modal.bundle/desktop';
 import { Popup } from '@/components/primitives/Popup/Popup';
@@ -12,7 +12,29 @@ import {
 } from './TextTranslator/TextTranslator';
 import { fixPosToPreventOverflow } from './TextTranslatorPopup.utils/fixPosToPreventOverflow';
 
-import './TextTranslatorPopup.css';
+const styles = stylex.create({
+	root: {
+		pointerEvents: 'all',
+	},
+	desktop: {
+		position: 'absolute',
+	},
+	translateButton: {
+		display: 'block',
+		opacity: {
+			default: 0.7,
+			':hover': 1,
+		},
+		width: '1.5rem',
+		height: '1.5rem',
+	},
+	mobileTable: {
+		maxWidth: '100%',
+	},
+	mobileContent: {
+		display: 'block',
+	},
+});
 
 export interface TextTranslatorPopupProps extends Omit<
 	TextTranslatorComponentProps,
@@ -27,8 +49,6 @@ export interface TextTranslatorPopupProps extends Omit<
 
 	closeHandler: () => void;
 }
-
-const cnTextTranslatorPopup = cn('TextTranslatorPopup');
 
 const isActivationKey = (code: string) =>
 	code === 'Enter' || code === 'NumpadEnter' || code === 'Space';
@@ -205,7 +225,7 @@ export const TextTranslatorPopup: FC<TextTranslatorPopupProps> = ({
 						toggleAutoclose(true);
 					}}
 				>
-					<LogoElement className={cnTextTranslatorPopup('TranslateButton')} />
+					<LogoElement {...stylex.props(styles.translateButton)} />
 				</div>
 			)}
 		</div>
@@ -214,8 +234,15 @@ export const TextTranslatorPopup: FC<TextTranslatorPopupProps> = ({
 	// Mobile view
 	if (isMobile && translating) {
 		return (
-			<div className={cnTextTranslatorPopup({ mobile: true })}>
-				<Modal view="default" visible preventBodyScroll zIndex={zIndex}>
+			<div {...stylex.props(styles.root)}>
+				<Modal
+					view="default"
+					visible
+					preventBodyScroll
+					zIndex={zIndex}
+					tableXstyle={styles.mobileTable}
+					contentXstyle={styles.mobileContent}
+				>
 					{content}
 				</Modal>
 			</div>
@@ -231,7 +258,7 @@ export const TextTranslatorPopup: FC<TextTranslatorPopupProps> = ({
 			<div style={cursorStyle} ref={cursorRef} />
 
 			{/* Render popup attached to cursor */}
-			<div className={cnTextTranslatorPopup()}>
+			<div {...stylex.props(styles.root, styles.desktop)}>
 				<Popup
 					target="anchor"
 					anchor={cursorRef}

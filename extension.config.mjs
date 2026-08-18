@@ -1,6 +1,8 @@
 import fs from 'node:fs';
 import { join } from 'node:path';
 
+import stylexPlugin from '@stylexjs/unplugin';
+
 export function withoutInjectedContentStyles(manifest) {
 	let isChanged = false;
 	const contentScripts = (manifest['content_scripts'] ?? []).map((contentScript) => {
@@ -69,6 +71,7 @@ export default {
 			use: ['@svgr/webpack'],
 		});
 		config.plugins ??= [];
+		config.plugins.push(stylexPlugin.rspack());
 		config.plugins.push(new ShadowDomContentStylesPlugin());
 
 		return config;

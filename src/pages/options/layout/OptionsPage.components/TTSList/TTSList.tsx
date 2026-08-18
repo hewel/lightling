@@ -1,7 +1,7 @@
 import { FC, useCallback, useContext, useEffect, useState } from 'react';
 import { Spinner } from '@astryxdesign/core/Spinner';
 import { HStack, VStack } from '@astryxdesign/core/Stack';
-import { cn } from '@bem-react/classname';
+import * as stylex from '@stylexjs/stylex';
 import { IconTrash } from '@tabler/icons-react';
 
 import { CustomTTS } from '@/app/Background/TTS/TTSManager';
@@ -18,9 +18,27 @@ import { OptionsModalsContext } from '../../OptionsPage';
 
 import { Editor, EditorEntry } from '../Editor/Editor';
 
-import './TTSList.css';
-
-const cnTTSList = cn('TTSList');
+const styles = stylex.create({
+	root: {
+		maxWidth: '37.5rem',
+		minWidth: {
+			default: 'auto',
+			'@media (width >= 600px)': '25rem',
+		},
+	},
+	entry: {
+		display: 'flex',
+		flexFlow: 'row',
+		lineHeight: '2em',
+	},
+	entryName: {
+		width: '100%',
+		padding: '0 0.3rem',
+		whiteSpace: 'nowrap',
+		textOverflow: 'ellipsis',
+		overflow: 'hidden',
+	},
+});
 
 export const TTSList: FC<{
 	visible: boolean;
@@ -114,7 +132,7 @@ export const TTSList: FC<{
 			{isLoading ? (
 				<Spinner />
 			) : (
-				<div className={cnTTSList({})}>
+				<div {...stylex.props(styles.root)}>
 					<ModalLayout
 						title={getMessage('ttsManagerWindow_title')}
 						footer={[
@@ -131,8 +149,8 @@ export const TTSList: FC<{
 								const { id, name } = speaker;
 
 								return (
-									<div className={cnTTSList('Entry')} key={id}>
-										<span className={cnTTSList('EntryName')}>
+									<div {...stylex.props(styles.entry)} key={id}>
+										<span {...stylex.props(styles.entryName)}>
 											{name}
 										</span>
 

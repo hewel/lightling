@@ -19,7 +19,7 @@ RULES:
 - No <div> — components do all layout/spacing, page frame included.
 - Frame first: read `astryx docs layout` before writing any page or screen — page frame, region widths, breakpoint behavior.
 - Dense data = rows (Table, List/Item), never Card-wrapped list items; Card is for standalone widgets. Status = StatusDot/Token; Badge = counts only.
-- Custom styling: component props first; else style/className with tokens — var(--color-*|--spacing-*|--radius-*). No raw hex/px. (No StyleX/Tailwind compiler here — don't use xstyle/utility classes.)
+- Custom styling: component props first; else StyleX — colocated `stylex.create` in the component file, `xstyle` prop for Astryx components; token values as `'var(--color-*|--spacing-*|--radius-*)'` literals. No raw hex/px.
 - Tokens for every value (`astryx docs tokens`). Brand/accent belongs in the theme (`astryx theme list` / `theme add <slug>`, or `astryx theme template` for a custom one) — never override --color-* in :root.
 - SELF-CHECK before you finish: re-read the file and replace any raw <div>/<span> layout, imported .css/@apply, or hardcoded value (#hex, 16px) with the component or a token (var(--color-*|--spacing-*|…)). If unsure a component/prop exists, run `astryx component <Name>` / `astryx search "<thing>"`; don't hand-roll CSS.
 

@@ -1,9 +1,30 @@
 import { FC, ReactNode } from 'react';
-import { cn } from '@bem-react/classname';
+import * as stylex from '@stylexjs/stylex';
 
-import './OptionsPanel.css';
-
-export const cnOptionsPanel = cn('OptionsPanel');
+const styles = stylex.create({
+	optionSpacing: {
+		marginBlockEnd: '0.5rem',
+	},
+	fullOption: {
+		display: 'table-row',
+	},
+	fullTitle: {
+		display: 'table-cell',
+		lineHeight: '200%',
+		paddingBlockEnd: '0.3rem',
+		paddingInlineEnd: '0.3rem',
+	},
+	mobileOption: {
+		display: 'block',
+	},
+	mobileTitle: {
+		display: 'block',
+		marginBlockEnd: '0.3rem',
+	},
+	optionBody: {
+		display: 'block',
+	},
+});
 
 export type Option = {
 	title?: ReactNode;
@@ -13,26 +34,33 @@ export type Option = {
 export interface IOptionsPanelProps {
 	options: Option[];
 	view: 'mobile' | 'full';
-	className?: string;
 }
 
 /**
  * Component which render typical options lists
  */
-export const OptionsPanel: FC<IOptionsPanelProps> = ({ options, view, className }) => {
+export const OptionsPanel: FC<IOptionsPanelProps> = ({ options, view }) => {
 	return (
-		<div className={cnOptionsPanel({ view }, [className])}>
+		<div>
 			{options.map((option, idx) => (
-				<div className={cnOptionsPanel('Option')} key={idx}>
+				<div
+					{...stylex.props(
+						idx !== options.length - 1 && styles.optionSpacing,
+						view === 'full' ? styles.fullOption : styles.mobileOption,
+					)}
+					key={idx}
+				>
 					{option.title && (
-						<div className={cnOptionsPanel('OptionTitle')}>
+						<div
+							{...stylex.props(
+								view === 'full' ? styles.fullTitle : styles.mobileTitle,
+							)}
+						>
 							{option.title}
 						</div>
 					)}
 					{option.content && (
-						<div className={cnOptionsPanel('OptionBody')}>
-							{option.content}
-						</div>
+						<div {...stylex.props(styles.optionBody)}>{option.content}</div>
 					)}
 				</div>
 			))}

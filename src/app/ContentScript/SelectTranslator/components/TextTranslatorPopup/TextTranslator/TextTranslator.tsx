@@ -2,7 +2,7 @@ import { FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import browser from 'webextension-polyfill';
 import { Collapsible } from '@astryxdesign/core/Collapsible';
 import { Spinner } from '@astryxdesign/core/Spinner';
-import { cn } from '@bem-react/classname';
+import * as stylex from '@stylexjs/stylex';
 import { IconVolume2, IconX } from '@tabler/icons-react';
 
 import { DictionaryButton } from '@/components/controls/DictionaryButton/DictionaryButton';
@@ -24,7 +24,73 @@ import { ITranslation } from '@/types/translation/Translation';
 
 import './TextTranslator.css';
 
-export const cnTextTranslator = cn('TextTranslator');
+const styles = stylex.create({
+	root: {
+		boxSizing: 'border-box',
+		width: 'max-content',
+		maxWidth: '100%',
+		padding: 'var(--spacing-3)',
+		fontFamily: 'var(--font-family-body)',
+		fontSize: 'var(--text-supporting-size)',
+		fontWeight: 'var(--text-supporting-weight)',
+		lineHeight: 'var(--text-supporting-leading)',
+		color: 'var(--color-text-primary)',
+		textAlign: 'initial',
+		display: 'flex',
+		flexDirection: 'column',
+		gap: 'var(--spacing-2)',
+	},
+	desktopHead: {
+		display: 'grid',
+		gridTemplateColumns: 'minmax(0, 1fr) max-content',
+		alignItems: 'start',
+		gap: 'var(--spacing-2)',
+	},
+	textContainer: {
+		display: 'grid',
+		gridTemplateColumns: 'max-content minmax(0, 1fr)',
+		alignItems: 'start',
+		columnGap: 'var(--spacing-1)',
+		borderRadius: 'var(--radius-element)',
+	},
+	textControls: {
+		display: 'flex',
+		flexDirection: 'row',
+		alignItems: 'center',
+		gap: 'var(--spacing-1)',
+		paddingBlock: 'var(--spacing-0-5)',
+	},
+	originalContainer: {
+		padding: 'var(--spacing-1)',
+		background: 'var(--color-background-muted)',
+	},
+	originalText: {
+		maxHeight: 'calc(var(--spacing-10) * 10)',
+		margin: 'var(--spacing-2) 0 0',
+		overflow: 'auto',
+		whiteSpace: 'pre-wrap',
+		scrollbarWidth: 'thin',
+	},
+	body: {
+		minWidth: 0,
+		maxWidth: 'calc(var(--spacing-10) * 15)',
+		maxHeight: 'calc(var(--spacing-10) * 10)',
+		paddingBlock: 'var(--spacing-1)',
+		overflowY: 'auto',
+		fontSize: 'var(--text-supporting-size)',
+		lineHeight: 'var(--text-supporting-leading)',
+		whiteSpace: 'pre-line',
+		scrollbarWidth: 'thin',
+	},
+	error: {
+		color: 'var(--color-error)',
+	},
+	mobileHead: {
+		width: '100%',
+		marginBlockEnd: 'var(--spacing-2)',
+		textAlign: 'end',
+	},
+});
 
 export interface TextTranslatorComponentProps {
 	detectedLangFirst: boolean;
@@ -331,15 +397,7 @@ export const TextTranslator: FC<TextTranslatorComponentProps> = ({
 	const isMobile = useMemo(() => isMobileBrowser(), []);
 
 	const closeButton = (
-		<div
-			className={
-				isMobile
-					? cnTextTranslator('MobileHead')
-					: cnTextTranslator('Container', {
-							direction: 'right',
-						})
-			}
-		>
+		<div {...stylex.props(isMobile && styles.mobileHead)}>
 			<Button
 				view="clear"
 				// `onPress` is not work in shadow DOM
@@ -354,19 +412,11 @@ export const TextTranslator: FC<TextTranslatorComponentProps> = ({
 
 	if (translatorFeatures !== undefined && (translatedText !== null || error !== null)) {
 		return (
-			<div className={cnTextTranslator()}>
-				<div className={cnTextTranslator('Head', { mobile: isMobile })}>
+			<div {...stylex.props(styles.root)}>
+				<div {...stylex.props(!isMobile && styles.desktopHead)}>
 					{isMobile && closeButton}
 
-					<div
-						className={
-							!isMobile
-								? cnTextTranslator('Container', {
-										direction: 'left',
-									})
-								: undefined
-						}
-					>
+					<div>
 						<LanguagePanel
 							languages={translatorFeatures.supportedLanguages}
 							auto={translatorFeatures.isSupportAutodetect}
@@ -384,12 +434,8 @@ export const TextTranslator: FC<TextTranslatorComponentProps> = ({
 				</div>
 				{error === null ? (
 					<>
-						<div
-							className={cnTextTranslator('TextContainer', {
-								text: 'translation',
-							})}
-						>
-							<div className={cnTextTranslator('TextControls')}>
+						<div {...stylex.props(styles.textContainer)}>
+							<div {...stylex.props(styles.textControls)}>
 								<Button
 									onPress={ttsTranslate.toggle}
 									view="clear"
@@ -402,17 +448,16 @@ export const TextTranslator: FC<TextTranslatorComponentProps> = ({
 								</Button>
 								<DictionaryButton translation={dictionaryData} />
 							</div>
-							<div className={cnTextTranslator('Body')}>
-								{translatedText}
-							</div>
+							<div {...stylex.props(styles.body)}>{translatedText}</div>
 						</div>
 						{!showOriginalText ? undefined : (
 							<div
-								className={cnTextTranslator('TextContainer', {
-									text: 'original',
-								})}
+								{...stylex.props(
+									styles.textContainer,
+									styles.originalContainer,
+								)}
 							>
-								<div className={cnTextTranslator('TextControls')}>
+								<div {...stylex.props(styles.textControls)}>
 									<Button
 										onPress={ttsOriginal.toggle}
 										view="clear"
@@ -424,18 +469,16 @@ export const TextTranslator: FC<TextTranslatorComponentProps> = ({
 										<IconVolume2 />
 									</Button>
 								</div>
-								<div className={cnTextTranslator('Body')}>
+								<div {...stylex.props(styles.body)}>
 									<Collapsible
-										className={cnTextTranslator(
-											'OriginalTextDisclosure',
-										)}
+										className="TextTranslatorDisclosure"
 										trigger={getMessage(
 											'inlineTranslator_showOriginalText',
 										)}
 										defaultIsOpen={false}
 										onOpenChange={updatePopup}
 									>
-										<p className={cnTextTranslator('OriginalText')}>
+										<p {...stylex.props(styles.originalText)}>
 											{originalText}
 										</p>
 									</Collapsible>
@@ -445,9 +488,7 @@ export const TextTranslator: FC<TextTranslatorComponentProps> = ({
 					</>
 				) : (
 					<>
-						<div className={cnTextTranslator('Body', { error: true })}>
-							{error}
-						</div>
+						<div {...stylex.props(styles.body, styles.error)}>{error}</div>
 						<div>
 							<Button view="action" onPress={translateText}>
 								{getMessage('common_retry')}

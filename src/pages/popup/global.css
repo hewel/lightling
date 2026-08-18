@@ -1,0 +1,10 @@
+:root {
+	/* Hide firefox scrollbar */
+	scrollbar-width: none;
+}
+
+body {
+	margin: 0;
+	background-color: var(--color-essential);
+	font-size: var(--typography-layout-size-m-font-size);
+}

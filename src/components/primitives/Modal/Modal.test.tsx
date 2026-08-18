@@ -27,7 +27,7 @@ function getDialog(container: HTMLElement) {
 }
 
 function getModalContent(dialog: HTMLDialogElement) {
-	const content = dialog.querySelector<HTMLElement>('.Modal-Content');
+	const content = dialog.querySelector<HTMLElement>('[data-autofocus]');
 	if (content === null) throw new Error('Expected modal content to render');
 
 	return content;
@@ -82,7 +82,7 @@ describe('Modal', () => {
 		});
 	}
 
-	it('renders the Astryx dialog with compatibility structure and a fallback name', async () => {
+	it('renders the Astryx dialog with content and a fallback name', async () => {
 		const innerRef = createRef<HTMLDialogElement>();
 
 		await renderModal({
@@ -98,15 +98,9 @@ describe('Modal', () => {
 		expect(dialog).toBe(innerRef.current);
 		expect(dialog?.open).toBe(true);
 		expect(dialog?.classList.contains('astryx-dialog')).toBe(true);
-		expect(dialog?.classList.contains('Modal')).toBe(true);
-		expect(dialog?.classList.contains('Modal_visible')).toBe(true);
-		expect(dialog?.classList.contains('Modal_view_default')).toBe(true);
-		expect(dialog?.classList.contains('Modal_hasAnimation')).toBe(true);
 		expect(dialog?.classList.contains('custom-modal')).toBe(true);
 		expect(dialog?.getAttribute('aria-label')).toBe('Dialog');
-		expect(dialog?.querySelector('.Modal-Table')).not.toBeNull();
-		expect(dialog?.querySelector('.Modal-Cell_align_middle')).not.toBeNull();
-		expect(dialog?.querySelector('.Modal-Content')).not.toBeNull();
+		expect(dialog?.textContent).toContain('Modal action');
 		expect(dialog?.style.maxWidth).toBe('var(--spacing-12)');
 		expect(dialog?.style.zIndex).toBe('73');
 	});
@@ -180,7 +174,7 @@ describe('Modal', () => {
 		await renderModal({ scope, visible: true });
 
 		expect(container.querySelector('dialog')).toBeNull();
-		expect(scopeElement.querySelector('dialog.Modal')).not.toBeNull();
+		expect(scopeElement.querySelector('dialog')).not.toBeNull();
 	});
 
 	it('keeps hidden content only when keepMounted is enabled', async () => {
@@ -188,7 +182,6 @@ describe('Modal', () => {
 		const hiddenDialog = container.querySelector<HTMLDialogElement>('dialog');
 		expect(hiddenDialog).not.toBeNull();
 		expect(hiddenDialog?.open).toBe(false);
-		expect(hiddenDialog?.classList.contains('Modal_visible')).toBe(false);
 
 		await renderModal({ keepMounted: false, visible: false });
 		expect(container.querySelector('dialog')).toBeNull();
@@ -210,7 +203,10 @@ describe('Modal', () => {
 		trigger.remove();
 	});
 
-	it('retains backdrop and motion compatibility switches', async () => {
+	it('retains backdrop, motion, and alignment compatibility switches', async () => {
+		await renderModal({ visible: true });
+		const defaultClassName = getDialog(container).className;
+
 		await renderModal({
 			contentVerticalAlign: 'top',
 			hasAnimation: false,
@@ -219,9 +215,7 @@ describe('Modal', () => {
 		});
 
 		const dialog = getDialog(container);
-		expect(dialog.classList.contains('Modal_hideBackdrop')).toBe(true);
-		expect(dialog.classList.contains('Modal_hasAnimation')).toBe(false);
-		expect(dialog.querySelector('.Modal-Cell_align_top')).not.toBeNull();
+		expect(dialog.className).not.toBe(defaultClassName);
 		expect(dialog.style.marginBlockStart).toBe('var(--spacing-1-5)');
 		expect(dialog.style.marginBlockEnd).toBe('auto');
 	});

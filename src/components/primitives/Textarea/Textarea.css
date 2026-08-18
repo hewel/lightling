@@ -1,19 +1,11 @@
-.TextareaAdapter-ControlPlane {
-	position: relative;
-}
-
-.TextareaAdapter-Input {
-	min-width: 0;
-	min-height: 0;
-}
-
-.TextareaAdapter-Clear {
-	position: absolute;
-	inset-block-start: var(--spacing-1);
-	inset-inline-end: var(--spacing-1);
-	pointer-events: auto;
-}
-
-.TextareaAdapter_hasClear .TextareaAdapter-Field textarea {
+/* Infrastructure exception: Astryx TextArea has no slot for its native textarea. */
+.TextareaAdapter_hasClear.TextareaAdapter-Field textarea {
 	padding-inline-end: var(--spacing-10);
+}
+
+.TextareaAdapter-Field textarea {
+	height: var(--textarea-adapter-height, auto);
+	min-height: var(--textarea-adapter-min-height, 5rem);
+	max-height: var(--textarea-adapter-max-height, 20rem);
+	resize: var(--textarea-adapter-resize, vertical);
 }

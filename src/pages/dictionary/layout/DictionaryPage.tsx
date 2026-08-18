@@ -4,7 +4,7 @@ import { FC, useCallback, useEffect, useLayoutEffect, useMemo, useState } from '
 import { Selector } from '@astryxdesign/core/Selector';
 import { HStack, VStack } from '@astryxdesign/core/Stack';
 import { useToast } from '@astryxdesign/core/Toast';
-import { cn } from '@bem-react/classname';
+import * as stylex from '@stylexjs/stylex';
 import { IconTrash } from '@tabler/icons-react';
 
 import { Page } from '@/components/layouts/Page/Page';
@@ -27,9 +27,39 @@ import { ITranslation } from '@/types/translation/Translation';
 
 import { OptionsPanel } from './OptionsPanel/OptionsPanel';
 
-import './DictionaryPage.css';
-
-export const cnDictionaryPage = cn('DictionaryPage');
+const styles = stylex.create({
+	root: {
+		padding:
+			'var(--typography-layout-indent-l-all) var(--typography-layout-indent-m-all)',
+	},
+	description: {
+		borderRadius: 'var(--typography-controls-border-radius)',
+		color: 'var(--color-typo-secondary)',
+	},
+	searchControl: {
+		width: '100%',
+	},
+	notFoundMessage: {
+		display: 'table',
+		boxSizing: 'border-box',
+		width: '100%',
+		minHeight: '7.5rem',
+		padding: 'var(--typography-controls-indent-l)',
+		borderRadius: 'var(--typography-controls-border-radius)',
+		fontSize: '1.5rem',
+		background: 'var(--color-background-muted)',
+		color: 'var(--color-typo-secondary)',
+	},
+	notFoundMessageContent: {
+		display: 'table-cell',
+		width: '100%',
+		maxWidth: '100%',
+		height: '100%',
+		textAlign: 'center',
+		verticalAlign: 'middle',
+		overflowWrap: 'anywhere',
+	},
+});
 
 const langCodes = getLanguageCodesISO639('v1');
 
@@ -188,8 +218,8 @@ export const DictionaryPage: FC<IDictionaryPageProps> = ({ confirmDelete = true 
 		// Empty content
 		if (entries.length === 0)
 			return (
-				<div className={cnDictionaryPage('NotFoundMessage')}>
-					<div className={cnDictionaryPage('NotFoundMessageContent')}>
+				<div {...stylex.props(styles.notFoundMessage)}>
+					<div {...stylex.props(styles.notFoundMessageContent)}>
 						{getMessage('dictionary_emptyDictionary')}
 					</div>
 				</div>
@@ -224,8 +254,8 @@ export const DictionaryPage: FC<IDictionaryPageProps> = ({ confirmDelete = true 
 		// Empty content
 		if (filteredEntries.length === 0)
 			return (
-				<div className={cnDictionaryPage('NotFoundMessage')}>
-					<div className={cnDictionaryPage('NotFoundMessageContent')}>
+				<div {...stylex.props(styles.notFoundMessage)}>
+					<div {...stylex.props(styles.notFoundMessageContent)}>
 						{getMessage('dictionary_notFoundEntries') + ' '}
 						<Button view="action" onPress={resetFilters}>
 							{getMessage('dictionary_resetFilters')}
@@ -290,9 +320,9 @@ export const DictionaryPage: FC<IDictionaryPageProps> = ({ confirmDelete = true 
 
 	return (
 		<Page loading={entries === null}>
-			<div className={cnDictionaryPage({ mobile: isMobile })}>
+			<div {...stylex.props(styles.root)}>
 				<VStack gap={5}>
-					<div className={cnDictionaryPage('Description')}>
+					<div {...stylex.props(styles.description)}>
 						{getMessage('dictionary_description')}
 					</div>
 
@@ -301,7 +331,7 @@ export const DictionaryPage: FC<IDictionaryPageProps> = ({ confirmDelete = true 
 							placeholder={getMessage('dictionary_searchPlaceholder')}
 							value={search}
 							onInputText={setSearch}
-							className={cnDictionaryPage('SearchControl')}
+							xstyle={styles.searchControl}
 							onClearClick={() => {
 								setSearch('');
 							}}
@@ -309,7 +339,6 @@ export const DictionaryPage: FC<IDictionaryPageProps> = ({ confirmDelete = true 
 						/>
 
 						<OptionsPanel
-							className={cnDictionaryPage('SearchOptions')}
 							view={isMobile ? 'mobile' : 'full'}
 							options={[
 								{
@@ -358,9 +387,7 @@ export const DictionaryPage: FC<IDictionaryPageProps> = ({ confirmDelete = true 
 							</Button>
 						</HStack>
 
-						<div className={cnDictionaryPage('Entries')}>
-							{renderedEntries}
-						</div>
+						<div>{renderedEntries}</div>
 					</VStack>
 				</VStack>
 			</div>

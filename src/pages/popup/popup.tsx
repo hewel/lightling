@@ -19,6 +19,8 @@ import { PageTranslatorTab } from './tabs/PageTranslator/PageTranslator@tab';
 // Tabs
 import { TextTranslatorTab } from './tabs/TextTranslator/TextTranslator@tab';
 
+import './global.css';
+
 interface PopupPageProps {
 	rootElement: HTMLElement;
 }

@@ -37,3 +37,8 @@ retargeted
 retargets
 tabler
 unparse
+stylex
+stylexjs
+xstyle
+unplugin
+rspack

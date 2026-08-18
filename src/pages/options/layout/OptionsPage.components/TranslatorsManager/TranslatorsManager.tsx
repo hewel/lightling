@@ -1,7 +1,7 @@
 import { FC, useCallback, useContext, useEffect, useState } from 'react';
 import { Spinner } from '@astryxdesign/core/Spinner';
 import { HStack, VStack } from '@astryxdesign/core/Stack';
-import { cn } from '@bem-react/classname';
+import * as stylex from '@stylexjs/stylex';
 import { IconTrash } from '@tabler/icons-react';
 
 import { ModalLayout } from '@/components/layouts/ModalLayout/ModalLayout';
@@ -18,9 +18,27 @@ import { OptionsModalsContext } from '../../OptionsPage';
 
 import { Editor, EditorEntry } from '../Editor/Editor';
 
-import './TranslatorsManager.css';
-
-const cnTranslatorsManager = cn('TranslatorsManager');
+const styles = stylex.create({
+	root: {
+		maxWidth: '37.5rem',
+		minWidth: {
+			default: 'auto',
+			'@media (width >= 600px)': '25rem',
+		},
+	},
+	entry: {
+		display: 'flex',
+		flexFlow: 'row',
+		lineHeight: '2em',
+	},
+	entryName: {
+		width: '100%',
+		padding: '0 0.3rem',
+		whiteSpace: 'nowrap',
+		textOverflow: 'ellipsis',
+		overflow: 'hidden',
+	},
+});
 
 export const TranslatorsManager: FC<{
 	visible: boolean;
@@ -121,7 +139,7 @@ export const TranslatorsManager: FC<{
 			{isLoading ? (
 				<Spinner />
 			) : (
-				<div className={cnTranslatorsManager({})}>
+				<div {...stylex.props(styles.root)}>
 					<ModalLayout
 						title={getMessage('translatorsManagerWindow_title')}
 						footer={[
@@ -138,13 +156,8 @@ export const TranslatorsManager: FC<{
 								const { id, name } = translatorInfo;
 
 								return (
-									<div
-										className={cnTranslatorsManager('Entry')}
-										key={id}
-									>
-										<span
-											className={cnTranslatorsManager('EntryName')}
-										>
+									<div {...stylex.props(styles.entry)} key={id}>
+										<span {...stylex.props(styles.entryName)}>
 											{name}
 										</span>
 

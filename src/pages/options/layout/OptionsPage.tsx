@@ -12,7 +12,7 @@ import {
 } from 'react';
 import { HStack, VStack } from '@astryxdesign/core/Stack';
 import { useToast } from '@astryxdesign/core/Toast';
-import { cn } from '@bem-react/classname';
+import * as stylex from '@stylexjs/stylex';
 
 import { Page } from '@/components/layouts/Page/Page';
 import { Button } from '@/components/primitives/Button/Button.bundle/universal';
@@ -34,13 +34,10 @@ import { AppConfigType } from '@/types/runtime';
 
 import { TranslatorsManager } from './OptionsPage.components/TranslatorsManager/TranslatorsManager';
 import { TTSList } from './OptionsPage.components/TTSList/TTSList';
+import { optionsPageStyles } from './OptionsPage.stylex';
 import { generateTree } from './OptionsPage.utils/generateTree';
 import { OptionsGroup, OptionsTree } from './OptionsTree/OptionsTree';
 import { PageSection } from './PageSection/PageSection';
-
-import './OptionsPage.css';
-
-export const cnOptionsPage = cn('OptionsPage');
 
 export const OptionsModalsContext = createContext<
 	RefObject<HTMLDivElement | null> | undefined
@@ -301,14 +298,10 @@ export const OptionsPage: FC<OptionsPageProps> = () => {
 	const ActionsStack = isMobile ? VStack : HStack;
 	return (
 		<Page>
-			<div className={cnOptionsPage()}>
-				<div className={cnOptionsPage('Page', { editMode })}>
+			<div>
+				<div {...stylex.props(optionsPageStyles.page)}>
 					<PageSection title={getMessage('settings_pageTitle')} level={1}>
-						<div
-							className={cnOptionsPage('Container', {}, [
-								cnOptionsPage('IndentMixin', { horizontal: true }),
-							])}
-						>
+						<div {...stylex.props(optionsPageStyles.indentHorizontal)}>
 							<ActionsStack gap={3}>
 								<Button
 									view="action"
@@ -334,7 +327,7 @@ export const OptionsPage: FC<OptionsPageProps> = () => {
 							</ActionsStack>
 						</div>
 
-						<div className={cnOptionsPage('OptionsTree')}>
+						<div {...stylex.props(optionsPageStyles.optionsTree)}>
 							<OptionsTree
 								tree={configTree}
 								errors={errors ?? undefined}
@@ -347,11 +340,7 @@ export const OptionsPage: FC<OptionsPageProps> = () => {
 				</div>
 
 				{editMode ? (
-					<div
-						className={cnOptionsPage('ConfirmMenu', {}, [
-							cnOptionsPage('IndentMixin', { horizontal: true }),
-						])}
-					>
+					<div {...stylex.props(optionsPageStyles.confirmMenu)}>
 						<Button view="action" onPress={saveChanges}>
 							{getMessage('settings_button_saveChanges')}
 						</Button>

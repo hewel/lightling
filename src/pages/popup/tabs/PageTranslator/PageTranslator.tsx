@@ -1,7 +1,7 @@
 import { FC, useCallback, useMemo } from 'react';
 import { Collapsible } from '@astryxdesign/core/Collapsible';
 import { Selector } from '@astryxdesign/core/Selector';
-import { cn } from '@bem-react/classname';
+import * as stylex from '@stylexjs/stylex';
 
 import { PageTranslatorStats } from '@/app/ContentScript/PageTranslator/PageTranslator';
 import { LanguagePanel } from '@/components/controls/LanguagePanel/LanguagePanel';
@@ -11,9 +11,62 @@ import { MutableValue } from '@/types/utils';
 
 import { TabData } from '../../layout/PopupWindow';
 
-import './PageTranslator.css';
-
-export const cnPageTranslator = cn('PageTranslator');
+const styles = stylex.create({
+	root: {
+		fontFamily: 'var(--typography-font-family)',
+	},
+	verticalContainer: {
+		display: 'flex',
+		flexDirection: 'column',
+		gap: 'var(--typography-controls-indent-l)',
+	},
+	horizontalContainer: {
+		display: 'flex',
+		gap: 'var(--typography-controls-indent-l)',
+	},
+	header: {
+		margin: 'var(--typography-layout-indent-l-all) 0 var(--typography-layout-indent-m-all)',
+	},
+	translateButtonFill: {
+		width: '100%',
+	},
+	langPanel: {
+		display: 'inline',
+	},
+	langPanelMobile: {
+		display: 'block',
+	},
+	counterContainer: {
+		display: 'flex',
+		gap: 'var(--button-size-s-indent-outer)',
+	},
+	counter: {
+		display: 'inline-block',
+		backgroundColor: 'var(--button-view-default-fill-color-disabled)',
+		color: 'var(--button-view-default-typo-color-disabled)',
+		fontSize: 'var(--button-size-s-font-size)',
+		lineHeight: 'var(--button-size-s-line-height)',
+		padding: '0 var(--button-size-m-indent-inner)',
+		borderRadius: 'var(--button-border-radius)',
+	},
+	counterContent: {
+		marginInlineStart: 'var(--typography-layout-indent-s-all)',
+		borderInlineStart: 'var(--border-width) solid currentcolor',
+		paddingInlineStart: 'var(--typography-layout-indent-s-all)',
+	},
+	placeholder: {
+		marginBlockEnd: '0.5rem',
+	},
+	optionTitle: {
+		marginInlineEnd: 'var(--typography-controls-indent-l)',
+	},
+	optionTitleMobile: {
+		display: 'block',
+	},
+	optionValue: {
+		marginInlineEnd: 'var(--typography-controls-indent-l)',
+	},
+});
 
 export const languagePreferenceOptions = {
 	ENABLE: 'enable',
@@ -145,33 +198,26 @@ export const PageTranslator: FC<PageTranslatorProps> = ({
 	);
 
 	return (
-		<div
-			className={cnPageTranslator({ view: isMobile ? 'mobile' : undefined }, [
-				cnPageTranslator('Container', { indent: 'vertical' }),
-			])}
-		>
+		<div {...stylex.props(styles.root, styles.verticalContainer)}>
 			<div
-				className={cnPageTranslator(
-					'PageTranslation',
-					{
-						view: isMobile ? 'mobile' : undefined,
-					},
-					[
-						cnPageTranslator('Container', {
-							indent: isMobile ? 'vertical' : 'horizontal',
-						}),
-					],
+				{...stylex.props(
+					isMobile ? styles.verticalContainer : styles.horizontalContainer,
 				)}
 			>
 				<Button
 					view="action"
 					onPress={toggleTranslate}
 					size={isMobile ? 'l' : 'm'}
-					className={cnPageTranslator('TranslateButton', { fill: isMobile })}
+					xstyle={isMobile && styles.translateButtonFill}
 				>
 					{actionBtnText}
 				</Button>
-				<div className={cnPageTranslator('LangPanel')}>
+				<div
+					{...stylex.props(
+						styles.langPanel,
+						isMobile && styles.langPanelMobile,
+					)}
+				>
 					<LanguagePanel
 						auto={translatorFeatures.isSupportAutodetect}
 						languages={translatorFeatures.supportedLanguages}
@@ -190,21 +236,22 @@ export const PageTranslator: FC<PageTranslatorProps> = ({
 				isOpen={isShowOptions}
 				onOpenChange={setIsShowOptions}
 			>
-				<div
-					className={cnPageTranslator('OptionContainer', { mobile: isMobile }, [
-						cnPageTranslator('Container', { indent: 'vertical' }),
-					])}
-				>
-					<div className={cnPageTranslator('Option')}>
-						<h4 className={cnPageTranslator('Header')}>
+				<div {...stylex.props(styles.verticalContainer)}>
+					<div>
+						<h4 {...stylex.props(styles.header)}>
 							{getMessage('pageTranslator_commonPreferences_title') +
 								(localizedLang && ` (${localizedLang})`)}
 						</h4>
-						<div className={cnPageTranslator('OptionBody')}>
-							<span className={cnPageTranslator('OptionTitle')}>
+						<div>
+							<span
+								{...stylex.props(
+									styles.optionTitle,
+									isMobile && styles.optionTitleMobile,
+								)}
+							>
 								{getMessage('pageTranslator_option_autoTranslate')}
 							</span>
-							<span className={cnPageTranslator('OptionValue')}>
+							<span {...stylex.props(styles.optionValue)}>
 								<Selector
 									label={getMessage(
 										'pageTranslator_commonPreferences_title',
@@ -218,16 +265,21 @@ export const PageTranslator: FC<PageTranslatorProps> = ({
 						</div>
 					</div>
 
-					<div className={cnPageTranslator('Option')}>
-						<h4 className={cnPageTranslator('Header')}>
+					<div>
+						<h4 {...stylex.props(styles.header)}>
 							{getMessage('pageTranslator_sitePreferences_title')}{' '}
 							{escapedHostname}
 						</h4>
-						<div className={cnPageTranslator('OptionBody')}>
-							<span className={cnPageTranslator('OptionTitle')}>
+						<div>
+							<span
+								{...stylex.props(
+									styles.optionTitle,
+									isMobile && styles.optionTitleMobile,
+								)}
+							>
 								{getMessage('pageTranslator_option_autoTranslate')}
 							</span>
-							<span className={cnPageTranslator('OptionValue')}>
+							<span {...stylex.props(styles.optionValue)}>
 								<Selector
 									label={getMessage(
 										'pageTranslator_sitePreferences_title',
@@ -245,25 +297,25 @@ export const PageTranslator: FC<PageTranslatorProps> = ({
 
 			{showCounters ? (
 				<>
-					<h4 className={cnPageTranslator('Header')}>
+					<h4 {...stylex.props(styles.header)}>
 						{getMessage('pageTranslator_translationReport')}
 					</h4>
-					<div className={cnPageTranslator('CounterContainer')}>
-						<span className={cnPageTranslator('Counter')}>
+					<div {...stylex.props(styles.counterContainer)}>
+						<span {...stylex.props(styles.counter)}>
 							{getMessage('pageTranslator_translationReport_resolve')}
-							<span className={cnPageTranslator('CounterContent')}>
+							<span {...stylex.props(styles.counterContent)}>
 								{counters !== undefined ? counters.resolved : 0}
 							</span>
 						</span>
-						<span className={cnPageTranslator('Counter')}>
+						<span {...stylex.props(styles.counter)}>
 							{getMessage('pageTranslator_translationReport_reject')}
-							<span className={cnPageTranslator('CounterContent')}>
+							<span {...stylex.props(styles.counterContent)}>
 								{counters !== undefined ? counters.rejected : 0}
 							</span>
 						</span>
-						<span className={cnPageTranslator('Counter')}>
+						<span {...stylex.props(styles.counter)}>
 							{getMessage('pageTranslator_translationReport_queue')}
-							<span className={cnPageTranslator('CounterContent')}>
+							<span {...stylex.props(styles.counterContent)}>
 								{counters !== undefined ? counters.pending : 0}
 							</span>
 						</span>
@@ -271,7 +323,7 @@ export const PageTranslator: FC<PageTranslatorProps> = ({
 				</>
 			) : (
 				// Placeholder
-				<div className={cnPageTranslator('Placeholder')} />
+				<div {...stylex.props(styles.placeholder)} />
 			)}
 		</div>
 	);

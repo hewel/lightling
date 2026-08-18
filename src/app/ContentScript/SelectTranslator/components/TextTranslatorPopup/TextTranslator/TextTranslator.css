@@ -1,86 +1,9 @@
-.TextTranslator {
-	box-sizing: border-box;
-	width: max-content;
-	max-width: 100%;
-	padding: var(--spacing-3);
-	font-family: var(--font-family-body);
-	font-size: var(--text-supporting-size);
-	font-weight: var(--text-supporting-weight);
-	line-height: var(--text-supporting-leading);
-	color: var(--color-text-primary);
-	text-align: initial;
-}
-
-.TextTranslator > *:not(:first-child) {
-	margin-top: var(--spacing-2);
-}
-
-/* Head */
-.TextTranslator-Head:not(.TextTranslator-Head_mobile) {
-	display: grid;
-	grid-template-columns: minmax(0, 1fr) max-content;
-	align-items: start;
-	gap: var(--spacing-2);
-}
-
-/* Content */
-.TextTranslator-TextContainer {
-	display: grid;
-	grid-template-columns: max-content minmax(0, 1fr);
-	align-items: start;
-	column-gap: var(--spacing-1);
-	border-radius: var(--radius-element);
-}
-
-.TextTranslator-TextControls {
-	display: flex;
-	flex-direction: row;
-	align-items: center;
-	gap: var(--spacing-1);
-	padding-block: var(--spacing-0-5);
-}
-
-.TextTranslator-TextContainer_text_original {
-	padding: var(--spacing-1);
-	background: var(--color-background-muted);
-}
-
-.TextTranslator-OriginalTextDisclosure > button {
+/* Infrastructure exception: Astryx Collapsible has no trigger xstyle slot. */
+.TextTranslatorDisclosure > button {
 	min-height: auto;
 	padding: var(--spacing-1) 0;
 	font-family: inherit;
 	font-size: inherit;
 	font-weight: var(--font-weight-normal);
 	line-height: inherit;
-}
-
-.TextTranslator-OriginalText {
-	max-height: calc(var(--spacing-10) * 10);
-	margin: var(--spacing-2) 0 0;
-	overflow: auto;
-	white-space: pre-wrap;
-	scrollbar-width: thin;
-}
-
-/* Body */
-.TextTranslator-Body {
-	min-width: 0;
-	max-width: calc(var(--spacing-10) * 15);
-	max-height: calc(var(--spacing-10) * 10);
-	padding-block: var(--spacing-1);
-	overflow-y: auto;
-	font-size: var(--text-supporting-size);
-	line-height: var(--text-supporting-leading);
-	white-space: pre-line;
-	scrollbar-width: thin;
-}
-
-.TextTranslator-Body_error {
-	color: var(--color-error);
-}
-
-.TextTranslator-MobileHead {
-	width: 100%;
-	margin-bottom: var(--spacing-2);
-	text-align: end;
 }

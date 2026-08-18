@@ -13,13 +13,33 @@ import {
 import { InputClearButton } from '@astryxdesign/core/Field';
 import { Stack } from '@astryxdesign/core/Stack';
 import { TextArea, TextAreaProps } from '@astryxdesign/core/TextArea';
+import * as stylex from '@stylexjs/stylex';
 
 import { INPUT_CONTROL_LAYER } from '@/themes/layers';
+
+const styles = stylex.create({
+	controlPlane: {
+		position: 'relative',
+	},
+	input: {
+		minHeight: 0,
+		minWidth: 0,
+	},
+	clear: {
+		position: 'absolute',
+		insetBlockStart: 'var(--spacing-1)',
+		insetInlineEnd: 'var(--spacing-1)',
+		pointerEvents: 'auto',
+	},
+});
 
 type LegacyTextAreaSize = 's' | 'm' | TextAreaProps['size'];
 
 export interface TextareaControlProps {
 	innerRef?: Ref<HTMLTextAreaElement>;
+	controlPlaneXstyle?: stylex.StyleXStyles;
+	inputXstyle?: stylex.StyleXStyles;
+	fieldXstyle?: stylex.StyleXStyles;
 }
 
 export interface TextareaProps extends Omit<
@@ -93,6 +113,7 @@ export const Textarea = ({
 	className,
 	style,
 	width,
+	xstyle,
 	...props
 }: TextareaProps) => {
 	const textAreaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -132,13 +153,9 @@ export const Textarea = ({
 	const stringValue = value === undefined ? '' : String(value);
 	const accessibleLabel = label ?? hint ?? placeholder ?? 'Text area';
 	const resolvedStatus = status ?? (state === 'error' ? { type: 'error' } : undefined);
-	const rootClassName = [
-		'TextareaAdapter',
-		hasClear ? 'TextareaAdapter_hasClear' : undefined,
-		className,
-	]
-		.filter((value): value is string => value !== undefined)
-		.join(' ');
+	const fieldClassName = hasClear
+		? 'TextareaAdapter-Field TextareaAdapter_hasClear'
+		: 'TextareaAdapter-Field';
 	const clearControl =
 		hasClear && stringValue !== '' && !disabled
 			? createElement(InputClearButton, {
@@ -156,28 +173,29 @@ export const Textarea = ({
 	return createElement(
 		Stack,
 		{
-			className: rootClassName,
+			className,
 			gap: 0,
 			style,
 			width,
+			xstyle,
 		},
 		createElement(
 			Stack,
 			{
-				className: 'TextareaAdapter-ControlPlane',
+				xstyle: [styles.controlPlane, controlProps?.controlPlaneXstyle],
 				gap: 0,
 			},
 			addonBeforeControl,
 			createElement(
 				Stack,
 				{
-					className: 'TextareaAdapter-Input',
+					xstyle: [styles.input, controlProps?.inputXstyle],
 					gap: 0,
 					width: '100%',
 				},
 				createElement(TextArea, {
 					...props,
-					className: 'TextareaAdapter-Field',
+					className: fieldClassName,
 					label: accessibleLabel,
 					isLabelHidden: isLabelHidden ?? label === undefined,
 					value: stringValue,
@@ -188,6 +206,7 @@ export const Textarea = ({
 					status: resolvedStatus,
 					placeholder,
 					width: '100%',
+					xstyle: controlProps?.fieldXstyle,
 					onChange: handleChange,
 					ref: mergedRef,
 				}),
@@ -197,7 +216,7 @@ export const Textarea = ({
 				: createElement(
 						Stack,
 						{
-							className: 'TextareaAdapter-Clear',
+							xstyle: styles.clear,
 							direction: 'horizontal',
 							style: { zIndex: INPUT_CONTROL_LAYER },
 							onMouseDown: (event) => {

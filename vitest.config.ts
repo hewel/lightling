@@ -2,6 +2,7 @@ import { readFileSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { defineConfig } from 'vitest/config';
+import stylexPlugin from '@stylexjs/unplugin';
 
 const testTargets = (process.env.TEST_TARGETS ?? '').split(',');
 
@@ -15,6 +16,7 @@ export default defineConfig({
 		},
 	},
 	plugins: [
+		stylexPlugin.vite(),
 		{
 			name: 'vite-plugin-string-import',
 			enforce: 'pre',

@@ -13,6 +13,7 @@ import '@astryxdesign/core/reset.css';
 import '@astryxdesign/core/astryx.css';
 import '../../themes/astryx-neutral.css';
 import '../../themes/legacy-compat.css';
+import '../../themes/stylex.css';
 
 interface AstryxProviderProps {
 	children: ReactNode;

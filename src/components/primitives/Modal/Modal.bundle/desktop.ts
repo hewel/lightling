@@ -18,6 +18,22 @@ import {
 	type DialogProps as AstryxDialogProps,
 } from '@astryxdesign/core/Dialog';
 import { Stack } from '@astryxdesign/core/Stack';
+import * as stylex from '@stylexjs/stylex';
+
+const styles = stylex.create({
+	root: {
+		maxWidth: '100vw',
+	},
+	hideBackdrop: {
+		'::backdrop': {
+			backgroundColor: 'transparent',
+			backdropFilter: 'none',
+		},
+	},
+	noAnimation: {
+		animation: 'none',
+	},
+});
 
 export type ModalCloseSource = 'click' | 'esc';
 export type ModalCloseHandler = (
@@ -31,6 +47,8 @@ export interface IModalProps extends Omit<
 > {
 	children?: ReactNode;
 	contentVerticalAlign?: 'bottom' | 'middle' | 'top';
+	contentXstyle?: stylex.StyleXStyles;
+	tableXstyle?: stylex.StyleXStyles;
 	essentialRefs?: RefObject<HTMLElement | null>[];
 	hasAnimation?: boolean;
 	hideBackdrop?: boolean;
@@ -82,28 +100,6 @@ function getActiveElement(node: HTMLElement | null): HTMLElement | null {
 	return activeElement instanceof HTMLElement ? activeElement : null;
 }
 
-function getModalClassName({
-	className,
-	hasAnimation,
-	hideBackdrop,
-	view,
-	visible,
-}: Pick<
-	IModalProps,
-	'className' | 'hasAnimation' | 'hideBackdrop' | 'view' | 'visible'
->) {
-	return [
-		'Modal',
-		visible ? 'Modal_visible' : undefined,
-		view === undefined ? undefined : `Modal_view_${view}`,
-		hasAnimation ? 'Modal_hasAnimation' : undefined,
-		hideBackdrop ? 'Modal_hideBackdrop' : undefined,
-		className,
-	]
-		.filter((value): value is string => Boolean(value))
-		.join(' ');
-}
-
 /**
  * Compatibility wrapper for the retired legacy Modal.
  *
@@ -117,7 +113,9 @@ export const Modal: FC<IModalProps> = ({
 	children,
 	className,
 	contentVerticalAlign = 'middle',
+	contentXstyle,
 	essentialRefs: _essentialRefs,
+	tableXstyle,
 	hasAnimation = true,
 	hideBackdrop = false,
 	hostRef: _hostRef,
@@ -132,7 +130,7 @@ export const Modal: FC<IModalProps> = ({
 	renderToStack: _renderToStack,
 	scope,
 	style,
-	view = 'default',
+	view: _view = 'default',
 	visible = false,
 	zIndex,
 	...props
@@ -264,14 +262,6 @@ export const Modal: FC<IModalProps> = ({
 
 	const fallbackAriaLabel =
 		ariaLabel === undefined && ariaLabelledBy === undefined ? 'Dialog' : undefined;
-	const rootClassName = getModalClassName({
-		className,
-		hasAnimation,
-		hideBackdrop,
-		view,
-		visible,
-	});
-	const cellClassName = `Modal-Cell Modal-Cell_align_${contentVerticalAlign}`;
 	const alignmentStyle =
 		contentVerticalAlign === 'top'
 			? {
@@ -288,19 +278,18 @@ export const Modal: FC<IModalProps> = ({
 	const content = createElement(
 		Stack,
 		{
-			className: 'Modal-Table',
 			direction: 'horizontal',
 			gap: 0,
 			hAlign: 'center',
 			isScrollable: true,
 			minHeight: 0,
+			xstyle: tableXstyle,
 			vAlign: 'center',
 			wrap: 'wrap',
 		},
 		createElement(
 			Stack,
 			{
-				className: cellClassName,
 				gap: 0,
 				maxWidth: '100%',
 				// Retains the legacy cell inset around the content surface.
@@ -309,11 +298,11 @@ export const Modal: FC<IModalProps> = ({
 			createElement(
 				Stack,
 				{
-					className: 'Modal-Content',
 					gap: 0,
 					maxWidth: '100%',
 					// Retains the separate legacy content-surface inset.
 					padding: 1.5,
+					xstyle: contentXstyle,
 				},
 				children,
 			),
@@ -324,7 +313,7 @@ export const Modal: FC<IModalProps> = ({
 		...props,
 		'aria-label': ariaLabel ?? fallbackAriaLabel,
 		'aria-labelledby': ariaLabelledBy,
-		className: rootClassName,
+		className,
 		isOpen: visible,
 		maxHeight: '100vh',
 		onClickCapture: handleClickCapture,
@@ -340,6 +329,11 @@ export const Modal: FC<IModalProps> = ({
 			...style,
 		},
 		width: 'fit-content',
+		xstyle: [
+			styles.root,
+			hideBackdrop && styles.hideBackdrop,
+			!hasAnimation && styles.noAnimation,
+		],
 		children: content,
 	};
 	const dialog = createElement(AstryxDialog, dialogProps);
@@ -349,5 +343,3 @@ export const Modal: FC<IModalProps> = ({
 };
 
 Modal.displayName = 'Modal';
-
-import '../Modal.css';

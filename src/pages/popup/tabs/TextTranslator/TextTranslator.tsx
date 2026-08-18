@@ -9,7 +9,7 @@ import React, {
 	useState,
 } from 'react';
 import ReactDOM from 'react-dom';
-import { cn } from '@bem-react/classname';
+import * as stylex from '@stylexjs/stylex';
 import { IconVolume2, IconWand } from '@tabler/icons-react';
 
 import { DictionaryButton } from '@/components/controls/DictionaryButton/DictionaryButton';
@@ -32,9 +32,79 @@ import { MutableValue } from '@/types/utils';
 
 import { TabData } from '../../layout/PopupWindow';
 
-import './TextTranslator.css';
-
-export const cnTextTranslator = cn('TextTranslator');
+const styles = stylex.create({
+	root: {
+		boxSizing: 'border-box',
+		fontFamily: 'var(--textarea-font-family)',
+		display: 'flex',
+		flexDirection: 'column',
+		gap: 'var(--typography-layout-indent-m-all)',
+	},
+	langPanel: {
+		minWidth: 'max-content',
+	},
+	inputContainer: {
+		width: 'min-content',
+		minWidth: '100%',
+		maxWidth: '100%',
+	},
+	inputContainerWrapper: {
+		boxSizing: 'border-box',
+		display: 'flex',
+		flexDirection: 'column',
+		gap: 'var(--typography-layout-indent-m-all)',
+	},
+	input: {
+		width: '100%',
+	},
+	controlPlane: {
+		display: 'flex',
+		height: 'calc(var(--spacing-12) * 3 + var(--spacing-1-5))',
+		flexDirection: 'column',
+		gap: 'var(--spacing-1)',
+	},
+	inputSlot: {
+		display: 'grid',
+		flex: '1 1 auto',
+		gridTemplateRows: 'minmax(0, 1fr)',
+		minHeight: 0,
+	},
+	field: {
+		height: '100%',
+		'--textarea-adapter-height': '100%',
+		'--textarea-adapter-min-height': '0',
+		'--textarea-adapter-max-height': 'none',
+		'--textarea-adapter-resize': 'none',
+	},
+	textActions: {
+		display: 'flex',
+		gap: 'var(--typography-layout-indent-s-all)',
+	},
+	inputTextActions: {
+		zIndex: 2,
+	},
+	resultContainer: {
+		display: 'flex',
+		flexDirection: 'column',
+		backgroundColor: 'var(--textarea-view-default-fill-color-disabled)',
+		color: 'var(--textarea-view-default-typo-color-base)',
+		borderRadius: 'var(--textarea-border-radius)',
+		maxHeight: '12.5rem',
+		fontFamily: 'var(--textarea-font-family)',
+	},
+	resultText: {
+		minHeight: '8.125rem',
+		overflow: 'auto',
+		padding: 'var(--textarea-size-m-control-indent)',
+		whiteSpace: 'pre-line',
+		boxSizing: 'border-box',
+		wordBreak: 'break-word',
+	},
+	languageSuggestion: {
+		display: 'flex',
+		gap: '0.3em',
+	},
+});
 
 export type TranslationState = {
 	originalText: string;
@@ -397,8 +467,8 @@ export const TextTranslator: FC<TextTranslatorProps> = ({
 				: null;
 
 	return (
-		<div className={cnTextTranslator({ view: isMobile ? 'mobile' : undefined })}>
-			<div className={cnTextTranslator('LangPanel')}>
+		<div {...stylex.props(styles.root)}>
+			<div {...stylex.props(styles.langPanel)}>
 				<LanguagePanel
 					auto={translatorFeatures.isSupportAutodetect}
 					languages={translatorFeatures.supportedLanguages}
@@ -411,10 +481,10 @@ export const TextTranslator: FC<TextTranslatorProps> = ({
 					mobile={isMobile}
 				/>
 			</div>
-			<div className={cnTextTranslator('InputContainer')}>
-				<div className={cnTextTranslator('InputContainerWrapper')}>
+			<div {...stylex.props(styles.inputContainer)}>
+				<div {...stylex.props(styles.inputContainerWrapper)}>
 					{langSuggestion && (
-						<div className={cnTextTranslator('LanguageSuggestion')}>
+						<div {...stylex.props(styles.languageSuggestion)}>
 							<IconWand size="1em" />
 							<span>
 								{getLocalizedNode({
@@ -433,8 +503,13 @@ export const TextTranslator: FC<TextTranslatorProps> = ({
 							placeholder={getMessage(
 								'textTranslator_translateInputPlaceholder',
 							)}
-							className={cnTextTranslator('Input')}
-							controlProps={{ innerRef: inputControlExternal }}
+							xstyle={styles.input}
+							controlProps={{
+								innerRef: inputControlExternal,
+								controlPlaneXstyle: styles.controlPlane,
+								inputXstyle: styles.inputSlot,
+								fieldXstyle: styles.field,
+							}}
 							value={userInput}
 							onInputText={onTextChange}
 							hasClear
@@ -447,7 +522,12 @@ export const TextTranslator: FC<TextTranslatorProps> = ({
 								setIsFocusOnInput(false);
 							}}
 							addonAfterControl={
-								<div className={cnTextTranslator('TextActions')}>
+								<div
+									{...stylex.props(
+										styles.textActions,
+										styles.inputTextActions,
+									)}
+								>
 									<Button
 										disabled={
 											userInput.length === 0 ||
@@ -464,13 +544,13 @@ export const TextTranslator: FC<TextTranslatorProps> = ({
 							}
 						/>
 					</div>
-					<div className={cnTextTranslator('ResultContainer')}>
-						<div className={cnTextTranslator('ResultText')}>
+					<div {...stylex.props(styles.resultContainer)}>
+						<div {...stylex.props(styles.resultText)}>
 							{resultText !== null
 								? resultText
 								: getMessage('textTranslator_translatePlaceholder')}
 						</div>
-						<div className={cnTextTranslator('TextActions')}>
+						<div {...stylex.props(styles.textActions)}>
 							<Button
 								disabled={
 									inTranslateProcess ||

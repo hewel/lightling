@@ -3,7 +3,7 @@ import { Banner } from '@astryxdesign/core/Banner';
 import { CheckboxInput } from '@astryxdesign/core/CheckboxInput';
 import { Spinner } from '@astryxdesign/core/Spinner';
 import { HStack, VStack } from '@astryxdesign/core/Stack';
-import { cn } from '@bem-react/classname';
+import * as stylex from '@stylexjs/stylex';
 import { IconTrash } from '@tabler/icons-react';
 
 import { DictionaryButton } from '@/components/controls/DictionaryButton/DictionaryButton';
@@ -23,9 +23,21 @@ import {
 } from '@/requests/backend/history/data';
 import { deleteTranslationHistoryEntry } from '@/requests/backend/history/deleteTranslationHistoryEntry';
 
-import './TranslationsHistory.css';
-
-export const cnTranslationsHistory = cn('TranslationsHistory');
+const styles = stylex.create({
+	search: {
+		width: '100%',
+	},
+	emptyResults: {
+		padding: '4rem 2rem',
+		fontSize: '2rem',
+		fontWeight: 'bold',
+		textAlign: 'center',
+	},
+	infinityScrollLoader: {
+		textAlign: 'center',
+		paddingBlockStart: '1rem',
+	},
+});
 
 export type TranslationsHistoryFetcher = (
 	options?: TranslationHistoryFetcherOptions,
@@ -283,7 +295,7 @@ export const TranslationsHistory: FC<TranslationsHistoryProps> = ({
 		translations.length !== selectedItemsNumber;
 
 	return (
-		<div className={cnTranslationsHistory()}>
+		<div>
 			<VStack gap={4}>
 				{!isHistoryEnabled && (
 					<Banner
@@ -300,7 +312,7 @@ export const TranslationsHistory: FC<TranslationsHistoryProps> = ({
 					hasClear
 					label={getMessage('history_searchPlaceholder')}
 					isLabelHidden
-					className={cnTranslationsHistory('Search')}
+					xstyle={styles.search}
 					placeholder={getMessage('history_searchPlaceholder')}
 					value={searchInput.value}
 					onInputText={searchInput.setValue}
@@ -340,9 +352,7 @@ export const TranslationsHistory: FC<TranslationsHistoryProps> = ({
 				</HStack>
 
 				{noEntriesMessage && (
-					<div className={cnTranslationsHistory('EmptyResults')}>
-						{noEntriesMessage}
-					</div>
+					<div {...stylex.props(styles.emptyResults)}>{noEntriesMessage}</div>
 				)}
 
 				<div>
@@ -403,7 +413,7 @@ export const TranslationsHistory: FC<TranslationsHistoryProps> = ({
 					{hasMoreTranslations && (
 						<div
 							ref={loadMoreSentinelRef}
-							className={cnTranslationsHistory('InfinityScrollLoader')}
+							{...stylex.props(styles.infinityScrollLoader)}
 						>
 							<Spinner aria-label="Loading translations" />
 						</div>

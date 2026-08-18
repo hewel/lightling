@@ -47,23 +47,16 @@ describe('Textarea compatibility adapter', () => {
 			/>,
 		);
 
-		const controlPlane = container.querySelector<HTMLElement>(
-			'.TextareaAdapter-ControlPlane',
-		);
-		if (controlPlane === null) throw new Error('Expected a textarea control plane');
-
-		const textarea = controlPlane.querySelector('textarea');
+		const textarea = container.querySelector('textarea');
 		if (textarea === null) throw new Error('Expected the Astryx textarea');
 
-		const clearButton = controlPlane.querySelector<HTMLButtonElement>(
+		const clearButton = container.querySelector<HTMLButtonElement>(
 			'button[aria-label="Clear Translate text"]',
 		);
 		if (clearButton === null) throw new Error('Expected an interactive clear button');
 
 		expect(controlRef.current).toBe(textarea);
-		expect(clearButton.closest('.TextareaAdapter-Clear')).not.toBeNull();
-		expect(clearButton.closest('.TextareaAdapter-Field')).toBeNull();
-		expect(controlPlane.textContent).toContain('Text actions');
+		expect(container.textContent).toContain('Text actions');
 
 		textarea.focus();
 		const mouseDown = new MouseEvent('mousedown', {
