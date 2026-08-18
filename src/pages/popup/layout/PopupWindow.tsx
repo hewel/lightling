@@ -55,8 +55,11 @@ const styles = stylex.create({
     lineHeight: 'inherit',
   },
   headerIcon: {
-    width: 'var(--spacing-8)',
-    height: 'var(--spacing-8)',
+    // Astryx Button's icon wrapper is a 16px flex box; without flexShrink the
+    // svg is compressed to it. 24px stays inside the 32px icon-only button.
+    flexShrink: 0,
+    width: 'var(--spacing-6)',
+    height: 'var(--spacing-6)',
     margin: '0 0.2rem',
   },
   tabs: {

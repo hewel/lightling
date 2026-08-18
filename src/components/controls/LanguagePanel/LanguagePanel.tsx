@@ -131,6 +131,8 @@ export const LanguagePanel: FC<LanguagePanelProps> = ({
         options={optionsFrom}
         value={fromValue}
         onChange={onFromChange}
+        hasSearch
+        searchPlaceholder={getMessage('lang_searchPlaceholder')}
         width="100%"
       />
       <IconButton
@@ -149,6 +151,8 @@ export const LanguagePanel: FC<LanguagePanelProps> = ({
         options={options}
         value={toValue}
         onChange={onToChange}
+        hasSearch
+        searchPlaceholder={getMessage('lang_searchPlaceholder')}
         width="100%"
       />
     </Stack>

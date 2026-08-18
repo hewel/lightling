@@ -15,6 +15,24 @@ const rootContainerStyles = {
 } satisfies CSSProperties;
 
 /**
+ * Resolve a bundler-emitted asset URL to a fetchable extension URL.
+ *
+ * The bundler emits `publicPath + assetPath` where publicPath varies by build:
+ * an absolute extension URL (`chrome-extension://…/`), the content-script
+ * fallback "/", or "". `runtime.getURL` only accepts relative paths — absolute
+ * URLs get their origin doubled, and a leading "/" yields an unresolvable
+ * "//assets/…" URL in Chrome — so normalize before resolving.
+ */
+export const resolveExtensionAssetUrl = (url: string): string => {
+  if (/^[a-z][\w+.-]*:/i.test(url)) return url;
+
+  const path = url.replace(/^\/+/, '');
+  return typeof browser?.runtime?.getURL === 'function'
+    ? browser.runtime.getURL(path)
+    : path;
+};
+
+/**
  * Shadow DOM container manager
  */
 export class ShadowDOMContainerManager {
@@ -69,10 +87,19 @@ export class ShadowDOMContainerManager {
       return;
     }
 
-    void this.getContentShadowStyles().then((styles) => {
-      this.contentShadowStyles = styles;
-      this.render();
-    });
+    void this.getContentShadowStyles()
+      .catch((error: unknown) => {
+        // A stale content script (extension reloaded without a page refresh) can no
+        // longer fetch extension assets. Render without injected styles instead of
+        // never mounting, and don't cache the rejection for the next mount.
+        this.contentShadowStylesPromise = null;
+        console.warn('Could not load Shadow DOM styles; rendering without them', error);
+        return '';
+      })
+      .then((styles) => {
+        this.contentShadowStyles = styles;
+        this.render();
+      });
   };
 
   private getContentShadowStyles() {
@@ -85,10 +112,7 @@ export class ShadowDOMContainerManager {
       return Promise.resolve(contentShadowStylesUrl);
     }
 
-    const resolvedUrl =
-      typeof browser?.runtime?.getURL === 'function'
-        ? browser.runtime.getURL(contentShadowStylesUrl)
-        : contentShadowStylesUrl;
+    const resolvedUrl = resolveExtensionAssetUrl(contentShadowStylesUrl);
 
     this.contentShadowStylesPromise ??= fetch(resolvedUrl).then(async (response) => {
       if (!response.ok) {

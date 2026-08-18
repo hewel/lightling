@@ -47,3 +47,4 @@ Figtree
 oklch
 Segoe
 statusdot
+unstub

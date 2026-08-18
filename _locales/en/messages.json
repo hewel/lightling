@@ -162,6 +162,9 @@
   "lang_detect": {
     "message": "Auto-detect"
   },
+  "lang_searchPlaceholder": {
+    "message": "Search language"
+  },
   "lang_select": {
     "message": "Select language"
   },
