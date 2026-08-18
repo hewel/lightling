@@ -1,12 +1,13 @@
-import { type } from '../../../../lib/types';
+import { Schema } from 'effect';
+
 import { buildBackendRequest } from '../../../utils/requestBuilder';
 
 import { addLanguage, dataSignature, LanguageInfo } from './utils';
 
 export const [addLanguagePreferencesFactory, addLanguagePreferencesReq] =
 	buildBackendRequest('addLanguagePreferences', {
-		requestValidator: type.type({
-			lang: type.string,
+		requestValidator: Schema.Struct({
+			lang: Schema.String,
 			preferences: dataSignature,
 		}),
 

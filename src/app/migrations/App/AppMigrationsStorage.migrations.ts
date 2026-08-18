@@ -1,7 +1,8 @@
+import { Schema } from 'effect';
 import browser from 'webextension-polyfill';
 
 import { createMigrationTask } from '../../../lib/migrations/createMigrationTask';
-import { decodeStruct, type } from '../../../lib/types';
+import { decodeStruct, NonNaNNumber } from '../../../lib/types';
 
 export const migrationsForMigrationsStorage = createMigrationTask([
 	{
@@ -11,10 +12,10 @@ export const migrationsForMigrationsStorage = createMigrationTask([
 			const { [browserStorageKey]: rawData } =
 				await browser.storage.local.get(browserStorageKey);
 
-			const legacyStructure = type.type({
-				appConfig: type.number,
-				autoTranslateDB: type.number,
-				storageVersions: type.record(type.string, type.number),
+			const legacyStructure = Schema.Struct({
+				appConfig: NonNaNNumber,
+				autoTranslateDB: NonNaNNumber,
+				storageVersions: Schema.Record(Schema.String, NonNaNNumber),
 			});
 
 			// Verify data
@@ -26,11 +27,11 @@ export const migrationsForMigrationsStorage = createMigrationTask([
 			// Pick storages
 			const newData = {
 				version: 1,
-				dataVersions: legacyData.storageVersions,
+				dataVersions: {
+					...legacyData.storageVersions,
+					autoTranslationPreferences: legacyData.autoTranslateDB,
+				},
 			};
-
-			// Rename storage name
-			newData.dataVersions.autoTranslationPreferences = legacyData.autoTranslateDB;
 
 			await browser.storage.local.set({ [browserStorageKey]: newData });
 		},

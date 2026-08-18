@@ -1,6 +1,4 @@
-import * as t from 'io-ts';
-
-import { tryDecode } from '../../../lib/types';
+import { type SyncSchema, tryDecode } from '../../../lib/types';
 import {
 	ClientRequestHandlerFactory,
 	ClientRequestHandlerFactoryProps,
@@ -8,12 +6,12 @@ import {
 
 import { addRequestHandler, sendTabRequest } from '..';
 
-type TabOptions<O = any, R = any> = {
+type TabOptions<O = unknown, R = unknown> = {
 	factoryHandler: (
 		props: ClientRequestHandlerFactoryProps,
 	) => (options: O) => Promise<R>;
-	requestValidator?: t.Type<O, O>;
-	responseValidator?: t.Type<R, R>;
+	requestValidator?: SyncSchema<O>;
+	responseValidator?: SyncSchema<R>;
 };
 
 /**

@@ -1,25 +1,28 @@
-import { TypeOf } from 'io-ts';
+import { Schema } from 'effect';
 import browser from 'webextension-polyfill';
 
-import { tryDecode, type } from '../../../../../lib/types';
+import { tryDecode } from '../../../../../lib/types';
 import { LangCode, LangCodeWithAuto } from '../../../../../types/runtime';
+import { type DeepMutable } from '../../../../../types/utils';
 
-const storageSignature = type.union([
-	type.type({
+const storageSignature = Schema.Union([
+	Schema.Struct({
 		from: LangCodeWithAuto,
 		to: LangCode,
-		translate: type.union([
-			type.type({
-				originalText: type.string,
-				translatedText: type.union([type.string, type.null]),
-			}),
-			type.null,
-		]),
+		translate: Schema.mutableKey(
+			Schema.Union([
+				Schema.Struct({
+					originalText: Schema.String,
+					translatedText: Schema.Union([Schema.String, Schema.Null]),
+				}),
+				Schema.Null,
+			]),
+		),
 	}),
-	type.null,
+	Schema.Null,
 ]);
 
-export type TextTranslatorData = TypeOf<typeof storageSignature>;
+export type TextTranslatorData = DeepMutable<typeof storageSignature.Type>;
 
 export class TextTranslatorStorage {
 	private readonly storeName = 'TextTranslatorStorage';
@@ -29,7 +32,7 @@ export class TextTranslatorStorage {
 	 */
 	private readonly defaultData: TextTranslatorData = null;
 
-	public getData = async () => {
+	public getData = async (): Promise<TextTranslatorData> => {
 		const storeName = this.storeName;
 		const { [storeName]: tabData } = await browser.storage.local.get(storeName);
 

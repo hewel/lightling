@@ -1,6 +1,7 @@
+import { Schema } from 'effect';
 import * as IDB from 'idb';
 
-import { type } from '../../../lib/types';
+import { NonNaNNumber } from '../../../lib/types';
 import { isTextsContainsSubstring } from '../../../lib/utils';
 import { ITranslation, TranslationType } from '../../../types/translation/Translation';
 
@@ -10,14 +11,14 @@ export type HistoryEntry = {
 	timestamp: number;
 };
 
-export const TranslationHistoryEntryType = type.type({
+export const TranslationHistoryEntryType = Schema.Struct({
 	translation: TranslationType,
-	timestamp: type.number,
-	origin: type.string,
+	timestamp: NonNaNNumber,
+	origin: Schema.String,
 });
 
-export const TranslationHistoryEntryWithKeyType = type.type({
-	key: type.number,
+export const TranslationHistoryEntryWithKeyType = Schema.Struct({
+	key: NonNaNNumber,
 	data: TranslationHistoryEntryType,
 });
 

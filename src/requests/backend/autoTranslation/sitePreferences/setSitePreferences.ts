@@ -1,4 +1,5 @@
-import { type } from '../../../../lib/types';
+import { Schema } from 'effect';
+
 import { buildBackendRequest } from '../../../utils/requestBuilder';
 
 import { dataSignature, setPreferences, SiteData } from './utils';
@@ -6,8 +7,8 @@ import { dataSignature, setPreferences, SiteData } from './utils';
 export const [setSitePreferencesFactory, setSitePreferencesReq] = buildBackendRequest(
 	'setSitePreferences',
 	{
-		requestValidator: type.type({
-			site: type.string,
+		requestValidator: Schema.Struct({
+			site: Schema.String,
 			options: dataSignature,
 		}),
 

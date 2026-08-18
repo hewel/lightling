@@ -1,11 +1,12 @@
-import { type } from '../../../lib/types';
+import { Schema } from 'effect';
+
 import { LangCode, LangCodeWithAuto } from '../../../types/runtime';
 import { buildTabRequest } from '../../utils/requestBuilder';
 
 export const [enableTranslatePageFactory, enableTranslatePageReq] = buildTabRequest(
 	'enableTranslatePage',
 	{
-		requestValidator: type.type({
+		requestValidator: Schema.Struct({
 			from: LangCodeWithAuto,
 			to: LangCode,
 		}),

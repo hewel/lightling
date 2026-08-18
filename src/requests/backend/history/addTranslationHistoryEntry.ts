@@ -1,4 +1,6 @@
-import { type } from '../../../lib/types';
+import { Schema } from 'effect';
+
+import { NonNaNNumber } from '../../../lib/types';
 import { TranslationType } from '../../../types/translation/Translation';
 import { buildBackendRequest } from '../../utils/requestBuilder';
 
@@ -6,11 +8,11 @@ import { addEntry } from './data';
 
 export const [addTranslationHistoryEntryFactory, addTranslationHistoryEntry] =
 	buildBackendRequest('addTranslationHistoryEntry', {
-		requestValidator: type.type({
+		requestValidator: Schema.Struct({
 			translation: TranslationType,
-			origin: type.string,
+			origin: Schema.String,
 		}),
-		responseValidator: type.union([type.number, type.null]),
+		responseValidator: Schema.Union([NonNaNNumber, Schema.Null]),
 
 		factoryHandler:
 			({ config }) =>

@@ -1,12 +1,10 @@
-import { TypeOf } from 'io-ts';
-
-import { type } from '../../../../lib/types';
+import { Schema } from 'effect';
 
 import { getDBInstance } from '../utils';
 
-export const dataSignature = type.boolean;
+export const dataSignature = Schema.Boolean;
 
-export type LanguageInfo = TypeOf<typeof dataSignature>;
+export type LanguageInfo = Schema.Schema.Type<typeof dataSignature>;
 
 export const addLanguage = async (language: string, status: LanguageInfo) => {
 	const db = await getDBInstance();

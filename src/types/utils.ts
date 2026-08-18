@@ -31,3 +31,12 @@ export type DeepPartial<T> = T extends object
 			[P in keyof T]?: DeepPartial<T[P]>;
 		}
 	: T;
+
+/**
+ * Remove readonly modifiers from nested data objects and arrays.
+ */
+export type DeepMutable<T> = T extends readonly (infer Item)[]
+	? DeepMutable<Item>[]
+	: T extends object
+		? { -readonly [Key in keyof T]: DeepMutable<T[Key]> }
+		: T;

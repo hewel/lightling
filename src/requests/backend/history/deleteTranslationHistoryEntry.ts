@@ -1,11 +1,11 @@
-import { type } from '../../../lib/types';
+import { NonNaNNumber } from '../../../lib/types';
 import { buildBackendRequest } from '../../utils/requestBuilder';
 
 import { deleteEntry } from './data';
 
 export const [deleteTranslationHistoryEntryFactory, deleteTranslationHistoryEntryReq] =
 	buildBackendRequest('deleteTranslationHistoryEntry', {
-		requestValidator: type.number,
+		requestValidator: NonNaNNumber,
 		factoryHandler: () => (id) => deleteEntry(id),
 	});
 

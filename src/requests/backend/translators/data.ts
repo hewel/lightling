@@ -1,15 +1,14 @@
+import { Schema } from 'effect';
 import * as IDB from 'idb';
-
-import { StringPatternType, type } from '../../../lib/types';
 
 export type ITranslatorEntry = {
 	name: string;
 	code: string;
 };
 
-export const TranslatorEntry = type.type({
-	name: StringPatternType(/[^\s]/),
-	code: type.string,
+export const TranslatorEntry = Schema.Struct({
+	name: Schema.String.check(Schema.isPattern(/[^\s]/)),
+	code: Schema.String,
 });
 
 export type IEntryWithKey = { key: number; data: ITranslatorEntry };

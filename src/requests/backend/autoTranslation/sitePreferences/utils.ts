@@ -1,32 +1,34 @@
 // TODO: show sites preference list on options page
 
-import { TypeOf } from 'io-ts';
-
-import { type } from '../../../../lib/types';
+import { Schema } from 'effect';
 
 import { getDBInstance } from '../utils';
 
 // TODO: rename fields
-export const dataSignature = type.type({
+export const dataSignature = Schema.Struct({
 	/**
 	 * While `false`, auto translate will not work, while `true` will work with consider other options
 	 */
-	enableAutoTranslate: type.boolean,
+	enableAutoTranslate: Schema.mutableKey(Schema.Boolean),
 
 	/**
 	 * While size greater than 0, languages from list will translate
 	 */
-	autoTranslateLanguages: type.array(type.string),
+	autoTranslateLanguages: Schema.mutableKey(
+		Schema.mutable(Schema.Array(Schema.String)),
+	),
 
 	/**
 	 * While size greater than 0, languages from list will not translate
 	 *
 	 * This list have priority over `autoTranslateLanguages`
 	 */
-	autoTranslateIgnoreLanguages: type.array(type.string),
+	autoTranslateIgnoreLanguages: Schema.mutableKey(
+		Schema.mutable(Schema.Array(Schema.String)),
+	),
 });
 
-export type SiteData = TypeOf<typeof dataSignature>;
+export type SiteData = Schema.Schema.Type<typeof dataSignature>;
 
 export const setPreferences = async (site: string, options: SiteData) => {
 	const db = await getDBInstance();

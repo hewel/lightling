@@ -1,5 +1,5 @@
 import { TranslatorsCacheStorage } from '../../../app/Background/TranslatorsCacheStorage';
-import { type } from '../../../lib/types';
+import { NonNaNNumber } from '../../../lib/types';
 import { buildBackendRequest } from '../../utils/requestBuilder';
 
 import { formatToCustomTranslatorId } from '.';
@@ -9,7 +9,7 @@ import * as db from './data';
 export const [deleteTranslatorFactory, deleteTranslator] = buildBackendRequest(
 	'deleteTranslator',
 	{
-		requestValidator: type.number,
+		requestValidator: NonNaNNumber,
 
 		factoryHandler: () => async (translatorId) => {
 			// Delete translator

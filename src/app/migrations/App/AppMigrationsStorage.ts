@@ -1,20 +1,20 @@
-import { TypeOf } from 'io-ts';
+import { Schema } from 'effect';
 import browser from 'webextension-polyfill';
 
 import {
 	MigrationsMap,
 	MigrationsStorage,
 } from '../../../lib/migrations/MigrationsExecutor/MigrationsStorage';
-import { decodeStruct, type } from '../../../lib/types';
+import { decodeStruct, NonNaNNumber } from '../../../lib/types';
 
 import { migrationsForMigrationsStorage } from './AppMigrationsStorage.migrations';
 
-const migrationsStructure = type.type({
-	version: type.number,
-	dataVersions: type.record(type.string, type.number),
+const migrationsStructure = Schema.Struct({
+	version: NonNaNNumber,
+	dataVersions: Schema.Record(Schema.String, NonNaNNumber),
 });
 
-type MigrationsData = TypeOf<typeof migrationsStructure>;
+type MigrationsData = typeof migrationsStructure.Type;
 
 export class AppMigrationsStorage implements MigrationsStorage {
 	private readonly storageName = 'migrationsInfo';

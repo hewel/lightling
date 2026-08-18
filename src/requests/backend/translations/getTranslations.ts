@@ -1,4 +1,5 @@
-import { type } from '../../../lib/types';
+import { Schema } from 'effect';
+
 import { buildBackendRequest } from '../../utils/requestBuilder';
 
 import { getEntries, TranslationEntryWithKeyType } from './data';
@@ -6,7 +7,7 @@ import { getEntries, TranslationEntryWithKeyType } from './data';
 export const [getTranslationsFactory, getTranslations] = buildBackendRequest(
 	'getTranslations',
 	{
-		responseValidator: type.array(TranslationEntryWithKeyType),
+		responseValidator: Schema.mutable(Schema.Array(TranslationEntryWithKeyType)),
 		factoryHandler: () => () => getEntries(),
 	},
 );

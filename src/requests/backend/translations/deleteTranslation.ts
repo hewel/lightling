@@ -1,4 +1,4 @@
-import { type } from '../../../lib/types';
+import { NonNaNNumber } from '../../../lib/types';
 import { buildBackendRequest } from '../../utils/requestBuilder';
 
 import { notifyDictionaryEntryDelete } from '.';
@@ -7,7 +7,7 @@ import { deleteEntry } from './data';
 export const [deleteTranslationFactory, deleteTranslationReq] = buildBackendRequest(
 	'deleteTranslation',
 	{
-		requestValidator: type.number,
+		requestValidator: NonNaNNumber,
 		factoryHandler: () => async (id) => {
 			await deleteEntry(id);
 

@@ -1,10 +1,11 @@
+import { Schema } from 'effect';
 import browser from 'webextension-polyfill';
 
-import { decodeStruct, type } from '../../../lib/types';
+import { decodeStruct } from '../../../lib/types';
 
 const storageKey = 'recentUsedLanguages';
 
-const languagesType = type.array(type.string);
+const languagesType = Schema.mutable(Schema.Array(Schema.String));
 
 // TODO: provide `limitLanguages` argument as option from config
 export const getLanguages = async (limitLanguages = 5): Promise<string[]> => {

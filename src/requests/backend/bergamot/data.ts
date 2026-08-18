@@ -1,7 +1,8 @@
+import { Schema } from 'effect';
 import * as IDB from 'idb';
 import { isEqual } from 'lodash';
 
-import { type } from '../../../lib/types';
+import { NonNaNNumber } from '../../../lib/types';
 
 export type File = {
 	name: string;
@@ -36,21 +37,21 @@ export type FileChunk = {
 	data: ArrayBuffer;
 };
 
-export const FileType = type.type({
-	name: type.string,
-	expectedSha256Hash: type.string,
+export const FileType = Schema.Struct({
+	name: Schema.String,
+	expectedSha256Hash: Schema.String,
 
-	type: type.string,
-	timestamp: type.number,
-	direction: type.type({
-		from: type.string,
-		to: type.string,
+	type: Schema.String,
+	timestamp: NonNaNNumber,
+	direction: Schema.Struct({
+		from: Schema.String,
+		to: Schema.String,
 	}),
-	buffer: type.array(type.number),
+	buffer: Schema.mutable(Schema.Array(NonNaNNumber)),
 });
 
-export const FileWithKeyType = type.type({
-	key: type.number,
+export const FileWithKeyType = Schema.Struct({
+	key: NonNaNNumber,
 	data: FileType,
 });
 

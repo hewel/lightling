@@ -1,4 +1,5 @@
-import { type } from '../../../../lib/types';
+import { Schema } from 'effect';
+
 import { buildBackendRequest } from '../../../utils/requestBuilder';
 
 import { dataSignature, getPreferences } from './utils';
@@ -6,8 +7,8 @@ import { dataSignature, getPreferences } from './utils';
 export const [getSitePreferencesFactory, getSitePreferencesReq] = buildBackendRequest(
 	'getSitePreferences',
 	{
-		requestValidator: type.string,
-		responseValidator: type.union([dataSignature, type.null]),
+		requestValidator: Schema.String,
+		responseValidator: Schema.Union([dataSignature, Schema.Null]),
 
 		factoryHandler: () => getPreferences,
 	},

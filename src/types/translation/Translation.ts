@@ -1,4 +1,4 @@
-import { type } from '../../lib/types';
+import { Schema } from 'effect';
 
 /**
  * Object contains translation data
@@ -10,9 +10,9 @@ export type ITranslation = {
 	translatedText: string;
 };
 
-export const TranslationType = type.type({
-	from: type.string,
-	to: type.string,
-	originalText: type.string,
-	translatedText: type.string,
+export const TranslationType = Schema.Struct({
+	from: Schema.String,
+	to: Schema.String,
+	originalText: Schema.String,
+	translatedText: Schema.String,
 });

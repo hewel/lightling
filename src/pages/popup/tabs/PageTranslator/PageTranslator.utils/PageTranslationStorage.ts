@@ -1,13 +1,14 @@
-import { TypeOf } from 'io-ts';
+import { Schema } from 'effect';
 import browser from 'webextension-polyfill';
 
-import { tryDecode, type } from '../../../../../lib/types';
+import { tryDecode } from '../../../../../lib/types';
+import { type DeepMutable } from '../../../../../types/utils';
 
-const storageSignature = type.type({
-	optionsSpoilerState: type.boolean,
+const storageSignature = Schema.Struct({
+	optionsSpoilerState: Schema.Boolean,
 });
 
-type PageTranslationData = TypeOf<typeof storageSignature>;
+type PageTranslationData = DeepMutable<typeof storageSignature.Type>;
 
 export class PageTranslationStorage {
 	private readonly storeName = 'PageTranslationStorage';
@@ -19,7 +20,7 @@ export class PageTranslationStorage {
 		optionsSpoilerState: false,
 	};
 
-	public getData = async () => {
+	public getData = async (): Promise<PageTranslationData> => {
 		const storeName = this.storeName;
 		const { [storeName]: tabData } = await browser.storage.local.get(storeName);
 

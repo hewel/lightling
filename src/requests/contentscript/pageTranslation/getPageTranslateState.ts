@@ -1,24 +1,26 @@
-import { type } from '../../../lib/types';
+import { Schema } from 'effect';
+
+import { NonNaNNumber } from '../../../lib/types';
 import { buildTabRequest } from '../../utils/requestBuilder';
 
-export const PageTranslateStateSignature = type.type({
-	resolved: type.number,
-	rejected: type.number,
-	pending: type.number,
+export const PageTranslateStateSignature = Schema.Struct({
+	resolved: NonNaNNumber,
+	rejected: NonNaNNumber,
+	pending: NonNaNNumber,
 });
 
 export const [getPageTranslateStateFactory, getPageTranslateState] = buildTabRequest(
 	'getPageTranslateState',
 	{
-		responseValidator: type.type({
-			isTranslated: type.boolean,
+		responseValidator: Schema.Struct({
+			isTranslated: Schema.Boolean,
 			counters: PageTranslateStateSignature,
-			translateDirection: type.union([
-				type.type({
-					from: type.string,
-					to: type.string,
+			translateDirection: Schema.Union([
+				Schema.Struct({
+					from: Schema.String,
+					to: Schema.String,
 				}),
-				type.null,
+				Schema.Null,
 			]),
 		}),
 

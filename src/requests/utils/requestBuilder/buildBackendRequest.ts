@@ -1,15 +1,13 @@
-import * as t from 'io-ts';
-
-import { tryDecode } from '../../../lib/types';
+import { type SyncSchema, tryDecode } from '../../../lib/types';
 import { RequestHandlerFactory, RequestHandlerFactoryProps } from '../../types';
 
 import { addRequestHandler, sendBackgroundRequest } from '..';
 
-type BackgroundOptions<O = any, R = any, C = RequestHandlerFactoryProps> = {
+type BackgroundOptions<O = unknown, R = unknown, C = RequestHandlerFactoryProps> = {
 	factoryHandler: (props: C) => (options: O) => Promise<R>;
 	filter?: (props: C) => (options: O) => boolean;
-	requestValidator?: t.Type<O, O>;
-	responseValidator?: t.Type<R, R>;
+	requestValidator?: SyncSchema<O>;
+	responseValidator?: SyncSchema<R>;
 };
 
 /**

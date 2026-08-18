@@ -1,7 +1,8 @@
+import { Schema } from 'effect';
 import { DBSchema } from 'idb';
 
 import { IDBConstructor } from '../../../../../lib/idb/manager';
-import { decodeStruct, type } from '../../../../../lib/types';
+import { decodeStruct, NonNaNNumber } from '../../../../../lib/types';
 import { ITranslationEntry } from '../../data';
 
 export type IDBTranslationsSchemaV2 = DBSchema & {
@@ -22,12 +23,12 @@ const migration: IDBConstructor<IDBTranslationsSchemaV2> = {
 		// Prepare data
 		const translations: IDBTranslationsSchemaV2['translations']['value'][] = [];
 		if (isMigrationNeeded) {
-			const translationType = type.type({
-				from: type.string,
-				to: type.string,
-				text: type.string,
-				translate: type.string,
-				date: type.number,
+			const translationType = Schema.Struct({
+				from: Schema.String,
+				to: Schema.String,
+				text: Schema.String,
+				translate: Schema.String,
+				date: NonNaNNumber,
 			});
 
 			const entries = await tx.objectStore('translations' as any).getAll();

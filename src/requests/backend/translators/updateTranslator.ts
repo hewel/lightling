@@ -1,5 +1,7 @@
+import { Schema } from 'effect';
+
 import { validateTranslatorCode } from '../../../lib/translators/customTranslators/utils';
-import { type } from '../../../lib/types';
+import { NonNaNNumber } from '../../../lib/types';
 import { buildBackendRequest } from '../../utils/requestBuilder';
 
 import { applyTranslators } from './applyTranslators';
@@ -9,8 +11,8 @@ import { TranslatorEntry } from './data';
 export const [updateTranslatorFactory, updateTranslator] = buildBackendRequest(
 	'updateTranslator',
 	{
-		requestValidator: type.type({
-			id: type.number,
+		requestValidator: Schema.Struct({
+			id: NonNaNNumber,
 			translator: TranslatorEntry,
 		}),
 

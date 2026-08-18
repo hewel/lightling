@@ -1,7 +1,8 @@
+import { Schema } from 'effect';
 import * as IDB from 'idb';
 
 import { ExtractSchemeFromIDBConstructor, getIDBPlan } from '../../../lib/idb/manager';
-import { type } from '../../../lib/types';
+import { NonNaNNumber } from '../../../lib/types';
 import { isEqualIntersection } from '../../../lib/utils';
 import { ITranslation, TranslationType } from '../../../types/translation/Translation';
 import { DeepPartial } from '../../../types/utils';
@@ -16,18 +17,14 @@ export type ITranslationEntry = {
 
 export type ITranslationEntryWithKey = { key: number; data: ITranslationEntry };
 
-export const TranslationEntryType = type.intersection([
-	type.type({
-		translation: TranslationType,
-		timestamp: type.number,
-	}),
-	type.partial({
-		translator: type.union([type.string, type.undefined]),
-	}),
-]);
+export const TranslationEntryType = Schema.Struct({
+	translation: TranslationType,
+	timestamp: NonNaNNumber,
+	translator: Schema.optional(Schema.Union([Schema.String, Schema.Undefined])),
+});
 
-export const TranslationEntryWithKeyType = type.type({
-	key: type.number,
+export const TranslationEntryWithKeyType = Schema.Struct({
+	key: NonNaNNumber,
 	data: TranslationEntryType,
 });
 

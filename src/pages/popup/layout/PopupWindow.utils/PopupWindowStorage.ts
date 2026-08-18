@@ -1,16 +1,16 @@
-import { TypeOf } from 'io-ts';
+import { Schema } from 'effect';
 import browser from 'webextension-polyfill';
 
-import { decodeStruct, type } from '../../../../lib/types';
+import { decodeStruct } from '../../../../lib/types';
 
-const storageStruct = type.type({
+const storageStruct = Schema.Struct({
 	/**
 	 * Map where key is tabs set hash and value is active tab ID
 	 */
-	activeTab: type.record(type.string, type.string),
+	activeTab: Schema.Record(Schema.String, Schema.String),
 });
 
-type StorageType = TypeOf<typeof storageStruct>;
+type StorageType = typeof storageStruct.Type;
 
 export class PopupWindowStorage {
 	public getActiveTab = async (tabsSetHash: string) => {

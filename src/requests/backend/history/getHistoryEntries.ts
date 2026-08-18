@@ -1,4 +1,5 @@
-import { type } from '../../../lib/types';
+import { Schema } from 'effect';
+
 import { buildBackendRequest } from '../../utils/requestBuilder';
 
 import {
@@ -9,7 +10,9 @@ import {
 
 export const [getTranslationHistoryEntriesFactory, getTranslationHistoryEntries] =
 	buildBackendRequest('getTranslationHistoryEntries', {
-		responseValidator: type.array(TranslationHistoryEntryWithKeyType),
+		responseValidator: Schema.mutable(
+			Schema.Array(TranslationHistoryEntryWithKeyType),
+		),
 		factoryHandler:
 			() =>
 			(options: TranslationHistoryFetcherOptions = {}) =>

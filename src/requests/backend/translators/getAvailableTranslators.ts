@@ -1,5 +1,6 @@
+import { Schema } from 'effect';
+
 import { embeddedTranslators } from '../../../app/Background';
-import { type } from '../../../lib/types';
 import { buildBackendRequest } from '../../utils/requestBuilder';
 
 import { formatToCustomTranslatorId } from '.';
@@ -10,7 +11,7 @@ import * as db from './data';
  */
 export const [getAvailableTranslatorsFactory, getAvailableTranslators] =
 	buildBackendRequest('getAvailableTranslators', {
-		responseValidator: type.record(type.string, type.string),
+		responseValidator: Schema.Record(Schema.String, Schema.String),
 		factoryHandler: () => async () => {
 			const translatorsMap: Record<string, string> = {};
 

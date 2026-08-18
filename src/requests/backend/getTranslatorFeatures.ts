@@ -1,4 +1,5 @@
-import { type } from '../../lib/types';
+import { Schema } from 'effect';
+
 import { ArrayOfStrings } from '../../types/runtime';
 
 import { buildBackendRequest } from '../utils/requestBuilder';
@@ -6,9 +7,9 @@ import { buildBackendRequest } from '../utils/requestBuilder';
 export const [getTranslatorFeaturesFactory, getTranslatorFeatures] = buildBackendRequest(
 	'getTranslatorFeatures',
 	{
-		responseValidator: type.type({
+		responseValidator: Schema.Struct({
 			supportedLanguages: ArrayOfStrings,
-			isSupportAutodetect: type.boolean,
+			isSupportAutodetect: Schema.Boolean,
 		}),
 
 		factoryHandler:

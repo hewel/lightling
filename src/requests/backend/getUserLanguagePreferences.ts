@@ -1,10 +1,10 @@
-import { type } from '../../lib/types';
+import { Schema } from 'effect';
 
 import { buildBackendRequest } from '../utils/requestBuilder';
 
 export const [getUserLanguagePreferencesFactory, getUserLanguagePreferences] =
 	buildBackendRequest('getUserLanguagePreferences', {
-		responseValidator: type.string,
+		responseValidator: Schema.String,
 
 		factoryHandler:
 			({ config }) =>

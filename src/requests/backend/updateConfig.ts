@@ -1,16 +1,17 @@
+import { Schema } from 'effect';
 import { cloneDeep, set } from 'lodash';
 
 import { getMessage } from '../../lib/language';
-import { checkTypeByPath, type } from '../../lib/types';
+import { checkTypeByPath } from '../../lib/types';
 import { AppConfig } from '../../types/runtime';
 
 import { buildBackendRequest } from '../utils/requestBuilder';
 
 export const [updateConfigFactory, updateConfig] = buildBackendRequest('updateConfig', {
-	requestValidator: type.record(type.string, type.unknown),
-	responseValidator: type.type({
-		success: type.boolean,
-		errors: type.union([type.record(type.string, type.string), type.null]),
+	requestValidator: Schema.Record(Schema.String, Schema.Unknown),
+	responseValidator: Schema.Struct({
+		success: Schema.Boolean,
+		errors: Schema.Union([Schema.Record(Schema.String, Schema.String), Schema.Null]),
 	}),
 
 	/**

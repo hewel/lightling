@@ -1,108 +1,105 @@
 import { isLanguageCodeISO639v1 } from 'anylang/languages';
-import { TypeOf } from 'io-ts';
+import { Effect, Schema } from 'effect';
 
-import { StringLiteralType, type } from '../lib/types';
+import { NonNaNNumber } from '../lib/types';
+import { type DeepMutable } from './utils';
 
-export const ArrayOfStrings = new type.Type<string[], string[], unknown>(
-	'ArrayOfStrings',
-	(input: unknown): input is string[] =>
-		Array.isArray(input) && input.every((i) => typeof i === 'string'),
-	(input, context) =>
-		Array.isArray(input) && input.every((i) => typeof i === 'string')
-			? type.success(input)
-			: type.failure(input, context),
-	type.identity,
-);
+export const ArrayOfStrings = Schema.mutable(Schema.Array(Schema.String));
 
-export const LangCode = new type.Type<string, string, unknown>(
-	'LangCode',
-	(input: unknown): input is string =>
-		typeof input === 'string' && isLanguageCodeISO639v1(input),
-	(input, context) =>
-		typeof input === 'string' && isLanguageCodeISO639v1(input)
-			? type.success(input)
-			: type.failure(input, context),
-	type.identity,
-);
-
-export const LangCodeWithAuto = new type.Type<string, string, unknown>(
-	'LangCodeWithAuto',
-	(input: unknown): input is string =>
-		input === 'auto' || (typeof input === 'string' && isLanguageCodeISO639v1(input)),
-	(input, context) =>
-		input === 'auto' || (typeof input === 'string' && isLanguageCodeISO639v1(input))
-			? type.success(input)
-			: type.failure(input, context),
-	type.identity,
-);
-
-export const AppConfig = type.type({
-	language: type.string,
-	translatorModule: type.string,
-	ttsModule: type.string,
-	scheduler: type.type({
-		useCache: type.boolean,
-		translateRetryAttemptLimit: type.number,
-		isAllowDirectTranslateBadChunks: type.boolean,
-		directTranslateLength: type.union([type.number, type.null]),
-		translatePoolDelay: type.number,
-		chunkSizeForInstantTranslate: type.union([type.number, type.null]),
+export const LangCode = Schema.String.check(
+	Schema.makeFilter((input: string) => isLanguageCodeISO639v1(input), {
+		identifier: 'LangCode',
+		expected: 'an ISO 639-1 language code',
 	}),
-	cache: type.type({
-		ignoreCase: type.boolean,
+);
+
+export const LangCodeWithAuto = Schema.String.check(
+	Schema.makeFilter(
+		(input: string) => input === 'auto' || isLanguageCodeISO639v1(input),
+		{
+			identifier: 'LangCodeWithAuto',
+			expected: '"auto" or an ISO 639-1 language code',
+		},
+	),
+);
+
+const OptionalNumber = Schema.Union([NonNaNNumber, Schema.Undefined]).pipe(
+	Schema.withDecodingDefault(Effect.succeed(undefined)),
+);
+
+const OptionalBoolean = Schema.Union([Schema.Boolean, Schema.Undefined]).pipe(
+	Schema.withDecodingDefault(Effect.succeed(undefined)),
+);
+
+export const AppConfig = Schema.Struct({
+	language: Schema.String,
+	translatorModule: Schema.String,
+	ttsModule: Schema.String,
+	scheduler: Schema.Struct({
+		useCache: Schema.Boolean,
+		translateRetryAttemptLimit: NonNaNNumber,
+		isAllowDirectTranslateBadChunks: Schema.Boolean,
+		directTranslateLength: Schema.Union([NonNaNNumber, Schema.Null]),
+		translatePoolDelay: NonNaNNumber,
+		chunkSizeForInstantTranslate: Schema.Union([NonNaNNumber, Schema.Null]),
 	}),
-	selectTranslator: type.type({
-		enabled: type.boolean,
-		disableWhileTranslatePage: type.boolean,
-		zIndex: type.union([type.number, type.undefined]),
-		focusOnTranslateButton: type.union([type.boolean, type.undefined]),
-		rememberDirection: type.boolean,
-		modifiers: type.array(
-			type.union([
-				StringLiteralType('ctrlKey'),
-				StringLiteralType('altKey'),
-				StringLiteralType('shiftKey'),
-				StringLiteralType('metaKey'),
-			]),
+	cache: Schema.Struct({
+		ignoreCase: Schema.Boolean,
+	}),
+	selectTranslator: Schema.Struct({
+		enabled: Schema.Boolean,
+		disableWhileTranslatePage: Schema.Boolean,
+		zIndex: OptionalNumber,
+		focusOnTranslateButton: OptionalBoolean,
+		rememberDirection: Schema.Boolean,
+		modifiers: Schema.mutable(
+			Schema.Array(
+				Schema.Union([
+					Schema.Literal('ctrlKey'),
+					Schema.Literal('altKey'),
+					Schema.Literal('shiftKey'),
+					Schema.Literal('metaKey'),
+				]),
+			),
 		),
-		strictSelection: type.boolean,
-		detectedLangFirst: type.boolean,
-		showOnceForSelection: type.boolean,
-		showOriginalText: type.boolean,
-		isUseAutoForDetectLang: type.boolean,
-		timeoutForHideButton: type.number,
-		mode: type.union([
-			StringLiteralType('popupButton'),
-			StringLiteralType('quickTranslate'),
-			StringLiteralType('contextMenu'),
+		strictSelection: Schema.Boolean,
+		detectedLangFirst: Schema.Boolean,
+		showOnceForSelection: Schema.Boolean,
+		showOriginalText: Schema.Boolean,
+		isUseAutoForDetectLang: Schema.Boolean,
+		timeoutForHideButton: NonNaNNumber,
+		mode: Schema.Union([
+			Schema.Literal('popupButton'),
+			Schema.Literal('quickTranslate'),
+			Schema.Literal('contextMenu'),
 		]),
 	}),
-	pageTranslator: type.type({
+	pageTranslator: Schema.Struct({
 		excludeSelectors: ArrayOfStrings,
 		translatableAttributes: ArrayOfStrings,
-		lazyTranslate: type.boolean,
-		detectLanguageByContent: type.boolean,
-		originalTextPopup: type.boolean,
-		enableContextMenu: type.boolean,
-		toggleTranslationHotkey: type.union([type.null, type.string]),
+		lazyTranslate: Schema.Boolean,
+		detectLanguageByContent: Schema.Boolean,
+		originalTextPopup: Schema.Boolean,
+		enableContextMenu: Schema.Boolean,
+		toggleTranslationHotkey: Schema.Union([Schema.Null, Schema.String]),
 	}),
-	textTranslator: type.type({
-		rememberText: type.boolean,
-		spellCheck: type.boolean,
-		suggestLanguage: type.boolean,
-		suggestLanguageAlways: type.boolean,
+	textTranslator: Schema.Struct({
+		rememberText: Schema.Boolean,
+		spellCheck: Schema.Boolean,
+		suggestLanguage: Schema.Boolean,
+		suggestLanguageAlways: Schema.Boolean,
 	}),
-	popup: type.type({
-		rememberLastTab: type.boolean,
+	popup: Schema.Struct({
+		rememberLastTab: Schema.Boolean,
 	}),
-	history: type.type({
-		enabled: type.boolean,
+	history: Schema.Struct({
+		enabled: Schema.Boolean,
 	}),
-	popupTab: type.type({
-		pageTranslator: type.type({
-			showCounters: type.boolean,
+	popupTab: Schema.Struct({
+		pageTranslator: Schema.Struct({
+			showCounters: Schema.Boolean,
 		}),
 	}),
 });
 
-export type AppConfigType = TypeOf<typeof AppConfig>;
+export type AppConfigType = DeepMutable<typeof AppConfig.Type>;

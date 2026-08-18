@@ -1,11 +1,12 @@
-import { type } from '../../../../lib/types';
+import { Schema } from 'effect';
+
 import { buildBackendRequest } from '../../../utils/requestBuilder';
 
 import { deletePreferences } from './utils';
 
 export const [deleteSitePreferencesFactory, deleteSitePreferencesReq] =
 	buildBackendRequest('deleteSitePreferences', {
-		requestValidator: type.string,
+		requestValidator: Schema.String,
 
 		factoryHandler: () => deletePreferences,
 	});

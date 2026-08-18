@@ -1,25 +1,26 @@
+import { Schema } from 'effect';
 import browser from 'webextension-polyfill';
 
 import {
 	createMigrationTask,
 	Migration,
 } from '../../../../../lib/migrations/createMigrationTask';
-import { decodeStruct, type } from '../../../../../lib/types';
+import { decodeStruct } from '../../../../../lib/types';
 
 const dataStructureVersions = {
-	0: type.union([
-		type.type({
-			from: type.string,
-			to: type.string,
-			translate: type.union([
-				type.type({
-					text: type.string,
-					translate: type.union([type.string, type.null]),
+	0: Schema.Union([
+		Schema.Struct({
+			from: Schema.String,
+			to: Schema.String,
+			translate: Schema.Union([
+				Schema.Struct({
+					text: Schema.String,
+					translate: Schema.Union([Schema.String, Schema.Null]),
 				}),
-				type.null,
+				Schema.Null,
 			]),
 		}),
-		type.null,
+		Schema.Null,
 	]),
 };
 

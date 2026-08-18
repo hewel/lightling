@@ -18,7 +18,7 @@ export class ConfigStorage implements AsyncStorage<AppConfigType> {
 		this.defaultData = defaultData;
 	}
 
-	public async get() {
+	public async get(): Promise<AppConfigType> {
 		// Get data from storage if possible
 		const { [this.storageName]: data } = await browser.storage.local.get(
 			this.storageName,

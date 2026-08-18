@@ -1,4 +1,4 @@
-import { type } from '../../../lib/types';
+import { NonNaNNumber } from '../../../lib/types';
 import { TranslationType } from '../../../types/translation/Translation';
 import { buildBackendRequest } from '../../utils/requestBuilder';
 
@@ -9,7 +9,7 @@ export const [addTranslationFactory, addTranslation] = buildBackendRequest(
 	'addTranslation',
 	{
 		requestValidator: TranslationType,
-		responseValidator: type.number,
+		responseValidator: NonNaNNumber,
 
 		factoryHandler: () => async (translation) => {
 			const id = await addEntry({
