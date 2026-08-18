@@ -1,8 +1,8 @@
 {
-	"from": "en",
-	"to": "ja",
-	"translate": {
-		"originalText": "wanderer in jungle",
-		"translatedText": "ジャングルの放浪者"
-	}
+  "from": "en",
+  "to": "ja",
+  "translate": {
+    "originalText": "wanderer in jungle",
+    "translatedText": "ジャングルの放浪者"
+  }
 }

@@ -4,6 +4,6 @@ import { addBergamotFileFactory } from './addBergamotFile';
 import { getBergamotFileFactory } from './getBergamotFile';
 
 export const bergamotHandlersFactory = joinRequestHandlers([
-	addBergamotFileFactory,
-	getBergamotFileFactory,
+  addBergamotFileFactory,
+  getBergamotFileFactory,
 ]);

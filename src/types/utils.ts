@@ -8,15 +8,15 @@ import { Dispatch, SetStateAction } from 'react';
  * type SomeCar = ClassObject<AbstractRedCar, typeof AbstractRedCar>;
  */
 export type ClassObject<Class, StaticProps extends {} = {}> = (new (
-	...args: any[]
+  ...args: any[]
 ) => Class) &
-	StaticProps;
+  StaticProps;
 
 /**
  * Define value and setter for it
  */
 export type MutableValue<Name extends string, Type> = Record<`${Name}`, Type> &
-	Record<`set${Capitalize<Name>}`, Dispatch<SetStateAction<Type>>>;
+  Record<`set${Capitalize<Name>}`, Dispatch<SetStateAction<Type>>>;
 
 /**
  * Return object values as keys
@@ -27,16 +27,16 @@ export type RecordValues<T extends Record<any, any>> = T[keyof T];
  * Make all nested properties of object are optional
  */
 export type DeepPartial<T> = T extends object
-	? {
-			[P in keyof T]?: DeepPartial<T[P]>;
-		}
-	: T;
+  ? {
+      [P in keyof T]?: DeepPartial<T[P]>;
+    }
+  : T;
 
 /**
  * Remove readonly modifiers from nested data objects and arrays.
  */
 export type DeepMutable<T> = T extends readonly (infer Item)[]
-	? DeepMutable<Item>[]
-	: T extends object
-		? { -readonly [Key in keyof T]: DeepMutable<T[Key]> }
-		: T;
+  ? DeepMutable<Item>[]
+  : T extends object
+    ? { -readonly [Key in keyof T]: DeepMutable<T[Key]> }
+    : T;

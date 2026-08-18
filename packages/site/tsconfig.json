@@ -1,17 +1,17 @@
 {
-	// This file is not used in compilation. It is here just for a nice editor experience.
-	"extends": "@docusaurus/tsconfig",
-	"compilerOptions": {
-		"baseUrl": ".",
-		"strictNullChecks": true,
-		"resolveJsonModule": true,
-		"typeRoots": ["./node_modules/@types"],
-		"paths": {
-			"@site/*": ["./*"],
-			"react": ["node_modules/@types/react"],
-			"react/*": ["node_modules/@types/react/*"],
-			"react-dom": ["node_modules/@types/react-dom"],
-			"react-dom/*": ["node_modules/@types/react-dom/*"]
-		}
-	}
+  // This file is not used in compilation. It is here just for a nice editor experience.
+  "extends": "@docusaurus/tsconfig",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "strictNullChecks": true,
+    "resolveJsonModule": true,
+    "typeRoots": ["./node_modules/@types"],
+    "paths": {
+      "@site/*": ["./*"],
+      "react": ["node_modules/@types/react"],
+      "react/*": ["node_modules/@types/react/*"],
+      "react-dom": ["node_modules/@types/react-dom"],
+      "react-dom/*": ["node_modules/@types/react-dom/*"]
+    }
+  }
 }

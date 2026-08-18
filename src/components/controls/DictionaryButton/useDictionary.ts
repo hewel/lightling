@@ -6,9 +6,9 @@ import { useImmutableCallback } from '@/lib/hooks/useImmutableCallback';
 import { TELEMETRY_EVENT_NAME } from '@/lib/telemetry';
 import { trackClientEvent } from '@/requests/backend/telemetry';
 import {
-	onClearDictionary,
-	onDictionaryEntryAdd,
-	onDictionaryEntryDelete,
+  onClearDictionary,
+  onDictionaryEntryAdd,
+  onDictionaryEntryDelete,
 } from '@/requests/backend/translations';
 import { addTranslation } from '@/requests/backend/translations/addTranslation';
 import { deleteTranslation } from '@/requests/backend/translations/deleteTranslation';
@@ -16,130 +16,130 @@ import { findTranslation } from '@/requests/backend/translations/findTranslation
 import { ITranslation } from '@/types/translation/Translation';
 
 export const useDictionary = (translation: ITranslation | null) => {
-	const { from, to, originalText, translatedText } = translation || {};
+  const { from, to, originalText, translatedText } = translation || {};
 
-	const [dictionaryEntryId, setDictionaryEntryId] = useState<null | number>(null);
+  const [dictionaryEntryId, setDictionaryEntryId] = useState<null | number>(null);
 
-	const getDictionaryEntryId = useCallback(async () => {
-		if (
-			from === undefined ||
-			to === undefined ||
-			originalText === undefined ||
-			translatedText === undefined
-		)
-			return null;
+  const getDictionaryEntryId = useCallback(async () => {
+    if (
+      from === undefined ||
+      to === undefined ||
+      originalText === undefined ||
+      translatedText === undefined
+    )
+      return null;
 
-		return findTranslation({
-			from,
-			to,
-			originalText: originalText.trim(),
-			translatedText: translatedText.trim(),
-		});
-	}, [from, to, originalText, translatedText]);
+    return findTranslation({
+      from,
+      to,
+      originalText: originalText.trim(),
+      translatedText: translatedText.trim(),
+    });
+  }, [from, to, originalText, translatedText]);
 
-	const [isInDictionary, setIsInDictionary] = useState(dictionaryEntryId !== null);
+  const [isInDictionary, setIsInDictionary] = useState(dictionaryEntryId !== null);
 
-	const update = useImmutableCallback(() => {
-		getDictionaryEntryId().then(setDictionaryEntryId);
-	}, [getDictionaryEntryId]);
+  const update = useImmutableCallback(() => {
+    getDictionaryEntryId().then(setDictionaryEntryId);
+  }, [getDictionaryEntryId]);
 
-	const toggle = useImmutableCallback(() => {
-		const nextState = !isInDictionary;
-		setIsInDictionary(nextState);
+  const toggle = useImmutableCallback(() => {
+    const nextState = !isInDictionary;
+    setIsInDictionary(nextState);
 
-		if (nextState) {
-			if (dictionaryEntryId === null) {
-				(async () => {
-					const id = await getDictionaryEntryId();
-					if (id !== null) {
-						setDictionaryEntryId(id);
-						return;
-					}
+    if (nextState) {
+      if (dictionaryEntryId === null) {
+        (async () => {
+          const id = await getDictionaryEntryId();
+          if (id !== null) {
+            setDictionaryEntryId(id);
+            return;
+          }
 
-					if (
-						from === undefined ||
-						to === undefined ||
-						originalText === undefined ||
-						translatedText === undefined
-					) {
-						setDictionaryEntryId(null);
-						return;
-					}
+          if (
+            from === undefined ||
+            to === undefined ||
+            originalText === undefined ||
+            translatedText === undefined
+          ) {
+            setDictionaryEntryId(null);
+            return;
+          }
 
-					addTranslation({
-						from,
-						to,
-						originalText: originalText.trim(),
-						translatedText: translatedText.trim(),
-					}).then((id) => {
-						setDictionaryEntryId(id);
-						trackClientEvent(
-							TELEMETRY_EVENT_NAME.TRANSLATION_MOVED_IN_DICTIONARY,
-							{ action: 'added', from, to },
-						);
-					});
-				})();
-			}
-		} else {
-			if (dictionaryEntryId !== null) {
-				deleteTranslation(dictionaryEntryId).then(() => {
-					setDictionaryEntryId(null);
-					trackClientEvent(
-						TELEMETRY_EVENT_NAME.TRANSLATION_MOVED_IN_DICTIONARY,
-						{ action: 'removed' },
-					);
-				});
-			}
-		}
-	}, [
-		dictionaryEntryId,
-		getDictionaryEntryId,
-		from,
-		to,
-		isInDictionary,
-		originalText,
-		translatedText,
-	]);
+          addTranslation({
+            from,
+            to,
+            originalText: originalText.trim(),
+            translatedText: translatedText.trim(),
+          }).then((id) => {
+            setDictionaryEntryId(id);
+            trackClientEvent(TELEMETRY_EVENT_NAME.TRANSLATION_MOVED_IN_DICTIONARY, {
+              action: 'added',
+              from,
+              to,
+            });
+          });
+        })();
+      }
+    } else {
+      if (dictionaryEntryId !== null) {
+        deleteTranslation(dictionaryEntryId).then(() => {
+          setDictionaryEntryId(null);
+          trackClientEvent(TELEMETRY_EVENT_NAME.TRANSLATION_MOVED_IN_DICTIONARY, {
+            action: 'removed',
+          });
+        });
+      }
+    }
+  }, [
+    dictionaryEntryId,
+    getDictionaryEntryId,
+    from,
+    to,
+    isInDictionary,
+    originalText,
+    translatedText,
+  ]);
 
-	useEffect(() => {
-		getDictionaryEntryId().then(setDictionaryEntryId);
-	}, [getDictionaryEntryId]);
+  useEffect(() => {
+    getDictionaryEntryId().then(setDictionaryEntryId);
+  }, [getDictionaryEntryId]);
 
-	useEffect(() => {
-		setIsInDictionary(dictionaryEntryId !== null);
-	}, [dictionaryEntryId]);
+  useEffect(() => {
+    setIsInDictionary(dictionaryEntryId !== null);
+  }, [dictionaryEntryId]);
 
-	// Observe state
-	useEffect(() => {
-		// TODO: implement observing for content scripts
-		// Don't observe state for content scripts
-		if (!isExtensionContext) return;
+  // Observe state
+  useEffect(() => {
+    // TODO: implement observing for content scripts
+    // Don't observe state for content scripts
+    if (!isExtensionContext) return;
 
-		const cleanupFunctions: (() => any)[] = [];
+    const cleanupFunctions: (() => any)[] = [];
 
-		if (dictionaryEntryId === null) {
-			const cleanup = onDictionaryEntryAdd((newTranslation) => {
-				if (translation === null) return;
+    if (dictionaryEntryId === null) {
+      const cleanup = onDictionaryEntryAdd((newTranslation) => {
+        if (translation === null) return;
 
-				const isEqualData = isEqual(newTranslation, translation);
-				if (isEqualData) {
-					update();
-				}
-			});
+        const isEqualData = isEqual(newTranslation, translation);
+        if (isEqualData) {
+          update();
+        }
+      });
 
-			cleanupFunctions.push(cleanup);
-		} else {
-			const cleanupOnDelete = onDictionaryEntryDelete(dictionaryEntryId, update);
-			cleanupFunctions.push(cleanupOnDelete);
+      cleanupFunctions.push(cleanup);
+    } else {
+      const cleanupOnDelete = onDictionaryEntryDelete(dictionaryEntryId, update);
+      cleanupFunctions.push(cleanupOnDelete);
 
-			const cleanupOnClear = onClearDictionary(update);
-			cleanupFunctions.push(cleanupOnClear);
-		}
+      const cleanupOnClear = onClearDictionary(update);
+      cleanupFunctions.push(cleanupOnClear);
+    }
 
-		return () => {
-			cleanupFunctions.map((fn) => fn());
-		};
-	}, [dictionaryEntryId, translation, update]);
+    return () => {
+      cleanupFunctions.map((fn) => fn());
+    };
+  }, [dictionaryEntryId, translation, update]);
 
-	return { has: isInDictionary, toggle, update };
+  return { has: isInDictionary, toggle, update };
 };

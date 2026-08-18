@@ -6,147 +6,147 @@ import { isTextsContainsSubstring } from '@/lib/utils';
 import { ITranslation, TranslationType } from '@/types/translation/Translation';
 
 export type HistoryEntry = {
-	translation: ITranslation;
-	origin: string;
-	timestamp: number;
+  translation: ITranslation;
+  origin: string;
+  timestamp: number;
 };
 
 export const TranslationHistoryEntryType = Schema.Struct({
-	translation: TranslationType,
-	timestamp: NonNaNNumber,
-	origin: Schema.String,
+  translation: TranslationType,
+  timestamp: NonNaNNumber,
+  origin: Schema.String,
 });
 
 export const TranslationHistoryEntryWithKeyType = Schema.Struct({
-	key: NonNaNNumber,
-	data: TranslationHistoryEntryType,
+  key: NonNaNNumber,
+  data: TranslationHistoryEntryType,
 });
 
 export type ITranslationHistoryEntryWithKey = { key: number; data: HistoryEntry };
 
 export interface DBSchema extends IDB.DBSchema {
-	translationsHistory: {
-		key: number;
-		value: HistoryEntry;
-	};
+  translationsHistory: {
+    key: number;
+    value: HistoryEntry;
+  };
 }
 
 type DB = IDB.IDBPDatabase<DBSchema>;
 
 let DBInstance: null | DB = null;
 const getDB = async () => {
-	const DBName = 'translationsHistory';
+  const DBName = 'translationsHistory';
 
-	if (DBInstance === null) {
-		DBInstance = await IDB.openDB<DBSchema>(DBName, 1, {
-			upgrade(db) {
-				db.createObjectStore('translationsHistory', {
-					keyPath: 'id',
-					autoIncrement: true,
-				});
-			},
-		});
-	}
+  if (DBInstance === null) {
+    DBInstance = await IDB.openDB<DBSchema>(DBName, 1, {
+      upgrade(db) {
+        db.createObjectStore('translationsHistory', {
+          keyPath: 'id',
+          autoIncrement: true,
+        });
+      },
+    });
+  }
 
-	return DBInstance;
+  return DBInstance;
 };
 
 export const addEntry = async (entry: HistoryEntry) => {
-	const db = await getDB();
-	return db.add('translationsHistory', entry);
+  const db = await getDB();
+  return db.add('translationsHistory', entry);
 };
 
 export const deleteEntry = async (entryId: number) => {
-	const db = await getDB();
-	return db.delete('translationsHistory', entryId);
+  const db = await getDB();
+  return db.delete('translationsHistory', entryId);
 };
 
 export const flush = async () => {
-	const db = await getDB();
-	const transaction = await db.transaction('translationsHistory', 'readwrite');
+  const db = await getDB();
+  const transaction = await db.transaction('translationsHistory', 'readwrite');
 
-	await transaction.store.delete(IDBKeyRange.lowerBound(0));
-	await transaction.done;
+  await transaction.store.delete(IDBKeyRange.lowerBound(0));
+  await transaction.done;
 };
 
 export type TranslationHistoryFetcherOptions = {
-	search?: string;
-	from?: number;
-	limitFrom?: number;
-	limit?: number;
-	options?: { order: 'desc' | 'asc' };
-	ignoreCase?: boolean;
+  search?: string;
+  from?: number;
+  limitFrom?: number;
+  limit?: number;
+  options?: { order: 'desc' | 'asc' };
+  ignoreCase?: boolean;
 };
 
 export const getEntries = async ({
-	search,
-	from,
-	limitFrom,
-	limit,
-	options,
-	ignoreCase = true,
+  search,
+  from,
+  limitFrom,
+  limit,
+  options,
+  ignoreCase = true,
 }: TranslationHistoryFetcherOptions) => {
-	const { order = 'desc' } = options ?? {};
+  const { order = 'desc' } = options ?? {};
 
-	const db = await getDB();
+  const db = await getDB();
 
-	const transaction = await db.transaction('translationsHistory', 'readonly');
+  const transaction = await db.transaction('translationsHistory', 'readonly');
 
-	const entries: ITranslationHistoryEntryWithKey[] = [];
+  const entries: ITranslationHistoryEntryWithKey[] = [];
 
-	let isJumped = false;
-	let counter = 0;
-	let pauseCounter = limitFrom !== undefined;
-	const startCursor = await transaction.store.openCursor(
-		null,
-		order === 'desc' ? 'prev' : 'next',
-	);
-	if (startCursor !== null) {
-		for await (const cursor of startCursor) {
-			// Jump to specified offset
-			if (!isJumped && from !== undefined && from > 0) {
-				cursor.advance(from);
-				isJumped = true;
-				continue;
-			}
+  let isJumped = false;
+  let counter = 0;
+  let pauseCounter = limitFrom !== undefined;
+  const startCursor = await transaction.store.openCursor(
+    null,
+    order === 'desc' ? 'prev' : 'next',
+  );
+  if (startCursor !== null) {
+    for await (const cursor of startCursor) {
+      // Jump to specified offset
+      if (!isJumped && from !== undefined && from > 0) {
+        cursor.advance(from);
+        isJumped = true;
+        continue;
+      }
 
-			// Skip by filter
-			if (search !== undefined && search.length > 0) {
-				const translation = cursor.value.translation;
+      // Skip by filter
+      if (search !== undefined && search.length > 0) {
+        const translation = cursor.value.translation;
 
-				// Skip not match texts
-				const isSomeTextMatch = isTextsContainsSubstring(
-					search,
-					[translation.originalText, translation.translatedText],
-					ignoreCase,
-				);
-				if (!isSomeTextMatch) continue;
-			}
+        // Skip not match texts
+        const isSomeTextMatch = isTextsContainsSubstring(
+          search,
+          [translation.originalText, translation.translatedText],
+          ignoreCase,
+        );
+        if (!isSomeTextMatch) continue;
+      }
 
-			// Stop by limit
-			if (limit !== undefined) {
-				// Check reach entry to start count
-				if (limitFrom !== undefined && pauseCounter) {
-					if (cursor.primaryKey === limitFrom) {
-						pauseCounter = false;
-					}
-				}
+      // Stop by limit
+      if (limit !== undefined) {
+        // Check reach entry to start count
+        if (limitFrom !== undefined && pauseCounter) {
+          if (cursor.primaryKey === limitFrom) {
+            pauseCounter = false;
+          }
+        }
 
-				if (!pauseCounter) {
-					const currentNumber = ++counter;
-					if (currentNumber > limit) break;
-				}
-			}
+        if (!pauseCounter) {
+          const currentNumber = ++counter;
+          if (currentNumber > limit) break;
+        }
+      }
 
-			// Add entry
-			entries.push({
-				key: cursor.primaryKey,
-				data: cursor.value,
-			});
-		}
-	}
+      // Add entry
+      entries.push({
+        key: cursor.primaryKey,
+        data: cursor.value,
+      });
+    }
+  }
 
-	await transaction.done;
+  await transaction.done;
 
-	return entries;
+  return entries;
 };

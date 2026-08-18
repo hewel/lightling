@@ -1,12 +1,12 @@
 import React, {
-	FC,
-	PropsWithChildren,
-	Ref,
-	useCallback,
-	useEffect,
-	useMemo,
-	useRef,
-	useState,
+  FC,
+  PropsWithChildren,
+  Ref,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
 } from 'react';
 import ReactDOM from 'react-dom';
 import * as stylex from '@stylexjs/stylex';
@@ -33,540 +33,528 @@ import { MutableValue } from '@/types/utils';
 import { TabData } from '../../layout/PopupWindow';
 
 const styles = stylex.create({
-	root: {
-		boxSizing: 'border-box',
-		fontFamily: 'var(--textarea-font-family)',
-		display: 'flex',
-		flexDirection: 'column',
-		gap: 'var(--typography-layout-indent-m-all)',
-	},
-	langPanel: {
-		minWidth: 'max-content',
-	},
-	inputContainer: {
-		width: 'min-content',
-		minWidth: '100%',
-		maxWidth: '100%',
-	},
-	inputContainerWrapper: {
-		boxSizing: 'border-box',
-		display: 'flex',
-		flexDirection: 'column',
-		gap: 'var(--typography-layout-indent-m-all)',
-	},
-	input: {
-		width: '100%',
-	},
-	controlPlane: {
-		display: 'flex',
-		height: 'calc(var(--spacing-12) * 3 + var(--spacing-1-5))',
-		flexDirection: 'column',
-		gap: 'var(--spacing-1)',
-	},
-	inputSlot: {
-		display: 'grid',
-		flex: '1 1 auto',
-		gridTemplateRows: 'minmax(0, 1fr)',
-		minHeight: 0,
-	},
-	field: {
-		height: '100%',
-		'--textarea-adapter-height': '100%',
-		'--textarea-adapter-min-height': '0',
-		'--textarea-adapter-max-height': 'none',
-		'--textarea-adapter-resize': 'none',
-	},
-	textActions: {
-		display: 'flex',
-		gap: 'var(--typography-layout-indent-s-all)',
-	},
-	inputTextActions: {
-		zIndex: 2,
-	},
-	resultContainer: {
-		display: 'flex',
-		flexDirection: 'column',
-		backgroundColor: 'var(--textarea-view-default-fill-color-disabled)',
-		color: 'var(--textarea-view-default-typo-color-base)',
-		borderRadius: 'var(--textarea-border-radius)',
-		maxHeight: '12.5rem',
-		fontFamily: 'var(--textarea-font-family)',
-	},
-	resultText: {
-		minHeight: '8.125rem',
-		overflow: 'auto',
-		padding: 'var(--textarea-size-m-control-indent)',
-		whiteSpace: 'pre-line',
-		boxSizing: 'border-box',
-		wordBreak: 'break-word',
-	},
-	languageSuggestion: {
-		display: 'flex',
-		gap: '0.3em',
-	},
+  root: {
+    boxSizing: 'border-box',
+    fontFamily: 'var(--textarea-font-family)',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 'var(--typography-layout-indent-m-all)',
+  },
+  langPanel: {
+    minWidth: 'max-content',
+  },
+  inputContainer: {
+    width: 'min-content',
+    minWidth: '100%',
+    maxWidth: '100%',
+  },
+  inputContainerWrapper: {
+    boxSizing: 'border-box',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 'var(--typography-layout-indent-m-all)',
+  },
+  input: {
+    width: '100%',
+  },
+  controlPlane: {
+    display: 'flex',
+    height: 'calc(var(--spacing-12) * 3 + var(--spacing-1-5))',
+    flexDirection: 'column',
+    gap: 'var(--spacing-1)',
+  },
+  inputSlot: {
+    display: 'grid',
+    flex: '1 1 auto',
+    gridTemplateRows: 'minmax(0, 1fr)',
+    minHeight: 0,
+  },
+  field: {
+    height: '100%',
+    '--textarea-adapter-height': '100%',
+    '--textarea-adapter-min-height': '0',
+    '--textarea-adapter-max-height': 'none',
+    '--textarea-adapter-resize': 'none',
+  },
+  textActions: {
+    display: 'flex',
+    gap: 'var(--typography-layout-indent-s-all)',
+  },
+  inputTextActions: {
+    zIndex: 2,
+  },
+  resultContainer: {
+    display: 'flex',
+    flexDirection: 'column',
+    backgroundColor: 'var(--textarea-view-default-fill-color-disabled)',
+    color: 'var(--textarea-view-default-typo-color-base)',
+    borderRadius: 'var(--textarea-border-radius)',
+    maxHeight: '12.5rem',
+    fontFamily: 'var(--textarea-font-family)',
+  },
+  resultText: {
+    minHeight: '8.125rem',
+    overflow: 'auto',
+    padding: 'var(--textarea-size-m-control-indent)',
+    whiteSpace: 'pre-line',
+    boxSizing: 'border-box',
+    wordBreak: 'break-word',
+  },
+  languageSuggestion: {
+    display: 'flex',
+    gap: '0.3em',
+  },
 });
 
 export type TranslationState = {
-	originalText: string;
-	translatedText: string | null;
+  originalText: string;
+  translatedText: string | null;
 };
 
 export interface TextTranslatorProps
-	extends
-		MutableValue<'userInput', string>,
-		MutableValue<'from', string>,
-		MutableValue<'to', string>,
-		// It must be null only when translate result never be set or after reset input
-		MutableValue<'lastTranslation', TranslationState | null> {
-	/**
-	 * Features of translator module
-	 */
-	translatorFeatures: TabData['translatorFeatures'];
+  extends
+    MutableValue<'userInput', string>,
+    MutableValue<'from', string>,
+    MutableValue<'to', string>,
+    // It must be null only when translate result never be set or after reset input
+    MutableValue<'lastTranslation', TranslationState | null> {
+  /**
+   * Features of translator module
+   */
+  translatorFeatures: TabData['translatorFeatures'];
 
-	/**
-	 * Callback which translate text
-	 */
-	translateHook: (text: string, from: string, to: string) => Promise<string>;
+  /**
+   * Callback which translate text
+   */
+  translateHook: (text: string, from: string, to: string) => Promise<string>;
 
-	/**
-	 * Ref to input
-	 */
-	inputControl?: Ref<HTMLTextAreaElement>;
+  /**
+   * Ref to input
+   */
+  inputControl?: Ref<HTMLTextAreaElement>;
 
-	/**
-	 * Delay for handle input
-	 */
-	inputDelay?: number;
+  /**
+   * Delay for handle input
+   */
+  inputDelay?: number;
 
-	/**
-	 * Init phase say to component - await full loading
-	 *
-	 * Useful to prevent translate
-	 */
-	initPhase?: boolean;
+  /**
+   * Init phase say to component - await full loading
+   *
+   * Useful to prevent translate
+   */
+  initPhase?: boolean;
 
-	/**
-	 * Enable spellcheck
-	 */
-	spellCheck?: boolean;
+  /**
+   * Enable spellcheck
+   */
+  spellCheck?: boolean;
 
-	enableLanguageSuggestions?: boolean;
-	enableLanguageSuggestionsAlways?: boolean;
+  enableLanguageSuggestions?: boolean;
+  enableLanguageSuggestionsAlways?: boolean;
 
-	isMobile?: boolean;
+  isMobile?: boolean;
 }
 
 /**
  * Component for translate any text
  */
 export const TextTranslator: FC<TextTranslatorProps> = ({
-	from,
-	to,
-	setFrom,
-	setTo,
-	lastTranslation,
-	setLastTranslation,
-	translatorFeatures,
-	translateHook,
-	spellCheck,
-	inputControl: inputControlExternal,
-	inputDelay = 600,
-	enableLanguageSuggestions = true,
-	enableLanguageSuggestionsAlways = true,
-	isMobile,
+  from,
+  to,
+  setFrom,
+  setTo,
+  lastTranslation,
+  setLastTranslation,
+  translatorFeatures,
+  translateHook,
+  spellCheck,
+  inputControl: inputControlExternal,
+  inputDelay = 600,
+  enableLanguageSuggestions = true,
+  enableLanguageSuggestionsAlways = true,
+  isMobile,
 }) => {
-	const [userInput, setUserInput] = useState(lastTranslation?.originalText ?? '');
-	const [translation, setTranslation] = useState<{
-		text: string;
-		original: string;
-	} | null>(
-		lastTranslation !== null && lastTranslation.translatedText !== null
-			? {
-					original: lastTranslation.originalText,
-					text: lastTranslation.translatedText,
-				}
-			: null,
-	);
+  const [userInput, setUserInput] = useState(lastTranslation?.originalText ?? '');
+  const [translation, setTranslation] = useState<{
+    text: string;
+    original: string;
+  } | null>(
+    lastTranslation !== null && lastTranslation.translatedText !== null
+      ? {
+          original: lastTranslation.originalText,
+          text: lastTranslation.translatedText,
+        }
+      : null,
+  );
 
-	const [inTranslateProcess, setInTranslateProcess] = useState(false);
-	const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [inTranslateProcess, setInTranslateProcess] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-	const isFirstRenderRef = useIsFirstRenderRef();
+  const isFirstRenderRef = useIsFirstRenderRef();
 
-	const isTranslatedTextRelative =
-		translation !== null && translation.original === userInput;
+  const isTranslatedTextRelative =
+    translation !== null && translation.original === userInput;
 
-	const [activeTTS, setActiveTTS] = useState<symbol | null>(null);
-	const TTSSignal = {
-		active: activeTTS,
-		setActive: setActiveTTS,
-	};
-	const ttsOriginal = useTTS(from, userInput, TTSSignal);
-	const ttsTranslate = useTTS(to, translation ? translation.text : null, TTSSignal);
-	const ttsModule = useTTSLanguages();
+  const [activeTTS, setActiveTTS] = useState<symbol | null>(null);
+  const TTSSignal = {
+    active: activeTTS,
+    setActive: setActiveTTS,
+  };
+  const ttsOriginal = useTTS(from, userInput, TTSSignal);
+  const ttsTranslate = useTTS(to, translation ? translation.text : null, TTSSignal);
+  const ttsModule = useTTSLanguages();
 
-	//
-	// Lang suggestions
-	//
+  //
+  // Lang suggestions
+  //
 
-	const [languageSuggestion, setLanguageSuggestion] = useState<null | string>(null);
+  const [languageSuggestion, setLanguageSuggestion] = useState<null | string>(null);
 
-	const isSuggestLanguage =
-		enableLanguageSuggestions && (enableLanguageSuggestionsAlways || from === 'auto');
+  const isSuggestLanguage =
+    enableLanguageSuggestions && (enableLanguageSuggestionsAlways || from === 'auto');
 
-	// Hide suggestion while change language
-	useEffect(() => {
-		setLanguageSuggestion(null);
-	}, [from]);
+  // Hide suggestion while change language
+  useEffect(() => {
+    setLanguageSuggestion(null);
+  }, [from]);
 
-	// Null `languageSuggestion` while disable suggestions
-	useEffect(() => {
-		if (!isSuggestLanguage) {
-			setLanguageSuggestion(null);
-		}
-	}, [isSuggestLanguage]);
+  // Null `languageSuggestion` while disable suggestions
+  useEffect(() => {
+    if (!isSuggestLanguage) {
+      setLanguageSuggestion(null);
+    }
+  }, [isSuggestLanguage]);
 
-	const applySuggestedLanguage: React.MouseEventHandler = useCallback(
-		(evt) => {
-			evt.preventDefault();
+  const applySuggestedLanguage: React.MouseEventHandler = useCallback(
+    (evt) => {
+      evt.preventDefault();
 
-			if (languageSuggestion !== null) {
-				setFrom(languageSuggestion);
-				setLanguageSuggestion(null);
-			}
-		},
-		[languageSuggestion, setFrom],
-	);
+      if (languageSuggestion !== null) {
+        setFrom(languageSuggestion);
+        setLanguageSuggestion(null);
+      }
+    },
+    [languageSuggestion, setFrom],
+  );
 
-	const ApplySuggestComponent = useMemo(
-		() =>
-			({ children }: PropsWithChildren<{}>) => {
-				return (
-					<a
-						href="src/components/layouts/TextTranslator#"
-						onClick={applySuggestedLanguage}
-					>
-						{children}
-					</a>
-				);
-			},
-		[applySuggestedLanguage],
-	);
+  const ApplySuggestComponent = useMemo(
+    () =>
+      ({ children }: PropsWithChildren<{}>) => {
+        return (
+          <a
+            href="src/components/layouts/TextTranslator#"
+            onClick={applySuggestedLanguage}
+          >
+            {children}
+          </a>
+        );
+      },
+    [applySuggestedLanguage],
+  );
 
-	//
-	// Translation
-	//
+  //
+  // Translation
+  //
 
-	// Translate manager
-	const textStateContext = useRef(Symbol('TextContext'));
-	const translate = useCallback(() => {
-		const localContext = textStateContext.current;
+  // Translate manager
+  const textStateContext = useRef(Symbol('TextContext'));
+  const translate = useCallback(() => {
+    const localContext = textStateContext.current;
 
-		translateHook(userInput, from, to)
-			.then((translatedText) => {
-				if (localContext !== textStateContext.current) {
-					return;
-				}
+    translateHook(userInput, from, to)
+      .then((translatedText) => {
+        if (localContext !== textStateContext.current) {
+          return;
+        }
 
-				if (typeof translatedText !== 'string') {
-					throw new Error(
-						`[${getMessage('common_error')}: unexpected response]`,
-					);
-				}
+        if (typeof translatedText !== 'string') {
+          throw new Error(`[${getMessage('common_error')}: unexpected response]`);
+        }
 
-				setTranslation({
-					text: translatedText,
-					original: userInput,
-				});
+        setTranslation({
+          text: translatedText,
+          original: userInput,
+        });
 
-				addTranslationHistoryEntry({
-					origin: TRANSLATION_ORIGIN.USER_INPUT,
-					translation: {
-						from,
-						to,
-						originalText: userInput,
-						translatedText: translatedText,
-					},
-				});
+        addTranslationHistoryEntry({
+          origin: TRANSLATION_ORIGIN.USER_INPUT,
+          translation: {
+            from,
+            to,
+            originalText: userInput,
+            translatedText: translatedText,
+          },
+        });
 
-				trackClientEvent(TELEMETRY_EVENT_NAME.TEXT_TRANSLATION_COMPLETED, {
-					scope: 'user input',
-					from,
-					to,
-					sourceTextLength: userInput.length,
-					translationLength: translatedText.length,
-				});
-			})
-			.catch((reason) => {
-				if (localContext !== textStateContext.current) return;
+        trackClientEvent(TELEMETRY_EVENT_NAME.TEXT_TRANSLATION_COMPLETED, {
+          scope: 'user input',
+          from,
+          to,
+          sourceTextLength: userInput.length,
+          translationLength: translatedText.length,
+        });
+      })
+      .catch((reason) => {
+        if (localContext !== textStateContext.current) return;
 
-				if (reason instanceof Error) {
-					setErrorMessage(`${getMessage('common_error')}: ${reason.message}`);
-					return;
-				}
+        if (reason instanceof Error) {
+          setErrorMessage(`${getMessage('common_error')}: ${reason.message}`);
+          return;
+        }
 
-				setErrorMessage(getMessage('message_unknownError'));
-			})
-			.finally(() => {
-				if (localContext !== textStateContext.current) return;
+        setErrorMessage(getMessage('message_unknownError'));
+      })
+      .finally(() => {
+        if (localContext !== textStateContext.current) return;
 
-				setInTranslateProcess(false);
-			});
-	}, [translateHook, userInput, from, to]);
+        setInTranslateProcess(false);
+      });
+  }, [translateHook, userInput, from, to]);
 
-	const resetTemporaryTextState = useCallback(() => {
-		// Stop translation
-		textStateContext.current = Symbol('TextContext');
-		setInTranslateProcess(false);
+  const resetTemporaryTextState = useCallback(() => {
+    // Stop translation
+    textStateContext.current = Symbol('TextContext');
+    setInTranslateProcess(false);
 
-		// Clear text states
-		setErrorMessage(null);
-		setLanguageSuggestion(null);
-	}, []);
+    // Clear text states
+    setErrorMessage(null);
+    setLanguageSuggestion(null);
+  }, []);
 
-	// Clear text and stop translation
-	const clearState = useCallback(() => {
-		resetTemporaryTextState();
+  // Clear text and stop translation
+  const clearState = useCallback(() => {
+    resetTemporaryTextState();
 
-		// Clear text
-		setUserInput('');
-		setTranslation(null);
-	}, [resetTemporaryTextState]);
+    // Clear text
+    setUserInput('');
+    setTranslation(null);
+  }, [resetTemporaryTextState]);
 
-	const isPreventClearTranslation = useRef(false);
-	const swapLanguages = useCallback(
-		({ from, to }: { from: string; to: string }) => {
-			isPreventClearTranslation.current = true;
+  const isPreventClearTranslation = useRef(false);
+  const swapLanguages = useCallback(
+    ({ from, to }: { from: string; to: string }) => {
+      isPreventClearTranslation.current = true;
 
-			ReactDOM.unstable_batchedUpdates(() => {
-				clearState();
+      ReactDOM.unstable_batchedUpdates(() => {
+        clearState();
 
-				// Set translate as input
-				if (translation !== null) {
-					setUserInput(translation.text);
-					setTranslation({
-						text: userInput,
-						original: translation.text,
-					});
-				}
+        // Set translate as input
+        if (translation !== null) {
+          setUserInput(translation.text);
+          setTranslation({
+            text: userInput,
+            original: translation.text,
+          });
+        }
 
-				setFrom(from);
-				setTo(to);
-			});
-		},
-		[clearState, setFrom, setTo, translation, userInput],
-	);
+        setFrom(from);
+        setTo(to);
+      });
+    },
+    [clearState, setFrom, setTo, translation, userInput],
+  );
 
-	const showLanguageSuggestion = useCallback(() => {
-		if (!isSuggestLanguage) return;
+  const showLanguageSuggestion = useCallback(() => {
+    if (!isSuggestLanguage) return;
 
-		const localContext = textStateContext.current;
-		suggestLanguage(userInput).then((lang) => {
-			if (localContext !== textStateContext.current || !isSuggestLanguage) return;
-			setLanguageSuggestion(lang);
-		});
-	}, [isSuggestLanguage, userInput]);
+    const localContext = textStateContext.current;
+    suggestLanguage(userInput).then((lang) => {
+      if (localContext !== textStateContext.current || !isSuggestLanguage) return;
+      setLanguageSuggestion(lang);
+    });
+  }, [isSuggestLanguage, userInput]);
 
-	const rememberTranslationState = useImmutableCallback(() => {
-		setLastTranslation(
-			userInput.length === 0
-				? null
-				: {
-						originalText: userInput,
-						translatedText: isTranslatedTextRelative
-							? translation.text
-							: null,
-					},
-		);
-	}, [isTranslatedTextRelative, setLastTranslation, translation, userInput]);
+  const rememberTranslationState = useImmutableCallback(() => {
+    setLastTranslation(
+      userInput.length === 0
+        ? null
+        : {
+            originalText: userInput,
+            translatedText: isTranslatedTextRelative ? translation.text : null,
+          },
+    );
+  }, [isTranslatedTextRelative, setLastTranslation, translation, userInput]);
 
-	const handleText = useImmutableCallback(() => {
-		// Translate
-		if (from !== to && userInput.length > 0) {
-			setInTranslateProcess(true);
-			setErrorMessage(null);
-			translate();
-		}
+  const handleText = useImmutableCallback(() => {
+    // Translate
+    if (from !== to && userInput.length > 0) {
+      setInTranslateProcess(true);
+      setErrorMessage(null);
+      translate();
+    }
 
-		showLanguageSuggestion();
-	}, [from, to, userInput, showLanguageSuggestion, translate]);
+    showLanguageSuggestion();
+  }, [from, to, userInput, showLanguageSuggestion, translate]);
 
-	// TODO: think about move logic to effect
-	// Translate by changes
-	const [setTranslateTask] = useDelayCallback();
-	const onTextChange = useCallback(
-		(text: string) => {
-			// Clear state
-			if (text.length === 0) {
-				clearState();
-				return;
-			}
+  // TODO: think about move logic to effect
+  // Translate by changes
+  const [setTranslateTask] = useDelayCallback();
+  const onTextChange = useCallback(
+    (text: string) => {
+      // Clear state
+      if (text.length === 0) {
+        clearState();
+        return;
+      }
 
-			resetTemporaryTextState();
-			setUserInput(text);
-			setTranslateTask(handleText, inputDelay);
-		},
-		[clearState, handleText, inputDelay, resetTemporaryTextState, setTranslateTask],
-	);
+      resetTemporaryTextState();
+      setUserInput(text);
+      setTranslateTask(handleText, inputDelay);
+    },
+    [clearState, handleText, inputDelay, resetTemporaryTextState, setTranslateTask],
+  );
 
-	// Translate text from last state if it not have translation
-	const isRequiredInitTranslate = useRef(userInput.length > 0 && translation === null);
-	useEffect(() => {
-		if (!isRequiredInitTranslate.current) return;
+  // Translate text from last state if it not have translation
+  const isRequiredInitTranslate = useRef(userInput.length > 0 && translation === null);
+  useEffect(() => {
+    if (!isRequiredInitTranslate.current) return;
 
-		handleText();
-	}, [handleText]);
+    handleText();
+  }, [handleText]);
 
-	// Handle languages changes
-	useEffect(() => {
-		if (isFirstRenderRef.current) return;
+  // Handle languages changes
+  useEffect(() => {
+    if (isFirstRenderRef.current) return;
 
-		resetTemporaryTextState();
+    resetTemporaryTextState();
 
-		// Special case for swap langs
-		if (isPreventClearTranslation.current) {
-			isPreventClearTranslation.current = false;
-		} else {
-			setTranslation(null);
-		}
+    // Special case for swap langs
+    if (isPreventClearTranslation.current) {
+      isPreventClearTranslation.current = false;
+    } else {
+      setTranslation(null);
+    }
 
-		handleText();
-	}, [from, to, handleText, resetTemporaryTextState, isFirstRenderRef]);
+    handleText();
+  }, [from, to, handleText, resetTemporaryTextState, isFirstRenderRef]);
 
-	// Backup state by changes
-	useEffect(() => {
-		rememberTranslationState();
-	}, [rememberTranslationState, userInput, translation]);
+  // Backup state by changes
+  useEffect(() => {
+    rememberTranslationState();
+  }, [rememberTranslationState, userInput, translation]);
 
-	const dictionaryData: ITranslation | null = useMemo(() => {
-		if (errorMessage !== null || translation === null || !isTranslatedTextRelative)
-			return null;
+  const dictionaryData: ITranslation | null = useMemo(() => {
+    if (errorMessage !== null || translation === null || !isTranslatedTextRelative)
+      return null;
 
-		return {
-			from,
-			to,
-			originalText: userInput,
-			translatedText: translation.text,
-		};
-	}, [errorMessage, from, isTranslatedTextRelative, to, translation, userInput]);
+    return {
+      from,
+      to,
+      originalText: userInput,
+      translatedText: translation.text,
+    };
+  }, [errorMessage, from, isTranslatedTextRelative, to, translation, userInput]);
 
-	const [isFocusOnInput, setIsFocusOnInput] = useState(false);
+  const [isFocusOnInput, setIsFocusOnInput] = useState(false);
 
-	// TODO: hide suggestions only for languages which is not supported by translator
-	const langSuggestion =
-		languageSuggestion && languageSuggestion !== from
-			? getLanguageNameByCode(languageSuggestion, false)
-			: null;
+  // TODO: hide suggestions only for languages which is not supported by translator
+  const langSuggestion =
+    languageSuggestion && languageSuggestion !== from
+      ? getLanguageNameByCode(languageSuggestion, false)
+      : null;
 
-	const resultText = inTranslateProcess
-		? '...'
-		: errorMessage !== null
-			? `[${errorMessage}]`
-			: translation !== null
-				? translation.text
-				: null;
+  const resultText = inTranslateProcess
+    ? '...'
+    : errorMessage !== null
+      ? `[${errorMessage}]`
+      : translation !== null
+        ? translation.text
+        : null;
 
-	return (
-		<div {...stylex.props(styles.root)}>
-			<div {...stylex.props(styles.langPanel)}>
-				<LanguagePanel
-					auto={translatorFeatures.isSupportAutodetect}
-					languages={translatorFeatures.supportedLanguages}
-					from={from}
-					to={to}
-					setFrom={(from) => from !== undefined && setFrom(from)}
-					setTo={(to) => to !== undefined && setTo(to)}
-					swapHandler={swapLanguages}
-					preventFocusOnPress={isFocusOnInput}
-					mobile={isMobile}
-				/>
-			</div>
-			<div {...stylex.props(styles.inputContainer)}>
-				<div {...stylex.props(styles.inputContainerWrapper)}>
-					{langSuggestion && (
-						<div {...stylex.props(styles.languageSuggestion)}>
-							<IconWand size="1em" />
-							<span>
-								{getLocalizedNode({
-									messageName: 'textTranslator_suggestLanguage',
-									substitutions: [langSuggestion.toLowerCase()],
-									slots: {
-										languageSuggest: ApplySuggestComponent,
-									},
-								})}
-							</span>
-						</div>
-					)}
+  return (
+    <div {...stylex.props(styles.root)}>
+      <div {...stylex.props(styles.langPanel)}>
+        <LanguagePanel
+          auto={translatorFeatures.isSupportAutodetect}
+          languages={translatorFeatures.supportedLanguages}
+          from={from}
+          to={to}
+          setFrom={(from) => from !== undefined && setFrom(from)}
+          setTo={(to) => to !== undefined && setTo(to)}
+          swapHandler={swapLanguages}
+          preventFocusOnPress={isFocusOnInput}
+          mobile={isMobile}
+        />
+      </div>
+      <div {...stylex.props(styles.inputContainer)}>
+        <div {...stylex.props(styles.inputContainerWrapper)}>
+          {langSuggestion && (
+            <div {...stylex.props(styles.languageSuggestion)}>
+              <IconWand size="1em" />
+              <span>
+                {getLocalizedNode({
+                  messageName: 'textTranslator_suggestLanguage',
+                  substitutions: [langSuggestion.toLowerCase()],
+                  slots: {
+                    languageSuggest: ApplySuggestComponent,
+                  },
+                })}
+              </span>
+            </div>
+          )}
 
-					<div>
-						<Textarea
-							placeholder={getMessage(
-								'textTranslator_translateInputPlaceholder',
-							)}
-							xstyle={styles.input}
-							controlProps={{
-								innerRef: inputControlExternal,
-								controlPlaneXstyle: styles.controlPlane,
-								inputXstyle: styles.inputSlot,
-								fieldXstyle: styles.field,
-							}}
-							value={userInput}
-							onInputText={onTextChange}
-							hasClear
-							onClearClick={clearState}
-							spellCheck={spellCheck}
-							onFocus={() => {
-								setIsFocusOnInput(true);
-							}}
-							onBlur={() => {
-								setIsFocusOnInput(false);
-							}}
-							addonAfterControl={
-								<div
-									{...stylex.props(
-										styles.textActions,
-										styles.inputTextActions,
-									)}
-								>
-									<Button
-										disabled={
-											userInput.length === 0 ||
-											!ttsModule.isSupportedLanguage(from)
-										}
-										onPress={ttsOriginal.toggle}
-										view="clear"
-										size="s"
-									>
-										<IconVolume2 />
-									</Button>
-									<DictionaryButton translation={dictionaryData} />
-								</div>
-							}
-						/>
-					</div>
-					<div {...stylex.props(styles.resultContainer)}>
-						<div {...stylex.props(styles.resultText)}>
-							{resultText !== null
-								? resultText
-								: getMessage('textTranslator_translatePlaceholder')}
-						</div>
-						<div {...stylex.props(styles.textActions)}>
-							<Button
-								disabled={
-									inTranslateProcess ||
-									translation === null ||
-									!ttsModule.isSupportedLanguage(to)
-								}
-								onPress={ttsTranslate.toggle}
-								view="clear"
-								size="s"
-							>
-								<IconVolume2 />
-							</Button>
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
-	);
+          <div>
+            <Textarea
+              placeholder={getMessage('textTranslator_translateInputPlaceholder')}
+              xstyle={styles.input}
+              controlProps={{
+                innerRef: inputControlExternal,
+                controlPlaneXstyle: styles.controlPlane,
+                inputXstyle: styles.inputSlot,
+                fieldXstyle: styles.field,
+              }}
+              value={userInput}
+              onInputText={onTextChange}
+              hasClear
+              onClearClick={clearState}
+              spellCheck={spellCheck}
+              onFocus={() => {
+                setIsFocusOnInput(true);
+              }}
+              onBlur={() => {
+                setIsFocusOnInput(false);
+              }}
+              addonAfterControl={
+                <div {...stylex.props(styles.textActions, styles.inputTextActions)}>
+                  <Button
+                    disabled={
+                      userInput.length === 0 || !ttsModule.isSupportedLanguage(from)
+                    }
+                    onPress={ttsOriginal.toggle}
+                    view="clear"
+                    size="s"
+                  >
+                    <IconVolume2 />
+                  </Button>
+                  <DictionaryButton translation={dictionaryData} />
+                </div>
+              }
+            />
+          </div>
+          <div {...stylex.props(styles.resultContainer)}>
+            <div {...stylex.props(styles.resultText)}>
+              {resultText !== null
+                ? resultText
+                : getMessage('textTranslator_translatePlaceholder')}
+            </div>
+            <div {...stylex.props(styles.textActions)}>
+              <Button
+                disabled={
+                  inTranslateProcess ||
+                  translation === null ||
+                  !ttsModule.isSupportedLanguage(to)
+                }
+                onPress={ttsTranslate.toggle}
+                view="clear"
+                size="s"
+              >
+                <IconVolume2 />
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 };

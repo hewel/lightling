@@ -9,53 +9,53 @@ import { PageTranslatorManager } from './PageTranslatorManager';
 import { pageTranslatorStateUpdated } from './requests/pageTranslatorStateUpdated';
 
 export type PageTranslatorState = {
-	isTranslated: boolean;
-	counters: PageTranslatorStats;
-	translateDirection: {
-		from: string;
-		to: string;
-	} | null;
+  isTranslated: boolean;
+  counters: PageTranslatorStats;
+  translateDirection: {
+    from: string;
+    to: string;
+  } | null;
 };
 
 export class PageTranslatorController {
-	private readonly manager: PageTranslatorManager;
-	private readonly updateTranslationState: Event<PageTranslationOptions | null>;
-	constructor(
-		manager: PageTranslatorManager,
-		updateTranslationState: Event<PageTranslationOptions | null>,
-	) {
-		this.manager = manager;
-		this.updateTranslationState = updateTranslationState;
-	}
+  private readonly manager: PageTranslatorManager;
+  private readonly updateTranslationState: Event<PageTranslationOptions | null>;
+  constructor(
+    manager: PageTranslatorManager,
+    updateTranslationState: Event<PageTranslationOptions | null>,
+  ) {
+    this.manager = manager;
+    this.updateTranslationState = updateTranslationState;
+  }
 
-	public translate(options: PageTranslationOptions) {
-		this.updateTranslationState(options);
-		this.notifyState();
-		trackClientEvent(TELEMETRY_EVENT_NAME.PAGE_TRANSLATION_CHANGED, {
-			action: 'run',
-			from: options.from,
-			to: options.to,
-		});
-	}
+  public translate(options: PageTranslationOptions) {
+    this.updateTranslationState(options);
+    this.notifyState();
+    trackClientEvent(TELEMETRY_EVENT_NAME.PAGE_TRANSLATION_CHANGED, {
+      action: 'run',
+      from: options.from,
+      to: options.to,
+    });
+  }
 
-	public stopTranslate() {
-		this.updateTranslationState(null);
-		this.notifyState();
-		trackClientEvent(TELEMETRY_EVENT_NAME.PAGE_TRANSLATION_CHANGED, {
-			action: 'stop',
-		});
-	}
+  public stopTranslate() {
+    this.updateTranslationState(null);
+    this.notifyState();
+    trackClientEvent(TELEMETRY_EVENT_NAME.PAGE_TRANSLATION_CHANGED, {
+      action: 'stop',
+    });
+  }
 
-	public getStatus(): PageTranslatorState {
-		const domTranslator = this.manager.getDomTranslator();
-		return {
-			isTranslated: domTranslator.isRun(),
-			counters: domTranslator.getStatus(),
-			translateDirection: domTranslator.getTranslateDirection(),
-		};
-	}
+  public getStatus(): PageTranslatorState {
+    const domTranslator = this.manager.getDomTranslator();
+    return {
+      isTranslated: domTranslator.isRun(),
+      counters: domTranslator.getStatus(),
+      translateDirection: domTranslator.getTranslateDirection(),
+    };
+  }
 
-	private notifyState() {
-		pageTranslatorStateUpdated(this.getStatus());
-	}
+  private notifyState() {
+    pageTranslatorStateUpdated(this.getStatus());
+  }
 }

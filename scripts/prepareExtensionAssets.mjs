@@ -15,126 +15,124 @@ const publicStaticDirectory = resolve(projectDirectory, 'public/static');
 const manifestStaticDirectory = resolve(projectDirectory, 'src/static');
 const thirdpartySourceDirectory = resolve(projectDirectory, 'thirdparty/bergamot/build');
 const thirdpartyStagingDirectory = resolve(
-	projectDirectory,
-	'public/thirdparty/bergamot',
+  projectDirectory,
+  'public/thirdparty/bergamot',
 );
 const requiredThirdpartyAssets = [
-	'bergamot-translator-worker.js',
-	'bergamot-translator-worker.wasm',
-	'translator.worker.js',
+  'bergamot-translator-worker.js',
+  'bergamot-translator-worker.wasm',
+  'translator.worker.js',
 ];
 
 async function readJson(path) {
-	return JSON.parse(await readFile(path, 'utf8'));
+  return JSON.parse(await readFile(path, 'utf8'));
 }
 
 async function getThirdpartyAssets() {
-	let entries;
+  let entries;
 
-	try {
-		entries = await readdir(thirdpartySourceDirectory, { withFileTypes: true });
-	} catch (error) {
-		if (error.code === 'ENOENT' || error.code === 'ENOTDIR') {
-			return [];
-		}
+  try {
+    entries = await readdir(thirdpartySourceDirectory, { withFileTypes: true });
+  } catch (error) {
+    if (error.code === 'ENOENT' || error.code === 'ENOTDIR') {
+      return [];
+    }
 
-		throw error;
-	}
+    throw error;
+  }
 
-	return entries
-		.filter(
-			(entry) => entry.isFile() && ['.js', '.wasm'].includes(extname(entry.name)),
-		)
-		.map((entry) => entry.name)
-		.sort();
+  return entries
+    .filter((entry) => entry.isFile() && ['.js', '.wasm'].includes(extname(entry.name)))
+    .map((entry) => entry.name)
+    .sort();
 }
 
 export async function prepareExtensionAssets({ requireThirdparty = false } = {}) {
-	await prepareAstryxTheme();
+  await prepareAstryxTheme();
 
-	const [packageJson, manifest] = await Promise.all([
-		readJson(packagePath),
-		readJson(manifestPath),
-	]);
+  const [packageJson, manifest] = await Promise.all([
+    readJson(packagePath),
+    readJson(manifestPath),
+  ]);
 
-	if (packageJson.version !== manifest.version) {
-		throw new Error(
-			`Version mismatch: package.json is ${JSON.stringify(packageJson.version)}, ` +
-				`but src/manifest.json is ${JSON.stringify(manifest.version)}`,
-		);
-	}
+  if (packageJson.version !== manifest.version) {
+    throw new Error(
+      `Version mismatch: package.json is ${JSON.stringify(packageJson.version)}, ` +
+        `but src/manifest.json is ${JSON.stringify(manifest.version)}`,
+    );
+  }
 
-	await Promise.all([
-		mkdir(publicStaticDirectory, { recursive: true }),
-		mkdir(manifestStaticDirectory, { recursive: true }),
-	]);
-	await Promise.all([
-		copyFile(logoSourcePath, resolve(publicStaticDirectory, 'logo.svg')),
-		sharp(logoSourcePath)
-			.resize(128, 128)
-			.png()
-			.toFile(resolve(manifestStaticDirectory, 'logo.png')),
-	]);
+  await Promise.all([
+    mkdir(publicStaticDirectory, { recursive: true }),
+    mkdir(manifestStaticDirectory, { recursive: true }),
+  ]);
+  await Promise.all([
+    copyFile(logoSourcePath, resolve(publicStaticDirectory, 'logo.svg')),
+    sharp(logoSourcePath)
+      .resize(128, 128)
+      .png()
+      .toFile(resolve(manifestStaticDirectory, 'logo.png')),
+  ]);
 
-	const thirdpartyAssets = await getThirdpartyAssets();
-	const missingThirdpartyAssets = requiredThirdpartyAssets.filter(
-		(filename) => !thirdpartyAssets.includes(filename),
-	);
+  const thirdpartyAssets = await getThirdpartyAssets();
+  const missingThirdpartyAssets = requiredThirdpartyAssets.filter(
+    (filename) => !thirdpartyAssets.includes(filename),
+  );
 
-	// This is the generated staging directory. Do not widen this removal to one
-	// of its parents: public/ may contain source-controlled extension assets.
-	await rm(thirdpartyStagingDirectory, { recursive: true, force: true });
+  // This is the generated staging directory. Do not widen this removal to one
+  // of its parents: public/ may contain source-controlled extension assets.
+  await rm(thirdpartyStagingDirectory, { recursive: true, force: true });
 
-	if (missingThirdpartyAssets.length > 0) {
-		const message =
-			`Bergamot build artifacts are missing from ${thirdpartySourceDirectory}: ` +
-			`${missingThirdpartyAssets.join(', ')}. ` +
-			'Build thirdparty/bergamot before creating a release.';
+  if (missingThirdpartyAssets.length > 0) {
+    const message =
+      `Bergamot build artifacts are missing from ${thirdpartySourceDirectory}: ` +
+      `${missingThirdpartyAssets.join(', ')}. ` +
+      'Build thirdparty/bergamot before creating a release.';
 
-		if (requireThirdparty) {
-			throw new Error(message);
-		}
+    if (requireThirdparty) {
+      throw new Error(message);
+    }
 
-		console.warn(message);
-	}
+    console.warn(message);
+  }
 
-	if (thirdpartyAssets.length === 0) {
-		return;
-	}
+  if (thirdpartyAssets.length === 0) {
+    return;
+  }
 
-	await mkdir(thirdpartyStagingDirectory, { recursive: true });
-	await Promise.all(
-		thirdpartyAssets.map((filename) =>
-			copyFile(
-				resolve(thirdpartySourceDirectory, filename),
-				resolve(thirdpartyStagingDirectory, filename),
-			),
-		),
-	);
+  await mkdir(thirdpartyStagingDirectory, { recursive: true });
+  await Promise.all(
+    thirdpartyAssets.map((filename) =>
+      copyFile(
+        resolve(thirdpartySourceDirectory, filename),
+        resolve(thirdpartyStagingDirectory, filename),
+      ),
+    ),
+  );
 }
 
 export default prepareExtensionAssets;
 
 const isMainModule =
-	process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+  process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 
 if (isMainModule) {
-	const argumentsList = process.argv.slice(2);
-	const unknownArguments = argumentsList.filter(
-		(argument) => argument !== '--require-thirdparty',
-	);
+  const argumentsList = process.argv.slice(2);
+  const unknownArguments = argumentsList.filter(
+    (argument) => argument !== '--require-thirdparty',
+  );
 
-	if (unknownArguments.length > 0) {
-		console.error(
-			`Unknown argument${unknownArguments.length === 1 ? '' : 's'}: ${unknownArguments.join(', ')}`,
-		);
-		process.exitCode = 1;
-	} else {
-		prepareExtensionAssets({
-			requireThirdparty: argumentsList.includes('--require-thirdparty'),
-		}).catch((error) => {
-			console.error(error);
-			process.exitCode = 1;
-		});
-	}
+  if (unknownArguments.length > 0) {
+    console.error(
+      `Unknown argument${unknownArguments.length === 1 ? '' : 's'}: ${unknownArguments.join(', ')}`,
+    );
+    process.exitCode = 1;
+  } else {
+    prepareExtensionAssets({
+      requireThirdparty: argumentsList.includes('--require-thirdparty'),
+    }).catch((error) => {
+      console.error(error);
+      process.exitCode = 1;
+    });
+  }
 }

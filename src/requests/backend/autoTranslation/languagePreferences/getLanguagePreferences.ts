@@ -3,8 +3,8 @@ import { buildBackendRequest } from '@/requests/utils/requestBuilder';
 import { getLanguage } from './utils';
 
 export const [getLanguagePreferencesFactory, getLanguagePreferencesReq] =
-	buildBackendRequest('getLanguagePreferences', {
-		factoryHandler: () => getLanguage,
-	});
+  buildBackendRequest('getLanguagePreferences', {
+    factoryHandler: () => getLanguage,
+  });
 
 export const getLanguagePreferences = (lang: string) => getLanguagePreferencesReq(lang);

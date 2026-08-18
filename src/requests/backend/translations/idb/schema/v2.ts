@@ -7,73 +7,73 @@ import { decodeStruct, NonNaNNumber } from '@/lib/types';
 import { ITranslationEntry } from '../../data';
 
 export type IDBTranslationsSchemaV2 = DBSchema & {
-	translations: {
-		key: number;
-		value: ITranslationEntry;
-		indexes: {
-			originalText: string;
-		};
-	};
+  translations: {
+    key: number;
+    value: ITranslationEntry;
+    indexes: {
+      originalText: string;
+    };
+  };
 };
 
 const migration: IDBConstructor<IDBTranslationsSchemaV2> = {
-	version: 2,
-	apply: async (db, { transaction: tx, migrateFrom }) => {
-		const isMigrationNeeded = migrateFrom === 1;
+  version: 2,
+  apply: async (db, { transaction: tx, migrateFrom }) => {
+    const isMigrationNeeded = migrateFrom === 1;
 
-		// Prepare data
-		const translations: IDBTranslationsSchemaV2['translations']['value'][] = [];
-		if (isMigrationNeeded) {
-			const translationType = Schema.Struct({
-				from: Schema.String,
-				to: Schema.String,
-				text: Schema.String,
-				translate: Schema.String,
-				date: NonNaNNumber,
-			});
+    // Prepare data
+    const translations: IDBTranslationsSchemaV2['translations']['value'][] = [];
+    if (isMigrationNeeded) {
+      const translationType = Schema.Struct({
+        from: Schema.String,
+        to: Schema.String,
+        text: Schema.String,
+        translate: Schema.String,
+        date: NonNaNNumber,
+      });
 
-			const entries = await tx.objectStore('translations' as any).getAll();
-			for (const translation of entries) {
-				// Skip invalid data
-				const translationCodecResult = decodeStruct(translationType, translation);
-				if (translationCodecResult.errors !== null) {
-					continue;
-				}
+      const entries = await tx.objectStore('translations' as any).getAll();
+      for (const translation of entries) {
+        // Skip invalid data
+        const translationCodecResult = decodeStruct(translationType, translation);
+        if (translationCodecResult.errors !== null) {
+          continue;
+        }
 
-				const { from, to, text, translate, date } = translationCodecResult.data;
+        const { from, to, text, translate, date } = translationCodecResult.data;
 
-				translations.push({
-					timestamp: date,
-					translation: {
-						from,
-						to,
-						originalText: text,
-						translatedText: translate,
-					},
-				});
-			}
+        translations.push({
+          timestamp: date,
+          translation: {
+            from,
+            to,
+            originalText: text,
+            translatedText: translate,
+          },
+        });
+      }
 
-			db.deleteObjectStore(`translations`);
-		}
+      db.deleteObjectStore(`translations`);
+    }
 
-		// Create store
-		const translationsStore = db.createObjectStore(`translations`, {
-			keyPath: 'id',
-			autoIncrement: true,
-		});
+    // Create store
+    const translationsStore = db.createObjectStore(`translations`, {
+      keyPath: 'id',
+      autoIncrement: true,
+    });
 
-		// `keyPath` with `.` separator: https://w3c.github.io/IndexedDB/#inject-key-into-value
-		translationsStore.createIndex('originalText', 'translation.originalText', {
-			unique: false,
-		});
+    // `keyPath` with `.` separator: https://w3c.github.io/IndexedDB/#inject-key-into-value
+    translationsStore.createIndex('originalText', 'translation.originalText', {
+      unique: false,
+    });
 
-		// Insert data
-		if (isMigrationNeeded && translations.length > 0) {
-			for (const translation of translations) {
-				await translationsStore.add(translation);
-			}
-		}
-	},
+    // Insert data
+    if (isMigrationNeeded && translations.length > 0) {
+      for (const translation of translations) {
+        await translationsStore.add(translation);
+      }
+    }
+  },
 };
 
 export default migration;

@@ -9,29 +9,29 @@ import { createMigrationTask } from '@/lib/migrations/createMigrationTask';
  * so we can't migrate data by IDB version, because it didn't reflect an IDB structure, but only number of updates.
  */
 export const TranslatorsCacheStorageMigration = createMigrationTask([
-	{
-		version: 2,
-		async migrate() {
-			const translateModules = [
-				'YandexTranslator',
-				'GoogleTranslator',
-				'BingTranslatorPublic',
-			];
+  {
+    version: 2,
+    async migrate() {
+      const translateModules = [
+        'YandexTranslator',
+        'GoogleTranslator',
+        'BingTranslatorPublic',
+      ];
 
-			// Remove legacy databases
-			for (const translatorName in translateModules) {
-				// Format is `translator_` + translator identifier (not its name)
-				const LegacyDBName = 'translator_' + translatorName;
-				await IDB.deleteDB(LegacyDBName);
-			}
-		},
-	},
-	{
-		version: 3,
-		async migrate() {
-			// Drop table with cache, to re-create with new structure
-			const DBName = 'translatorsCache';
-			await IDB.deleteDB(DBName);
-		},
-	},
+      // Remove legacy databases
+      for (const translatorName in translateModules) {
+        // Format is `translator_` + translator identifier (not its name)
+        const LegacyDBName = 'translator_' + translatorName;
+        await IDB.deleteDB(LegacyDBName);
+      }
+    },
+  },
+  {
+    version: 3,
+    async migrate() {
+      // Drop table with cache, to re-create with new structure
+      const DBName = 'translatorsCache';
+      await IDB.deleteDB(DBName);
+    },
+  },
 ]);

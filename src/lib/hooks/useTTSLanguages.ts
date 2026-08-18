@@ -7,36 +7,36 @@ import { onAppConfigUpdated } from '../../requests/global/appConfigUpdate';
 import { useIsMounted } from './useIsMounted';
 
 export const useTTSLanguages = () => {
-	const [supportedLanguages, setSupportedLanguages] = useState<string[]>([]);
-	const isMounted = useIsMounted();
+  const [supportedLanguages, setSupportedLanguages] = useState<string[]>([]);
+  const isMounted = useIsMounted();
 
-	// Get languages
-	useEffect(() => {
-		getTTSLanguages().then(setSupportedLanguages);
-	}, []);
+  // Get languages
+  useEffect(() => {
+    getTTSLanguages().then(setSupportedLanguages);
+  }, []);
 
-	// Update languages by change TTS module
-	useEffect(() => {
-		const cleanup = onAppConfigUpdated(() => {
-			getTTSLanguages().then((langs) => {
-				if (!isMounted()) return;
+  // Update languages by change TTS module
+  useEffect(() => {
+    const cleanup = onAppConfigUpdated(() => {
+      getTTSLanguages().then((langs) => {
+        if (!isMounted()) return;
 
-				setSupportedLanguages((value) => {
-					return isEqual(value, langs) ? value : langs;
-				});
-			});
-		});
+        setSupportedLanguages((value) => {
+          return isEqual(value, langs) ? value : langs;
+        });
+      });
+    });
 
-		return cleanup;
-	}, [isMounted]);
+    return cleanup;
+  }, [isMounted]);
 
-	const isSupportedLanguage = useCallback(
-		(lang: string) => supportedLanguages.includes(lang),
-		[supportedLanguages],
-	);
+  const isSupportedLanguage = useCallback(
+    (lang: string) => supportedLanguages.includes(lang),
+    [supportedLanguages],
+  );
 
-	return {
-		supportedLanguages,
-		isSupportedLanguage,
-	};
+  return {
+    supportedLanguages,
+    isSupportedLanguage,
+  };
 };

@@ -1,10 +1,10 @@
 {
-	"*.{js,jsx,mjs,cjs,ts,tsx,mts,cts}": [
-		"oxlint --fix --deny-warnings --no-error-on-unmatched-pattern",
-		"oxlint --config .oxlintrc.json --type-aware --fix --deny-warnings --ignore-pattern=packages/site/** --no-error-on-unmatched-pattern",
-		"cspell lint --no-progress --no-summary --no-must-find-files",
-		"oxfmt --write --no-error-on-unmatched-pattern"
-	],
-	"*.css": ["stylelint --fix", "oxfmt --write --no-error-on-unmatched-pattern"],
-	"*.{json,jsonc}": ["oxfmt --write --no-error-on-unmatched-pattern"]
+  "*.{js,jsx,mjs,cjs,ts,tsx,mts,cts}": [
+    "oxlint --fix --deny-warnings --no-error-on-unmatched-pattern",
+    "oxlint --config .oxlintrc.json --type-aware --fix --deny-warnings --ignore-pattern=packages/site/** --no-error-on-unmatched-pattern",
+    "cspell lint --no-progress --no-summary --no-must-find-files",
+    "oxfmt --write --no-error-on-unmatched-pattern"
+  ],
+  "*.css": ["stylelint --fix", "oxfmt --write --no-error-on-unmatched-pattern"],
+  "*.{json,jsonc}": ["oxfmt --write --no-error-on-unmatched-pattern"]
 }

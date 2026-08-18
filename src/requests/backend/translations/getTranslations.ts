@@ -5,9 +5,9 @@ import { buildBackendRequest } from '../../utils/requestBuilder';
 import { getEntries, TranslationEntryWithKeyType } from './data';
 
 export const [getTranslationsFactory, getTranslations] = buildBackendRequest(
-	'getTranslations',
-	{
-		responseValidator: Schema.mutable(Schema.Array(TranslationEntryWithKeyType)),
-		factoryHandler: () => () => getEntries(),
-	},
+  'getTranslations',
+  {
+    responseValidator: Schema.mutable(Schema.Array(TranslationEntryWithKeyType)),
+    factoryHandler: () => () => getEntries(),
+  },
 );

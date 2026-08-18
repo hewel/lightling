@@ -8,26 +8,26 @@ import { useImmutableCallback } from './useImmutableCallback';
  * Return [value, setterWithProxy, originalSetter]
  */
 export const useStateWithProxy = <S>(
-	initialState: S | (() => S),
-	proxy?: (value: React.SetStateAction<S>, setter: Dispatch<SetStateAction<S>>) => void,
-	deps?: DependencyList,
+  initialState: S | (() => S),
+  proxy?: (value: React.SetStateAction<S>, setter: Dispatch<SetStateAction<S>>) => void,
+  deps?: DependencyList,
 ): [S, Dispatch<SetStateAction<S>>, Dispatch<SetStateAction<S>>] => {
-	const [value, setter] = useState<S>(initialState);
+  const [value, setter] = useState<S>(initialState);
 
-	// Define proxy
-	const proxySetter: Dispatch<SetStateAction<S>> = useImmutableCallback(
-		(newValue) => {
-			if (proxy !== undefined) {
-				proxy(newValue, setter);
-			} else {
-				setter(newValue);
-			}
-		},
+  // Define proxy
+  const proxySetter: Dispatch<SetStateAction<S>> = useImmutableCallback(
+    (newValue) => {
+      if (proxy !== undefined) {
+        proxy(newValue, setter);
+      } else {
+        setter(newValue);
+      }
+    },
 
-		// Ignore spread
-		// oxlint-disable-next-line react/exhaustive-deps
-		[proxy, ...(deps ?? [])],
-	);
+    // Ignore spread
+    // oxlint-disable-next-line react/exhaustive-deps
+    [proxy, ...(deps ?? [])],
+  );
 
-	return [value, proxySetter, setter];
+  return [value, proxySetter, setter];
 };

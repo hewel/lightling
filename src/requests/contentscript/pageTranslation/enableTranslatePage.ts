@@ -5,23 +5,23 @@ import { LangCode, LangCodeWithAuto } from '@/types/runtime';
 import { buildTabRequest } from '../../utils/requestBuilder';
 
 export const [enableTranslatePageFactory, enableTranslatePageReq] = buildTabRequest(
-	'enableTranslatePage',
-	{
-		requestValidator: Schema.Struct({
-			from: LangCodeWithAuto,
-			to: LangCode,
-		}),
+  'enableTranslatePage',
+  {
+    requestValidator: Schema.Struct({
+      from: LangCodeWithAuto,
+      to: LangCode,
+    }),
 
-		factoryHandler:
-			({ pageTranslationContext }) =>
-			async ({ from, to }) => {
-				const domTranslator = pageTranslationContext.getDOMTranslator();
-				if (domTranslator !== null) {
-					domTranslator.translate({ from, to });
-				}
-			},
-	},
+    factoryHandler:
+      ({ pageTranslationContext }) =>
+      async ({ from, to }) => {
+        const domTranslator = pageTranslationContext.getDOMTranslator();
+        if (domTranslator !== null) {
+          domTranslator.translate({ from, to });
+        }
+      },
+  },
 );
 
 export const enableTranslatePage = (tabId: number, from: string, to: string) =>
-	enableTranslatePageReq(tabId, { from, to });
+  enableTranslatePageReq(tabId, { from, to });

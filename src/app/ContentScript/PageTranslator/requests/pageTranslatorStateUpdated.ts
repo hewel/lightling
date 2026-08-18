@@ -5,12 +5,12 @@ import { PageTranslatorState } from '../PageTranslatorController';
 const eventName = 'pageTranslatorStateUpdated';
 
 export const pageTranslatorStateUpdated = (
-	translateState: PageTranslatorState,
+  translateState: PageTranslatorState,
 ): Promise<void> => sendBackgroundRequest(eventName, translateState);
 
 export const pageTranslatorStateUpdatedHandler = (
-	handler: (state: PageTranslatorState, tabId?: number) => void,
+  handler: (state: PageTranslatorState, tabId?: number) => void,
 ) =>
-	addRequestHandler(eventName, (state, sender) => {
-		handler(state, sender.tab?.id);
-	});
+  addRequestHandler(eventName, (state, sender) => {
+    handler(state, sender.tab?.id);
+  });

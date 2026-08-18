@@ -7,67 +7,67 @@ import { AstryxProvider } from '@/components/providers/AstryxProvider';
 import { Textarea } from './Textarea.bundle/desktop';
 
 Object.defineProperty(globalThis, 'IS_REACT_ACT_ENVIRONMENT', {
-	configurable: true,
-	value: true,
+  configurable: true,
+  value: true,
 });
 
 describe('Textarea compatibility adapter', () => {
-	let container: HTMLDivElement;
-	let root: Root;
+  let container: HTMLDivElement;
+  let root: Root;
 
-	beforeEach(() => {
-		container = document.createElement('div');
-		document.body.append(container);
-		root = createRoot(container);
-	});
+  beforeEach(() => {
+    container = document.createElement('div');
+    document.body.append(container);
+    root = createRoot(container);
+  });
 
-	afterEach(async () => {
-		await act(async () => root.unmount());
-		container.remove();
-	});
+  afterEach(async () => {
+    await act(async () => root.unmount());
+    container.remove();
+  });
 
-	async function render(children: ReactNode) {
-		await act(async () => {
-			root.render(<AstryxProvider>{children}</AstryxProvider>);
-		});
-	}
+  async function render(children: ReactNode) {
+    await act(async () => {
+      root.render(<AstryxProvider>{children}</AstryxProvider>);
+    });
+  }
 
-	it('keeps the clear action interactive inside the shared control plane', async () => {
-		const controlRef = createRef<HTMLTextAreaElement>();
-		const onClearClick = vi.fn();
+  it('keeps the clear action interactive inside the shared control plane', async () => {
+    const controlRef = createRef<HTMLTextAreaElement>();
+    const onClearClick = vi.fn();
 
-		await render(
-			<Textarea
-				addonAfterControl={<Text>Text actions</Text>}
-				controlProps={{ innerRef: controlRef }}
-				hasClear
-				label="Translate text"
-				onClearClick={onClearClick}
-				value="Hello"
-			/>,
-		);
+    await render(
+      <Textarea
+        addonAfterControl={<Text>Text actions</Text>}
+        controlProps={{ innerRef: controlRef }}
+        hasClear
+        label="Translate text"
+        onClearClick={onClearClick}
+        value="Hello"
+      />,
+    );
 
-		const textarea = container.querySelector('textarea');
-		if (textarea === null) throw new Error('Expected the Astryx textarea');
+    const textarea = container.querySelector('textarea');
+    if (textarea === null) throw new Error('Expected the Astryx textarea');
 
-		const clearButton = container.querySelector<HTMLButtonElement>(
-			'button[aria-label="Clear Translate text"]',
-		);
-		if (clearButton === null) throw new Error('Expected an interactive clear button');
+    const clearButton = container.querySelector<HTMLButtonElement>(
+      'button[aria-label="Clear Translate text"]',
+    );
+    if (clearButton === null) throw new Error('Expected an interactive clear button');
 
-		expect(controlRef.current).toBe(textarea);
-		expect(container.textContent).toContain('Text actions');
+    expect(controlRef.current).toBe(textarea);
+    expect(container.textContent).toContain('Text actions');
 
-		textarea.focus();
-		const mouseDown = new MouseEvent('mousedown', {
-			bubbles: true,
-			cancelable: true,
-		});
-		clearButton.dispatchEvent(mouseDown);
-		expect(mouseDown.defaultPrevented).toBe(true);
+    textarea.focus();
+    const mouseDown = new MouseEvent('mousedown', {
+      bubbles: true,
+      cancelable: true,
+    });
+    clearButton.dispatchEvent(mouseDown);
+    expect(mouseDown.defaultPrevented).toBe(true);
 
-		await act(async () => clearButton.click());
-		expect(onClearClick).toHaveBeenCalledOnce();
-		expect(document.activeElement).toBe(textarea);
-	});
+    await act(async () => clearButton.click());
+    expect(onClearClick).toHaveBeenCalledOnce();
+    expect(document.activeElement).toBe(textarea);
+  });
 });

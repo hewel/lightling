@@ -2,99 +2,99 @@ import { Schema } from 'effect';
 import * as IDB from 'idb';
 
 export type ITranslatorEntry = {
-	name: string;
-	code: string;
+  name: string;
+  code: string;
 };
 
 export const TranslatorEntry = Schema.Struct({
-	name: Schema.String.check(Schema.isPattern(/[^\s]/)),
-	code: Schema.String,
+  name: Schema.String.check(Schema.isPattern(/[^\s]/)),
+  code: Schema.String,
 });
 
 export type IEntryWithKey = { key: number; data: ITranslatorEntry };
 
 export interface DBSchema extends IDB.DBSchema {
-	translators: {
-		key: number;
-		value: ITranslatorEntry;
-	};
+  translators: {
+    key: number;
+    value: ITranslatorEntry;
+  };
 }
 
 type DB = IDB.IDBPDatabase<DBSchema>;
 
 let DBInstance: null | DB = null;
 const getDB = async () => {
-	const DBName = 'translators';
+  const DBName = 'translators';
 
-	if (DBInstance === null) {
-		DBInstance = await IDB.openDB<DBSchema>(DBName, 1, {
-			upgrade(db) {
-				db.createObjectStore('translators', {
-					autoIncrement: true,
-				});
-			},
-		});
-	}
+  if (DBInstance === null) {
+    DBInstance = await IDB.openDB<DBSchema>(DBName, 1, {
+      upgrade(db) {
+        db.createObjectStore('translators', {
+          autoIncrement: true,
+        });
+      },
+    });
+  }
 
-	return DBInstance;
+  return DBInstance;
 };
 
 export const addTranslator = async (entry: ITranslatorEntry) => {
-	const db = await getDB();
-	return db.add('translators', entry);
+  const db = await getDB();
+  return db.add('translators', entry);
 };
 
 export const deleteTranslator = async (entryId: number) => {
-	const db = await getDB();
-	return db.delete('translators', entryId);
+  const db = await getDB();
+  return db.delete('translators', entryId);
 };
 
 export const updateTranslator = async (id: number, entry: ITranslatorEntry) => {
-	const db = await getDB();
+  const db = await getDB();
 
-	return db.put('translators', entry, id);
+  return db.put('translators', entry, id);
 };
 
 export const getTranslators = async (options?: {
-	from?: number;
-	limit?: number;
-	order: 'desc' | 'asc';
+  from?: number;
+  limit?: number;
+  order: 'desc' | 'asc';
 }) => {
-	const { from, limit, order = 'desc' } = options ?? {};
+  const { from, limit, order = 'desc' } = options ?? {};
 
-	const db = await getDB();
+  const db = await getDB();
 
-	const transaction = await db.transaction('translators', 'readonly');
+  const transaction = await db.transaction('translators', 'readonly');
 
-	const entries: IEntryWithKey[] = [];
+  const entries: IEntryWithKey[] = [];
 
-	let isJumped = false;
-	let counter = 0;
-	const startCursor = await transaction.store.openCursor(
-		null,
-		order === 'desc' ? 'prev' : 'next',
-	);
-	if (startCursor !== null) {
-		for await (const cursor of startCursor) {
-			// Jump to specified offset
-			if (!isJumped && from !== undefined && from > 0) {
-				cursor.advance(from);
-				isJumped = true;
-				continue;
-			}
+  let isJumped = false;
+  let counter = 0;
+  const startCursor = await transaction.store.openCursor(
+    null,
+    order === 'desc' ? 'prev' : 'next',
+  );
+  if (startCursor !== null) {
+    for await (const cursor of startCursor) {
+      // Jump to specified offset
+      if (!isJumped && from !== undefined && from > 0) {
+        cursor.advance(from);
+        isJumped = true;
+        continue;
+      }
 
-			// Stop by limit
-			if (limit !== undefined && ++counter > limit) break;
+      // Stop by limit
+      if (limit !== undefined && ++counter > limit) break;
 
-			// Add entry
-			entries.push({
-				key: cursor.primaryKey,
-				data: cursor.value,
-			});
-		}
-	}
+      // Add entry
+      entries.push({
+        key: cursor.primaryKey,
+        data: cursor.value,
+      });
+    }
+  }
 
-	await transaction.done;
+  await transaction.done;
 
-	return entries;
+  return entries;
 };

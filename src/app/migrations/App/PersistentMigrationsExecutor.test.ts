@@ -5,12 +5,12 @@ import { clearAllMocks } from '@/lib/tests';
 import { AppMigrationsStorage } from './AppMigrationsStorage';
 
 describe('migrations persistence', () => {
-	beforeAll(async () => {
-		await clearAllMocks();
-	});
+  beforeAll(async () => {
+    await clearAllMocks();
+  });
 
-	testPersistentMigrationsExecutor(() => {
-		const storage = new AppMigrationsStorage();
-		return new PersistentMigrationsExecutor(storage);
-	});
+  testPersistentMigrationsExecutor(() => {
+    const storage = new AppMigrationsStorage();
+    return new PersistentMigrationsExecutor(storage);
+  });
 });

@@ -5,14 +5,14 @@ import { useCallback, useEffect, useRef } from 'react';
  * Useful to check before set state in async functions, to prevent memory leaks
  */
 export const useIsMounted = () => {
-	const isMountedRef = useRef(true);
-	const isMounted = useCallback(() => isMountedRef.current, []);
+  const isMountedRef = useRef(true);
+  const isMounted = useCallback(() => isMountedRef.current, []);
 
-	useEffect(() => {
-		return () => {
-			isMountedRef.current = false;
-		};
-	}, []);
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
-	return isMounted;
+  return isMounted;
 };

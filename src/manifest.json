@@ -1,48 +1,48 @@
 {
-	"chromium:manifest_version": 3,
-	"firefox:manifest_version": 2,
-	"name": "__MSG_ext_name__",
-	"version": "7.1.0",
-	"description": "__MSG_ext_description__",
-	"default_locale": "en",
-	"icons": {
-		"512": "static/logo.png"
-	},
-	"chromium:permissions": ["storage", "tabs", "contextMenus", "scripting", "offscreen"],
-	"firefox:permissions": ["storage", "tabs", "contextMenus", "scripting", "<all_urls>"],
-	"chromium:host_permissions": ["<all_urls>"],
-	"content_scripts": [
-		{
-			"matches": ["*://*/*"],
-			"js": ["contentscript.tsx"]
-		}
-	],
-	"options_ui": {
-		"page": "pages/options/options.html",
-		"open_in_tab": true
-	},
-	"chromium:content_security_policy": {
-		"extension_pages": "default-src 'self' 'wasm-unsafe-eval'; connect-src *; style-src 'self' 'unsafe-inline' *"
-	},
-	"firefox:content_security_policy": "script-src 'self' 'unsafe-eval';",
-	"chromium:sandbox": {
-		"pages": ["../pages/offscreen-documents/translator/translator.html"]
-	},
-	"chromium:background": {
-		"service_worker": "background-script.ts",
-		"type": "module"
-	},
-	"firefox:background": {
-		"scripts": ["background-script.ts"]
-	},
-	"chromium:action": {
-		"default_popup": "pages/popup/popup.html",
-		"default_title": "__MSG_ext_name__",
-		"default_icon": "static/logo.png"
-	},
-	"firefox:browser_action": {
-		"default_popup": "pages/popup/popup.html",
-		"default_title": "__MSG_ext_name__",
-		"default_icon": "static/logo.png"
-	}
+  "chromium:manifest_version": 3,
+  "firefox:manifest_version": 2,
+  "name": "__MSG_ext_name__",
+  "version": "7.1.0",
+  "description": "__MSG_ext_description__",
+  "default_locale": "en",
+  "icons": {
+    "512": "static/logo.png"
+  },
+  "chromium:permissions": ["storage", "tabs", "contextMenus", "scripting", "offscreen"],
+  "firefox:permissions": ["storage", "tabs", "contextMenus", "scripting", "<all_urls>"],
+  "chromium:host_permissions": ["<all_urls>"],
+  "content_scripts": [
+    {
+      "matches": ["*://*/*"],
+      "js": ["contentscript.tsx"]
+    }
+  ],
+  "options_ui": {
+    "page": "pages/options/options.html",
+    "open_in_tab": true
+  },
+  "chromium:content_security_policy": {
+    "extension_pages": "default-src 'self' 'wasm-unsafe-eval'; connect-src *; style-src 'self' 'unsafe-inline' *"
+  },
+  "firefox:content_security_policy": "script-src 'self' 'unsafe-eval';",
+  "chromium:sandbox": {
+    "pages": ["../pages/offscreen-documents/translator/translator.html"]
+  },
+  "chromium:background": {
+    "service_worker": "background-script.ts",
+    "type": "module"
+  },
+  "firefox:background": {
+    "scripts": ["background-script.ts"]
+  },
+  "chromium:action": {
+    "default_popup": "pages/popup/popup.html",
+    "default_title": "__MSG_ext_name__",
+    "default_icon": "static/logo.png"
+  },
+  "firefox:browser_action": {
+    "default_popup": "pages/popup/popup.html",
+    "default_title": "__MSG_ext_name__",
+    "default_icon": "static/logo.png"
+  }
 }

@@ -10,47 +10,43 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 export default defineConfig({
-	resolve: {
-		alias: {
-			'@': path.resolve(__dirname, 'src'),
-		},
-	},
-	plugins: [
-		stylexPlugin.vite(),
-		{
-			name: 'vite-plugin-string-import',
-			enforce: 'pre',
-			load(id) {
-				const extensions = ['.txt'];
-				if (extensions.some((ext) => id.endsWith(ext))) {
-					const sqlContent = readFileSync(path.resolve(id), 'utf-8');
-					return `export default ${JSON.stringify(sqlContent)};`;
-				}
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, 'src'),
+    },
+  },
+  plugins: [
+    stylexPlugin.vite(),
+    {
+      name: 'vite-plugin-string-import',
+      enforce: 'pre',
+      load(id) {
+        const extensions = ['.txt'];
+        if (extensions.some((ext) => id.endsWith(ext))) {
+          const sqlContent = readFileSync(path.resolve(id), 'utf-8');
+          return `export default ${JSON.stringify(sqlContent)};`;
+        }
 
-				return;
-			},
-		},
-	],
-	test: {
-		exclude: [
-			'**/node_modules/**',
+        return;
+      },
+    },
+  ],
+  test: {
+    exclude: [
+      '**/node_modules/**',
 
-			// Optional targets
-			...(testTargets.includes('all')
-				? []
-				: [
-						...(testTargets.includes('integration')
-							? []
-							: ['**/*.integration.test.ts']),
-					]),
-		],
-		globals: true,
-		environment: 'jsdom',
-		setupFiles: [
-			path.join(__dirname, 'test/setupFiles/jest.js'),
-			'jest-localstorage-mock',
-			'fake-indexeddb/auto',
-			path.join(__dirname, 'test/setupFiles/webextension.js'),
-		],
-	},
+      // Optional targets
+      ...(testTargets.includes('all')
+        ? []
+        : [...(testTargets.includes('integration') ? [] : ['**/*.integration.test.ts'])]),
+    ],
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: [
+      path.join(__dirname, 'test/setupFiles/jest.js'),
+      'jest-localstorage-mock',
+      'fake-indexeddb/auto',
+      path.join(__dirname, 'test/setupFiles/webextension.js'),
+    ],
+  },
 });

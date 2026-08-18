@@ -1,17 +1,17 @@
 import * as IDB from 'idb';
 
 export type SerializedSpeaker = {
-	name: string;
-	code: string;
+  name: string;
+  code: string;
 };
 
 export type TTSKey = number;
 
 export interface TTSStorageDBSchema extends IDB.DBSchema {
-	speakers: {
-		key: TTSKey;
-		value: SerializedSpeaker;
-	};
+  speakers: {
+    key: TTSKey;
+    value: SerializedSpeaker;
+  };
 }
 
 type DB = IDB.IDBPDatabase<TTSStorageDBSchema>;
@@ -20,72 +20,72 @@ type DB = IDB.IDBPDatabase<TTSStorageDBSchema>;
  * Storage implementation to keep custom TTS modules
  */
 export class TTSStorage {
-	private dbPromise: Promise<DB> | null = null;
-	private async getDB() {
-		if (this.dbPromise === null) {
-			const dbPromise = IDB.openDB<TTSStorageDBSchema>('tts', 1, {
-				upgrade(db) {
-					db.createObjectStore('speakers', {
-						autoIncrement: true,
-					});
-				},
-			}).catch((reason) => {
-				// Clear promise
-				if (this.dbPromise === dbPromise) {
-					this.dbPromise = null;
-				}
+  private dbPromise: Promise<DB> | null = null;
+  private async getDB() {
+    if (this.dbPromise === null) {
+      const dbPromise = IDB.openDB<TTSStorageDBSchema>('tts', 1, {
+        upgrade(db) {
+          db.createObjectStore('speakers', {
+            autoIncrement: true,
+          });
+        },
+      }).catch((reason) => {
+        // Clear promise
+        if (this.dbPromise === dbPromise) {
+          this.dbPromise = null;
+        }
 
-				throw reason;
-			});
+        throw reason;
+      });
 
-			this.dbPromise = dbPromise;
-		}
+      this.dbPromise = dbPromise;
+    }
 
-		return this.dbPromise;
-	}
+    return this.dbPromise;
+  }
 
-	public async add(speaker: SerializedSpeaker) {
-		const db = await this.getDB();
-		const id = await db.put('speakers', speaker);
-		return id;
-	}
+  public async add(speaker: SerializedSpeaker) {
+    const db = await this.getDB();
+    const id = await db.put('speakers', speaker);
+    return id;
+  }
 
-	public async update(id: TTSKey, speaker: SerializedSpeaker) {
-		const db = await this.getDB();
-		await db.put('speakers', speaker, id);
-	}
+  public async update(id: TTSKey, speaker: SerializedSpeaker) {
+    const db = await this.getDB();
+    await db.put('speakers', speaker, id);
+  }
 
-	public async delete(id: TTSKey) {
-		const db = await this.getDB();
-		await db.delete('speakers', id);
-	}
+  public async delete(id: TTSKey) {
+    const db = await this.getDB();
+    await db.delete('speakers', id);
+  }
 
-	public async getAll() {
-		const db = await this.getDB();
-		const tx = db.transaction('speakers', 'readwrite');
+  public async getAll() {
+    const db = await this.getDB();
+    const tx = db.transaction('speakers', 'readwrite');
 
-		const speakers: {
-			id: TTSKey;
-			data: SerializedSpeaker;
-		}[] = [];
+    const speakers: {
+      id: TTSKey;
+      data: SerializedSpeaker;
+    }[] = [];
 
-		const startCursor = await tx.store.openCursor(null, 'next');
-		if (startCursor !== null) {
-			for await (const cursor of startCursor) {
-				speakers.push({
-					id: cursor.primaryKey,
-					data: cursor.value,
-				});
-			}
-		}
+    const startCursor = await tx.store.openCursor(null, 'next');
+    if (startCursor !== null) {
+      for await (const cursor of startCursor) {
+        speakers.push({
+          id: cursor.primaryKey,
+          data: cursor.value,
+        });
+      }
+    }
 
-		await tx.done;
+    await tx.done;
 
-		return speakers;
-	}
+    return speakers;
+  }
 
-	public async get(id: TTSKey) {
-		const db = await this.getDB();
-		return db.get('speakers', id);
-	}
+  public async get(id: TTSKey) {
+    const db = await this.getDB();
+    return db.get('speakers', id);
+  }
 }

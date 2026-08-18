@@ -15,138 +15,134 @@ export type Config = Pick<AppConfigType, 'translatorModule' | 'scheduler' | 'cac
  * Build and manage a translation scheduler
  */
 export class TranslatorManager<Translators extends TranslatorsMap = TranslatorsMap> {
-	private config: Config;
-	private translators: Translators;
-	constructor(config: Config, translators: Translators) {
-		this.config = config;
-		this.translators = translators;
-	}
+  private config: Config;
+  private translators: Translators;
+  constructor(config: Config, translators: Translators) {
+    this.config = config;
+    this.translators = translators;
+  }
 
-	public setConfig(config: Config) {
-		this.config = config;
-		this.getTranslationSchedulerInstance(true);
-	}
+  public setConfig(config: Config) {
+    this.config = config;
+    this.getTranslationSchedulerInstance(true);
+  }
 
-	public setTranslators(customTranslators: Translators) {
-		this.translators = customTranslators;
-		this.getTranslationSchedulerInstance(true);
-	}
+  public setTranslators(customTranslators: Translators) {
+    this.translators = customTranslators;
+    this.getTranslationSchedulerInstance(true);
+  }
 
-	public getTranslatorFeatures() {
-		const translatorClass = this.getTranslatorClass();
-		return {
-			supportedLanguages: translatorClass
-				.getSupportedLanguages()
-				.filter((lang) => isLanguageCodeISO639v1(lang)),
-			isSupportAutodetect: translatorClass.isSupportedAutoFrom(),
-		};
-	}
+  public getTranslatorFeatures() {
+    const translatorClass = this.getTranslatorClass();
+    return {
+      supportedLanguages: translatorClass
+        .getSupportedLanguages()
+        .filter((lang) => isLanguageCodeISO639v1(lang)),
+      isSupportAutodetect: translatorClass.isSupportedAutoFrom(),
+    };
+  }
 
-	/**
-	 * Return map with available translators
-	 */
-	public getTranslators(): Translators {
-		return this.translators;
-	}
+  /**
+   * Return map with available translators
+   */
+  public getTranslators(): Translators {
+    return this.translators;
+  }
 
-	public getTranslator(): InstanceType<RecordValues<Translators>> {
-		return this.getTranslatorInstance(false);
-	}
+  public getTranslator(): InstanceType<RecordValues<Translators>> {
+    return this.getTranslatorInstance(false);
+  }
 
-	/**
-	 * Return configured translation scheduler
-	 */
-	public getScheduler() {
-		return this.getTranslationSchedulerInstance();
-	}
+  /**
+   * Return configured translation scheduler
+   */
+  public getScheduler() {
+    return this.getTranslationSchedulerInstance();
+  }
 
-	private schedulerInstance: IScheduler | null = null;
-	private getTranslationSchedulerInstance(forceCreate = false) {
-		if (this.schedulerInstance === null || forceCreate) {
-			const translator = this.getTranslatorInstance(true);
+  private schedulerInstance: IScheduler | null = null;
+  private getTranslationSchedulerInstance(forceCreate = false) {
+    if (this.schedulerInstance === null || forceCreate) {
+      const translator = this.getTranslatorInstance(true);
 
-			const { useCache, ...schedulerConfig } = this.config.scheduler;
+      const { useCache, ...schedulerConfig } = this.config.scheduler;
 
-			const scheduler = new Scheduler(translator, schedulerConfig);
+      const scheduler = new Scheduler(translator, schedulerConfig);
 
-			let schedulerInstance: IScheduler = scheduler;
-			if (useCache) {
-				// Wrap scheduler by cache
-				const cacheInstance = this.getCacheInstance();
-				schedulerInstance = new SchedulerWithCache(scheduler, cacheInstance);
-			}
+      let schedulerInstance: IScheduler = scheduler;
+      if (useCache) {
+        // Wrap scheduler by cache
+        const cacheInstance = this.getCacheInstance();
+        schedulerInstance = new SchedulerWithCache(scheduler, cacheInstance);
+      }
 
-			this.schedulerInstance = schedulerInstance;
-		}
+      this.schedulerInstance = schedulerInstance;
+    }
 
-		return this.schedulerInstance;
-	}
+    return this.schedulerInstance;
+  }
 
-	private translator: InstanceType<RecordValues<Translators>> | null = null;
-	private getTranslatorInstance(forceCreate: boolean) {
-		if (!forceCreate && this.translator !== null) return this.translator;
+  private translator: InstanceType<RecordValues<Translators>> | null = null;
+  private getTranslatorInstance(forceCreate: boolean) {
+    if (!forceCreate && this.translator !== null) return this.translator;
 
-		const translatorClass = this.getTranslatorClass();
+    const translatorClass = this.getTranslatorClass();
 
-		this.translator = new (class extends translatorClass {
-			async translate(
-				text: string,
-				sourceLanguage: string,
-				targetLanguage: string,
-			): Promise<string> {
-				try {
-					return await super.translate(text, sourceLanguage, targetLanguage);
-				} catch (error) {
-					telemetry.track(TELEMETRY_EVENT_NAME.ERROR_CAPTURED, {
-						scope: 'translator',
-						error: String(error),
-						translatorName: translatorClass.translatorName,
-					});
+    this.translator = new (class extends translatorClass {
+      async translate(
+        text: string,
+        sourceLanguage: string,
+        targetLanguage: string,
+      ): Promise<string> {
+        try {
+          return await super.translate(text, sourceLanguage, targetLanguage);
+        } catch (error) {
+          telemetry.track(TELEMETRY_EVENT_NAME.ERROR_CAPTURED, {
+            scope: 'translator',
+            error: String(error),
+            translatorName: translatorClass.translatorName,
+          });
 
-					throw error;
-				}
-			}
+          throw error;
+        }
+      }
 
-			async translateBatch(
-				text: string[],
-				sourceLanguage: string,
-				targetLanguage: string,
-			): Promise<(string | null)[]> {
-				try {
-					return await super.translateBatch(
-						text,
-						sourceLanguage,
-						targetLanguage,
-					);
-				} catch (error) {
-					telemetry.track(TELEMETRY_EVENT_NAME.ERROR_CAPTURED, {
-						scope: 'translator',
-						error: String(error),
-						translatorName: translatorClass.translatorName,
-					});
+      async translateBatch(
+        text: string[],
+        sourceLanguage: string,
+        targetLanguage: string,
+      ): Promise<(string | null)[]> {
+        try {
+          return await super.translateBatch(text, sourceLanguage, targetLanguage);
+        } catch (error) {
+          telemetry.track(TELEMETRY_EVENT_NAME.ERROR_CAPTURED, {
+            scope: 'translator',
+            error: String(error),
+            translatorName: translatorClass.translatorName,
+          });
 
-					throw error;
-				}
-			}
-		})() as InstanceType<RecordValues<Translators>>;
+          throw error;
+        }
+      }
+    })() as InstanceType<RecordValues<Translators>>;
 
-		return this.translator;
-	}
+    return this.translator;
+  }
 
-	private getCacheInstance() {
-		const { translatorModule, cache } = this.config;
-		return new TranslatorsCacheStorage(translatorModule, cache);
-	}
+  private getCacheInstance() {
+    const { translatorModule, cache } = this.config;
+    return new TranslatorsCacheStorage(translatorModule, cache);
+  }
 
-	private getTranslatorClass(): RecordValues<Translators> {
-		const { translatorModule } = this.config;
+  private getTranslatorClass(): RecordValues<Translators> {
+    const { translatorModule } = this.config;
 
-		const translators = this.getTranslators();
-		const translatorClass = translators[translatorModule];
-		if (translatorClass === undefined) {
-			throw new Error(`Not found translator "${translatorModule}"`);
-		}
+    const translators = this.getTranslators();
+    const translatorClass = translators[translatorModule];
+    if (translatorClass === undefined) {
+      throw new Error(`Not found translator "${translatorModule}"`);
+    }
 
-		return translatorClass as RecordValues<Translators>;
-	}
+    return translatorClass as RecordValues<Translators>;
+  }
 }

@@ -12,82 +12,80 @@ import { codeBlock } from '../../utils/prompts';
 const command = new Command('proofread');
 
 command
-	.argument('directory', 'directory where localization files is placed')
-	.option(
-		'-l --languages <languages list>',
-		'comma separated languages list for processing',
-	)
-	.option(
-		'-e --excluded-languages <languages list>',
-		'comma separated languages list to exclude of processing',
-	)
-	.action(async (dir: string, rawOptions: unknown) => {
-		const options = z
-			.object({
-				languages: z
-					.string()
-					.transform((str) => str.split(','))
-					.optional(),
-				excludedLanguages: z
-					.string()
-					.transform((str) => str.split(','))
-					.optional(),
-			})
-			.parse(rawOptions);
+  .argument('directory', 'directory where localization files is placed')
+  .option(
+    '-l --languages <languages list>',
+    'comma separated languages list for processing',
+  )
+  .option(
+    '-e --excluded-languages <languages list>',
+    'comma separated languages list to exclude of processing',
+  )
+  .action(async (dir: string, rawOptions: unknown) => {
+    const options = z
+      .object({
+        languages: z
+          .string()
+          .transform((str) => str.split(','))
+          .optional(),
+        excludedLanguages: z
+          .string()
+          .transform((str) => str.split(','))
+          .optional(),
+      })
+      .parse(rawOptions);
 
-		const resolvedDir = path.resolve(dir);
-		console.log('Localization files dir', resolvedDir);
+    const resolvedDir = path.resolve(dir);
+    console.log('Localization files dir', resolvedDir);
 
-		const languages = (
-			options.languages ?? z.string().array().parse(readdirSync(resolvedDir))
-		).filter((language) => {
-			if (options.excludedLanguages?.includes(language)) {
-				return false;
-			}
+    const languages = (
+      options.languages ?? z.string().array().parse(readdirSync(resolvedDir))
+    ).filter((language) => {
+      if (options.excludedLanguages?.includes(language)) {
+        return false;
+      }
 
-			return true;
-		});
+      return true;
+    });
 
-		if (languages.length === 0) {
-			console.log('No locales found');
-			return;
-		}
+    if (languages.length === 0) {
+      console.log('No locales found');
+      return;
+    }
 
-		for (const index in languages) {
-			const language = languages[index];
+    for (const index in languages) {
+      const language = languages[index];
 
-			console.log(
-				`Proofread locale "${language}" [${Number(index) + 1}/${
-					languages.length
-				}]`,
-			);
+      console.log(
+        `Proofread locale "${language}" [${Number(index) + 1}/${languages.length}]`,
+      );
 
-			const jsonProcessor = new LLMJsonProcessor(
-				new BasicLLMFetcher(
-					{
-						apiKey: process.env.OPENAI_API_KEY!,
-						baseURL: process.env.OPENAI_BASE_URL,
-						dangerouslyAllowBrowser: true,
-					},
-					{
-						model: process.env.OPENAI_MODEL ?? 'openai/gpt-4.1-mini',
-						temperature: 0,
-					},
-				),
-				{ concurrency: 10 },
-			);
+      const jsonProcessor = new LLMJsonProcessor(
+        new BasicLLMFetcher(
+          {
+            apiKey: process.env.OPENAI_API_KEY!,
+            baseURL: process.env.OPENAI_BASE_URL,
+            dangerouslyAllowBrowser: true,
+          },
+          {
+            model: process.env.OPENAI_MODEL ?? 'openai/gpt-4.1-mini',
+            temperature: 0,
+          },
+        ),
+        { concurrency: 10 },
+      );
 
-			const localeFilename = path.join(resolvedDir, language, 'messages.json');
+      const localeFilename = path.join(resolvedDir, language, 'messages.json');
 
-			const sourceLocale = await readFile(localeFilename, {
-				encoding: 'utf8',
-			}).then((text) => JSON.parse(text));
+      const sourceLocale = await readFile(localeFilename, {
+        encoding: 'utf8',
+      }).then((text) => JSON.parse(text));
 
-			const fixedTexts = await jsonProcessor.process(sourceLocale, {
-				prompt(json) {
-					const prettifiedJson = JSON.stringify(JSON.parse(json), null, 2);
+      const fixedTexts = await jsonProcessor.process(sourceLocale, {
+        prompt(json) {
+          const prettifiedJson = JSON.stringify(JSON.parse(json), null, 2);
 
-					return `You are a proofreading service for localization files.
+          return `You are a proofreading service for localization files.
 	
 					I will provide a JSON string with text, and your purpose is to fix all string values (not keys).
 	
@@ -137,14 +135,14 @@ command
 					Here is the JSON to proofread:
 					${codeBlock(prettifiedJson, 'json')}
 					`;
-				},
-			});
+        },
+      });
 
-			await writeFile(
-				localeFilename,
-				JSON.stringify(orderKeysInLocalizationObject(fixedTexts), null, '\t'),
-			);
-		}
-	});
+      await writeFile(
+        localeFilename,
+        JSON.stringify(orderKeysInLocalizationObject(fixedTexts), null, '\t'),
+      );
+    }
+  });
 
 export default command;

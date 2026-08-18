@@ -8,20 +8,18 @@ import { applyTranslators } from './applyTranslators';
 import * as db from './data';
 
 export const [deleteTranslatorFactory, deleteTranslator] = buildBackendRequest(
-	'deleteTranslator',
-	{
-		requestValidator: NonNaNNumber,
+  'deleteTranslator',
+  {
+    requestValidator: NonNaNNumber,
 
-		factoryHandler: () => async (translatorId) => {
-			// Delete translator
-			await db.deleteTranslator(translatorId);
-			await applyTranslators();
+    factoryHandler: () => async (translatorId) => {
+      // Delete translator
+      await db.deleteTranslator(translatorId);
+      await applyTranslators();
 
-			// Delete translator cache
-			const cache = new TranslatorsCacheStorage(
-				formatToCustomTranslatorId(translatorId),
-			);
-			await cache.clear();
-		},
-	},
+      // Delete translator cache
+      const cache = new TranslatorsCacheStorage(formatToCustomTranslatorId(translatorId));
+      await cache.clear();
+    },
+  },
 );

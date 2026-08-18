@@ -24,105 +24,105 @@ const generatedHeader = `/*
 `;
 
 function braceDelta(line) {
-	return line.split('{').length - line.split('}').length;
+  return line.split('{').length - line.split('}').length;
 }
 
 export function convertAstryxThemeCss(source) {
-	const output = [];
-	let scopeCount = 0;
-	let scopeDepth = 0;
+  const output = [];
+  let scopeCount = 0;
+  let scopeDepth = 0;
 
-	for (const line of source.split('\n')) {
-		if (line.trim() === scopeOpening) {
-			if (scopeDepth !== 0) {
-				throw new Error('Nested Astryx theme scopes are not supported');
-			}
+  for (const line of source.split('\n')) {
+    if (line.trim() === scopeOpening) {
+      if (scopeDepth !== 0) {
+        throw new Error('Nested Astryx theme scopes are not supported');
+      }
 
-			scopeCount++;
-			scopeDepth = 1;
-			continue;
-		}
+      scopeCount++;
+      scopeDepth = 1;
+      continue;
+    }
 
-		if (scopeDepth === 0) {
-			output.push(line);
-			continue;
-		}
+    if (scopeDepth === 0) {
+      output.push(line);
+      continue;
+    }
 
-		const trimmedLine = line.trim();
-		if (scopeDepth === 1 && trimmedLine === '}') {
-			scopeDepth = 0;
-			continue;
-		}
+    const trimmedLine = line.trim();
+    if (scopeDepth === 1 && trimmedLine === '}') {
+      scopeDepth = 0;
+      continue;
+    }
 
-		let convertedLine = line;
-		if (scopeDepth === 1 && trimmedLine !== '') {
-			const selector = trimmedLine.startsWith(':scope')
-				? trimmedLine.replace(':scope', scopeSelector)
-				: `${scopeSelector} ${trimmedLine}`;
-			convertedLine = `  ${selector}`;
-		}
+    let convertedLine = line;
+    if (scopeDepth === 1 && trimmedLine !== '') {
+      const selector = trimmedLine.startsWith(':scope')
+        ? trimmedLine.replace(':scope', scopeSelector)
+        : `${scopeSelector} ${trimmedLine}`;
+      convertedLine = `  ${selector}`;
+    }
 
-		output.push(convertedLine);
-		scopeDepth += braceDelta(line);
-	}
+    output.push(convertedLine);
+    scopeDepth += braceDelta(line);
+  }
 
-	if (scopeDepth !== 0) {
-		throw new Error('Unclosed Astryx theme scope');
-	}
-	if (scopeCount === 0) {
-		throw new Error('No Astryx vivid theme scopes were found');
-	}
+  if (scopeDepth !== 0) {
+    throw new Error('Unclosed Astryx theme scope');
+  }
+  if (scopeCount === 0) {
+    throw new Error('No Astryx vivid theme scopes were found');
+  }
 
-	const convertedBody = output.join('\n');
-	if (
-		convertedBody.includes('@scope') ||
-		convertedBody.includes(':scope') ||
-		!convertedBody.includes(`${scopeSelector} {`) ||
-		!convertedBody.includes(`${scopeSelector} .astryx-button.destructive`)
-	) {
-		throw new Error('Astryx vivid theme conversion is incomplete');
-	}
+  const convertedBody = output.join('\n');
+  if (
+    convertedBody.includes('@scope') ||
+    convertedBody.includes(':scope') ||
+    !convertedBody.includes(`${scopeSelector} {`) ||
+    !convertedBody.includes(`${scopeSelector} .astryx-button.destructive`)
+  ) {
+    throw new Error('Astryx vivid theme conversion is incomplete');
+  }
 
-	return `${generatedHeader}${convertedBody}`;
+  return `${generatedHeader}${convertedBody}`;
 }
 
 export async function prepareAstryxTheme() {
-	const cliBin = localRequire.resolve('@astryxdesign/cli');
-	execFileSync(
-		process.execPath,
-		[
-			cliBin,
-			'theme',
-			'build',
-			'src/themes/vividTheme.ts',
-			'--out',
-			'src/themes/vivid/vivid.css',
-		],
-		{ cwd: projectDirectory, stdio: 'inherit' },
-	);
+  const cliBin = localRequire.resolve('@astryxdesign/cli');
+  execFileSync(
+    process.execPath,
+    [
+      cliBin,
+      'theme',
+      'build',
+      'src/themes/vividTheme.ts',
+      '--out',
+      'src/themes/vivid/vivid.css',
+    ],
+    { cwd: projectDirectory, stdio: 'inherit' },
+  );
 
-	const source = await readFile(builtThemePath, 'utf8');
-	const converted = convertAstryxThemeCss(source);
-	let current = '';
+  const source = await readFile(builtThemePath, 'utf8');
+  const converted = convertAstryxThemeCss(source);
+  let current = '';
 
-	try {
-		current = await readFile(generatedThemePath, 'utf8');
-	} catch (error) {
-		if (error.code !== 'ENOENT') throw error;
-	}
+  try {
+    current = await readFile(generatedThemePath, 'utf8');
+  } catch (error) {
+    if (error.code !== 'ENOENT') throw error;
+  }
 
-	if (current === converted) return;
+  if (current === converted) return;
 
-	await mkdir(dirname(generatedThemePath), { recursive: true });
-	await writeFile(generatedThemePath, converted, 'utf8');
+  await mkdir(dirname(generatedThemePath), { recursive: true });
+  await writeFile(generatedThemePath, converted, 'utf8');
 }
 
 const isMainModule =
-	process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+  process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 
 if (isMainModule) {
-	prepareAstryxTheme().catch((error) => {
-		console.error(error);
-		process.exitCode = 1;
-	});
+  prepareAstryxTheme().catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
+  });
 }

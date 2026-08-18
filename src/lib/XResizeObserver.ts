@@ -1,22 +1,22 @@
 type Parameters = {
-	width: number;
-	height: number;
+  width: number;
+  height: number;
 };
 
 type HandlerCallback = (node: Element, data: Parameters) => void;
 
 type NodeData = {
-	data: Parameters | null;
-	handlers: Set<HandlerCallback>;
+  data: Parameters | null;
+  handlers: Set<HandlerCallback>;
 };
 
 type SizeGetter = (node: Element) => Parameters;
 
 type Options = {
-	/**
-	 * Function return properties for check. Such as width, height
-	 */
-	sizeGetter?: SizeGetter;
+  /**
+   * Function return properties for check. Such as width, height
+   */
+  sizeGetter?: SizeGetter;
 };
 
 /**
@@ -30,95 +30,92 @@ type Options = {
  * @requires WeakSet
  */
 export class XResizeObserver {
-	private readonly registry = new WeakMap<Element, NodeData>();
+  private readonly registry = new WeakMap<Element, NodeData>();
 
-	private readonly getSize: SizeGetter = (node: Element) => ({
-		height: node.scrollHeight,
-		width: node.scrollWidth,
-	});
+  private readonly getSize: SizeGetter = (node: Element) => ({
+    height: node.scrollHeight,
+    width: node.scrollWidth,
+  });
 
-	constructor(options?: Options) {
-		const customSizeGetter = options?.sizeGetter;
-		if (customSizeGetter !== undefined) {
-			this.getSize = customSizeGetter;
-		}
-	}
+  constructor(options?: Options) {
+    const customSizeGetter = options?.sizeGetter;
+    if (customSizeGetter !== undefined) {
+      this.getSize = customSizeGetter;
+    }
+  }
 
-	private readonly loopRegistry = new WeakSet<Element>();
-	private readonly runLoop = (node: Element) => {
-		if (this.loopRegistry.has(node)) return;
+  private readonly loopRegistry = new WeakSet<Element>();
+  private readonly runLoop = (node: Element) => {
+    if (this.loopRegistry.has(node)) return;
 
-		const loop = () => {
-			const nodeStorage = this.registry.get(node);
-			if (nodeStorage === undefined) {
-				// Stop loop
-				this.loopRegistry.delete(node);
-				return;
-			}
+    const loop = () => {
+      const nodeStorage = this.registry.get(node);
+      if (nodeStorage === undefined) {
+        // Stop loop
+        this.loopRegistry.delete(node);
+        return;
+      }
 
-			const { width, height } = this.getSize(node);
+      const { width, height } = this.getSize(node);
 
-			let isResized = false;
-			if (nodeStorage.data === null) {
-				isResized = true;
-			} else if (
-				nodeStorage.data.height !== height ||
-				nodeStorage.data.width !== width
-			) {
-				isResized = true;
-			}
+      let isResized = false;
+      if (nodeStorage.data === null) {
+        isResized = true;
+      } else if (nodeStorage.data.height !== height || nodeStorage.data.width !== width) {
+        isResized = true;
+      }
 
-			if (isResized) {
-				const newData = { width, height };
-				nodeStorage.data = newData;
-				nodeStorage.handlers.forEach((callback) => {
-					callback(node, { ...newData });
-				});
-			}
+      if (isResized) {
+        const newData = { width, height };
+        nodeStorage.data = newData;
+        nodeStorage.handlers.forEach((callback) => {
+          callback(node, { ...newData });
+        });
+      }
 
-			requestAnimationFrame(loop);
-		};
+      requestAnimationFrame(loop);
+    };
 
-		// Start loop
-		this.loopRegistry.add(node);
-		loop();
-	};
+    // Start loop
+    this.loopRegistry.add(node);
+    loop();
+  };
 
-	addHandler(node: Element, callback: HandlerCallback) {
-		if (!this.registry.has(node)) {
-			this.registry.set(node, {
-				data: null,
-				handlers: new Set<HandlerCallback>(),
-			});
+  addHandler(node: Element, callback: HandlerCallback) {
+    if (!this.registry.has(node)) {
+      this.registry.set(node, {
+        data: null,
+        handlers: new Set<HandlerCallback>(),
+      });
 
-			this.runLoop(node);
-		}
+      this.runLoop(node);
+    }
 
-		const nodeStorage = this.registry.get(node);
-		if (nodeStorage === undefined) return;
+    const nodeStorage = this.registry.get(node);
+    if (nodeStorage === undefined) return;
 
-		const nodeHandlers = nodeStorage.handlers;
-		if (nodeHandlers === undefined) return;
+    const nodeHandlers = nodeStorage.handlers;
+    if (nodeHandlers === undefined) return;
 
-		if (!nodeHandlers.has(callback)) {
-			nodeHandlers.add(callback);
-		}
-	}
+    if (!nodeHandlers.has(callback)) {
+      nodeHandlers.add(callback);
+    }
+  }
 
-	deleteHandler(node: Element, callback: HandlerCallback) {
-		const nodeStorage = this.registry.get(node);
-		if (nodeStorage === undefined) return;
+  deleteHandler(node: Element, callback: HandlerCallback) {
+    const nodeStorage = this.registry.get(node);
+    if (nodeStorage === undefined) return;
 
-		const nodeHandlers = nodeStorage.handlers;
-		if (nodeHandlers === undefined) return;
+    const nodeHandlers = nodeStorage.handlers;
+    if (nodeHandlers === undefined) return;
 
-		nodeHandlers.delete(callback);
-	}
+    nodeHandlers.delete(callback);
+  }
 
-	purgeHandlers(node: Element) {
-		const nodeStorage = this.registry.get(node);
-		if (nodeStorage === undefined) return;
+  purgeHandlers(node: Element) {
+    const nodeStorage = this.registry.get(node);
+    if (nodeStorage === undefined) return;
 
-		nodeStorage.handlers = new Set<HandlerCallback>();
-	}
+    nodeStorage.handlers = new Set<HandlerCallback>();
+  }
 }

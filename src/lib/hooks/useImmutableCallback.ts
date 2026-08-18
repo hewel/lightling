@@ -5,13 +5,13 @@ import { DependencyList, useCallback, useRef } from 'react';
  * selected by the provided dependencies.
  */
 export const useImmutableCallback = <Args extends unknown[], Result>(
-	callback: (...args: Args) => Result,
-	deps: DependencyList,
+  callback: (...args: Args) => Result,
+  deps: DependencyList,
 ): ((...args: Args) => Result) => {
-	// oxlint-disable-next-line react/exhaustive-deps
-	const actualCallback = useCallback(callback, deps);
-	const callbackRef = useRef(actualCallback);
-	callbackRef.current = actualCallback;
+  // oxlint-disable-next-line react/exhaustive-deps
+  const actualCallback = useCallback(callback, deps);
+  const callbackRef = useRef(actualCallback);
+  callbackRef.current = actualCallback;
 
-	return useCallback((...args: Args) => callbackRef.current(...args), []);
+  return useCallback((...args: Args) => callbackRef.current(...args), []);
 };

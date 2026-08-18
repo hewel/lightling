@@ -8,8 +8,8 @@ import { isNotEqual } from '../filters';
  * Derived store will filter updates that equal to a current state (will used deep equality check)
  */
 export function equalMap<Type, MappedData>(
-	source: Store<Type>,
-	selector: (value: Type) => MappedData,
+  source: Store<Type>,
+  selector: (value: Type) => MappedData,
 ): Store<MappedData> {
-	return createSelector(source, selector, { updateFilter: isNotEqual });
+  return createSelector(source, selector, { updateFilter: isNotEqual });
 }

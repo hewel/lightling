@@ -9,31 +9,31 @@ import { useRefHost } from '@/lib/hooks/useRefHost';
 import { language as tslanguage } from './languages/typescript';
 
 const styles = stylex.create({
-	code: {
-		width: '100%',
-	},
+  code: {
+    width: '100%',
+  },
 });
 
 // Configure monako
 languages.register({
-	id: 'javascript',
-	extensions: ['.js', '.es6', '.jsx', '.mjs', '.cjs'],
-	firstLine: '^#!.*\\bnode',
-	filenames: ['jakefile'],
-	aliases: ['JavaScript', 'javascript', 'js'],
-	mimetypes: ['text/javascript'],
+  id: 'javascript',
+  extensions: ['.js', '.es6', '.jsx', '.mjs', '.cjs'],
+  firstLine: '^#!.*\\bnode',
+  filenames: ['jakefile'],
+  aliases: ['JavaScript', 'javascript', 'js'],
+  mimetypes: ['text/javascript'],
 });
 
 languages.setMonarchTokensProvider('javascript', tslanguage);
 
 export type EditorObject = {
-	updateDimensions: () => void;
+  updateDimensions: () => void;
 } | null;
 
 export type MonacoEditorProps = {
-	value: string;
-	setValue?: (value: string) => void;
-	editorObjectRef?: RefObject<EditorObject>;
+  value: string;
+  setValue?: (value: string) => void;
+  editorObjectRef?: RefObject<EditorObject>;
 };
 
 /**
@@ -41,100 +41,100 @@ export type MonacoEditorProps = {
  * See docs: https://microsoft.github.io/monaco-editor/docs.html
  */
 export const MonacoEditor: FC<MonacoEditorProps> = ({
-	value,
-	setValue,
-	editorObjectRef,
+  value,
+  setValue,
+  editorObjectRef,
 }) => {
-	const setValueRef = useRef(setValue);
-	setValueRef.current = setValue;
+  const setValueRef = useRef(setValue);
+  setValueRef.current = setValue;
 
-	// Init
-	const editorContainerRef = useRef<HTMLDivElement>(null);
-	const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
+  // Init
+  const editorContainerRef = useRef<HTMLDivElement>(null);
+  const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
 
-	const updateDimensions = useCallback(() => {
-		const editorContainer = editorContainerRef.current;
-		const monacoEditor = editorRef.current;
-		if (!editorContainer || !monacoEditor) return;
+  const updateDimensions = useCallback(() => {
+    const editorContainer = editorContainerRef.current;
+    const monacoEditor = editorRef.current;
+    if (!editorContainer || !monacoEditor) return;
 
-		monacoEditor.layout({ width: 0, height: 0 });
+    monacoEditor.layout({ width: 0, height: 0 });
 
-		requestAnimationFrame(() => {
-			const containerRect = editorContainer.getClientRects()[0];
-			if (!containerRect) return;
+    requestAnimationFrame(() => {
+      const containerRect = editorContainer.getClientRects()[0];
+      if (!containerRect) return;
 
-			const { width, height } = containerRect;
-			monacoEditor.layout({ width, height });
-		});
-	}, []);
+      const { width, height } = containerRect;
+      monacoEditor.layout({ width, height });
+    });
+  }, []);
 
-	const editorControls = useMemo(() => {
-		return {
-			updateDimensions,
-		};
-	}, [updateDimensions]);
+  const editorControls = useMemo(() => {
+    return {
+      updateDimensions,
+    };
+  }, [updateDimensions]);
 
-	useRefHost(editorObjectRef, editorControls);
+  useRefHost(editorObjectRef, editorControls);
 
-	useEffect(() => {
-		const editorContainer = editorContainerRef.current;
-		if (!editorContainer) return;
+  useEffect(() => {
+    const editorContainer = editorContainerRef.current;
+    if (!editorContainer) return;
 
-		const monacoEditor = editor.create(editorContainer, {
-			value,
-			language: 'javascript',
-			automaticLayout: true,
-			minimap: isMobileBrowser()
-				? {
-						enabled: false,
-					}
-				: undefined,
-		});
+    const monacoEditor = editor.create(editorContainer, {
+      value,
+      language: 'javascript',
+      automaticLayout: true,
+      minimap: isMobileBrowser()
+        ? {
+            enabled: false,
+          }
+        : undefined,
+    });
 
-		editorRef.current = monacoEditor;
+    editorRef.current = monacoEditor;
 
-		// Update value
-		monacoEditor.onDidChangeModelContent((evt) => {
-			if (evt.changes.length === 0) return;
-			if (setValueRef.current) {
-				setValueRef.current(monacoEditor.getValue());
-			}
-		});
+    // Update value
+    monacoEditor.onDidChangeModelContent((evt) => {
+      if (evt.changes.length === 0) return;
+      if (setValueRef.current) {
+        setValueRef.current(monacoEditor.getValue());
+      }
+    });
 
-		// Ignore keys while focus on editor
-		const onKeyPress = (evt: KeyboardEvent) => {
-			if (monacoEditor.hasWidgetFocus()) {
-				evt.stopPropagation();
-			}
-		};
+    // Ignore keys while focus on editor
+    const onKeyPress = (evt: KeyboardEvent) => {
+      if (monacoEditor.hasWidgetFocus()) {
+        evt.stopPropagation();
+      }
+    };
 
-		editorContainer.addEventListener('keydown', onKeyPress);
-		editorContainer.addEventListener('keyup', onKeyPress);
+    editorContainer.addEventListener('keydown', onKeyPress);
+    editorContainer.addEventListener('keyup', onKeyPress);
 
-		// Handle window resize
-		window.addEventListener('resize', updateDimensions);
+    // Handle window resize
+    window.addEventListener('resize', updateDimensions);
 
-		return () => {
-			editorContainer.removeEventListener('keydown', onKeyPress);
-			editorContainer.removeEventListener('keyup', onKeyPress);
-			window.removeEventListener('resize', updateDimensions);
+    return () => {
+      editorContainer.removeEventListener('keydown', onKeyPress);
+      editorContainer.removeEventListener('keyup', onKeyPress);
+      window.removeEventListener('resize', updateDimensions);
 
-			monacoEditor.dispose();
-		};
+      monacoEditor.dispose();
+    };
 
-		// Hook runs only once to initialize component
-		// oxlint-disable-next-line react/exhaustive-deps
-	}, []);
+    // Hook runs only once to initialize component
+    // oxlint-disable-next-line react/exhaustive-deps
+  }, []);
 
-	// Update value
-	useEffect(() => {
-		const editor = editorRef.current;
-		if (!editor) return;
+  // Update value
+  useEffect(() => {
+    const editor = editorRef.current;
+    if (!editor) return;
 
-		if (editor.getValue() !== value) {
-			editor.setValue(value);
-		}
-	});
+    if (editor.getValue() !== value) {
+      editor.setValue(value);
+    }
+  });
 
-	return <div {...stylex.props(styles.code)} ref={editorContainerRef} />;
+  return <div {...stylex.props(styles.code)} ref={editorContainerRef} />;
 };

@@ -1,11 +1,11 @@
 /* Infrastructure exception: Astryx TextArea has no slot for its native textarea. */
 .TextareaAdapter_hasClear.TextareaAdapter-Field textarea {
-	padding-inline-end: var(--spacing-10);
+  padding-inline-end: var(--spacing-10);
 }
 
 .TextareaAdapter-Field textarea {
-	height: var(--textarea-adapter-height, auto);
-	min-height: var(--textarea-adapter-min-height, 5rem);
-	max-height: var(--textarea-adapter-max-height, 20rem);
-	resize: var(--textarea-adapter-resize, vertical);
+  height: var(--textarea-adapter-height, auto);
+  min-height: var(--textarea-adapter-min-height, 5rem);
+  max-height: var(--textarea-adapter-max-height, 20rem);
+  resize: var(--textarea-adapter-resize, vertical);
 }

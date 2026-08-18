@@ -6,81 +6,80 @@ import { detectLanguage, isValidLanguage } from '../language';
  * Helper to detect platform
  */
 export const isMobileBrowser = () => {
-	const UA = navigator.userAgent;
-	const isMobileUserAgent =
-		/\b(BlackBerry|webOS|iPhone|IEMobile)\b/i.test(UA) ||
-		/\b(Android|Windows Phone|iPad|iPod)\b/i.test(UA);
+  const UA = navigator.userAgent;
+  const isMobileUserAgent =
+    /\b(BlackBerry|webOS|iPhone|IEMobile)\b/i.test(UA) ||
+    /\b(Android|Windows Phone|iPad|iPod)\b/i.test(UA);
 
-	return isMobileUserAgent;
+  return isMobileUserAgent;
 };
 
 export const injectStyles = (paths: string[], parent?: Node) => {
-	paths.forEach((path) => {
-		const link = document.createElement('link');
-		link.href = browser.runtime.getURL(path);
-		link.rel = 'stylesheet';
-		(parent !== undefined ? parent : document.head).appendChild(link);
-	});
+  paths.forEach((path) => {
+    const link = document.createElement('link');
+    link.href = browser.runtime.getURL(path);
+    link.rel = 'stylesheet';
+    (parent !== undefined ? parent : document.head).appendChild(link);
+  });
 };
 
 type WebAccessibleResource = string | { resources?: string[] };
 
 export const getContentScriptStyles = () => {
-	const manifest = browser.runtime.getManifest() as ReturnType<
-		typeof browser.runtime.getManifest
-	> & {
-		web_accessible_resources?: WebAccessibleResource[];
-	};
+  const manifest = browser.runtime.getManifest() as ReturnType<
+    typeof browser.runtime.getManifest
+  > & {
+    web_accessible_resources?: WebAccessibleResource[];
+  };
 
-	return (manifest.web_accessible_resources ?? [])
-		.flatMap((entry) => (typeof entry === 'string' ? entry : (entry.resources ?? [])))
-		.filter((path) => path.endsWith('.css'));
+  return (manifest.web_accessible_resources ?? [])
+    .flatMap((entry) => (typeof entry === 'string' ? entry : (entry.resources ?? [])))
+    .filter((path) => path.endsWith('.css'));
 };
 
 export const getOptionsPageUrl = () => {
-	const optionsPage = browser.runtime.getManifest().options_ui?.page;
-	return browser.runtime.getURL(optionsPage ?? 'options/index.html');
+  const optionsPage = browser.runtime.getManifest().options_ui?.page;
+  return browser.runtime.getURL(optionsPage ?? 'options/index.html');
 };
 
 export function getPageLanguageFromMeta() {
-	const html = document.documentElement;
+  const html = document.documentElement;
 
-	const langAttributes = ['lang', 'xml:lang'];
-	for (const name of langAttributes) {
-		const pageLangRaw = html.getAttribute(name);
-		if (pageLangRaw !== null) {
-			const match = /^([a-z]+)(-[a-zA-Z]+)?$/.exec(pageLangRaw);
-			if (match !== null) {
-				const language = match[1];
-				return isValidLanguage(language) ? language : null;
-			}
-		}
-	}
+  const langAttributes = ['lang', 'xml:lang'];
+  for (const name of langAttributes) {
+    const pageLangRaw = html.getAttribute(name);
+    if (pageLangRaw !== null) {
+      const match = /^([a-z]+)(-[a-zA-Z]+)?$/.exec(pageLangRaw);
+      if (match !== null) {
+        const language = match[1];
+        return isValidLanguage(language) ? language : null;
+      }
+    }
+  }
 
-	return null;
+  return null;
 }
 
 export const isFirefox = () => /firefox/i.test(navigator.userAgent);
 export const isChromium = () => /chrome/i.test(navigator.userAgent);
 export const isBackgroundContext = () => {
-	const manifest = browser.runtime.getManifest() as ReturnType<
-		typeof browser.runtime.getManifest
-	> & {
-		background?: {
-			scripts?: string[];
-			service_worker?: string;
-		};
-	};
-	const backgroundPaths = [
-		manifest.background?.service_worker,
-		...(manifest.background?.scripts ?? []),
-		'_generated_background_page.html',
-	];
+  const manifest = browser.runtime.getManifest() as ReturnType<
+    typeof browser.runtime.getManifest
+  > & {
+    background?: {
+      scripts?: string[];
+      service_worker?: string;
+    };
+  };
+  const backgroundPaths = [
+    manifest.background?.service_worker,
+    ...(manifest.background?.scripts ?? []),
+    '_generated_background_page.html',
+  ];
 
-	return backgroundPaths.some(
-		(path) =>
-			typeof path === 'string' && location.href === browser.runtime.getURL(path),
-	);
+  return backgroundPaths.some(
+    (path) => typeof path === 'string' && location.href === browser.runtime.getURL(path),
+  );
 };
 
 const extensionHostname = new URL(browser.runtime.getURL('')).host;
@@ -90,15 +89,15 @@ export const isExtensionContext = location.host === extensionHostname;
  * By default detect lang by meta, but while `detectByContent` is `true` its try detect lang by content
  */
 export const getPageLanguage = async (detectByContent = false, reliableOnly = false) => {
-	const langFromMeta = getPageLanguageFromMeta();
+  const langFromMeta = getPageLanguageFromMeta();
 
-	// Try detect language by content
-	if (langFromMeta === null || detectByContent) {
-		const contentLang = await detectLanguage(document.body.innerText, reliableOnly);
-		if (contentLang !== null) {
-			return contentLang;
-		}
-	}
+  // Try detect language by content
+  if (langFromMeta === null || detectByContent) {
+    const contentLang = await detectLanguage(document.body.innerText, reliableOnly);
+    if (contentLang !== null) {
+      return contentLang;
+    }
+  }
 
-	return langFromMeta;
+  return langFromMeta;
 };

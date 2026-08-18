@@ -8,28 +8,28 @@ const packagePath = resolve(projectDirectory, 'package.json');
 const manifestPath = resolve(projectDirectory, 'src/manifest.json');
 
 async function readJson(path) {
-	return JSON.parse(await readFile(path, 'utf8'));
+  return JSON.parse(await readFile(path, 'utf8'));
 }
 
 export async function syncManifestVersion() {
-	const [packageJson, manifest] = await Promise.all([
-		readJson(packagePath),
-		readJson(manifestPath),
-	]);
+  const [packageJson, manifest] = await Promise.all([
+    readJson(packagePath),
+    readJson(manifestPath),
+  ]);
 
-	manifest.version = packageJson.version;
+  manifest.version = packageJson.version;
 
-	await writeFile(manifestPath, `${JSON.stringify(manifest, null, '\t')}\n`);
+  await writeFile(manifestPath, `${JSON.stringify(manifest, null, '\t')}\n`);
 }
 
 export default syncManifestVersion;
 
 const isMainModule =
-	process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+  process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 
 if (isMainModule) {
-	syncManifestVersion().catch((error) => {
-		console.error(error);
-		process.exitCode = 1;
-	});
+  syncManifestVersion().catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
+  });
 }

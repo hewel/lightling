@@ -7,11 +7,11 @@ import { getTTSLanguagesFactory } from './getTTSLanguages';
 import { updateCustomSpeakerFactory } from './updateCustomSpeaker';
 
 export const ttsRequestHandlers = [
-	getTTSFactory,
-	getTTSLanguagesFactory,
-	getSpeakersFactory,
-	getCustomSpeakersFactory,
-	addCustomSpeakerFactory,
-	deleteCustomSpeakerFactory,
-	updateCustomSpeakerFactory,
+  getTTSFactory,
+  getTTSLanguagesFactory,
+  getSpeakersFactory,
+  getCustomSpeakersFactory,
+  addCustomSpeakerFactory,
+  deleteCustomSpeakerFactory,
+  updateCustomSpeakerFactory,
 ];

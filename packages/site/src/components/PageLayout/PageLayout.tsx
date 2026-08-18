@@ -7,22 +7,19 @@ import Head from '@docusaurus/Head';
 import theme from '../theme';
 
 export const PageLayout: FC<
-	PropsWithChildren<{
-		i18n: i18n;
-	}>
+  PropsWithChildren<{
+    i18n: i18n;
+  }>
 > = ({ i18n, children }) => {
-	return (
-		<I18nextProvider i18n={i18n}>
-			<ChakraBaseProvider theme={theme}>
-				<Head>
-					<meta
-						name="viewport"
-						content="width=device-width, initial-scale=1.0"
-					/>
-				</Head>
+  return (
+    <I18nextProvider i18n={i18n}>
+      <ChakraBaseProvider theme={theme}>
+        <Head>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        </Head>
 
-				{children}
-			</ChakraBaseProvider>
-		</I18nextProvider>
-	);
+        {children}
+      </ChakraBaseProvider>
+    </I18nextProvider>
+  );
 };

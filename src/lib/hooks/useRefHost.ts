@@ -1,14 +1,14 @@
 import { Ref, useEffect, useRef } from 'react';
 
 const setRefValue = <T>(ref: Ref<T>, value: T | null) => {
-	if (ref === null) return;
+  if (ref === null) return;
 
-	if (typeof ref === 'function') {
-		ref(value);
-		return;
-	}
+  if (typeof ref === 'function') {
+    ref(value);
+    return;
+  }
 
-	ref.current = value;
+  ref.current = value;
 };
 
 /**
@@ -16,24 +16,24 @@ const setRefValue = <T>(ref: Ref<T>, value: T | null) => {
  * ref when the component unmounts.
  */
 export const useRefHost = <T>(ref: Ref<T> | undefined, value: T) => {
-	const localRef = useRef<Ref<T> | undefined>(undefined);
-	const localValue = useRef<T | undefined>(undefined);
+  const localRef = useRef<Ref<T> | undefined>(undefined);
+  const localValue = useRef<T | undefined>(undefined);
 
-	if (localRef.current !== ref || localValue.current !== value) {
-		localRef.current = ref;
-		localValue.current = value;
+  if (localRef.current !== ref || localValue.current !== value) {
+    localRef.current = ref;
+    localValue.current = value;
 
-		if (ref !== undefined) {
-			setRefValue(ref, value);
-		}
-	}
+    if (ref !== undefined) {
+      setRefValue(ref, value);
+    }
+  }
 
-	useEffect(
-		() => () => {
-			if (localRef.current !== undefined) {
-				setRefValue(localRef.current, null);
-			}
-		},
-		[],
-	);
+  useEffect(
+    () => () => {
+      if (localRef.current !== undefined) {
+        setRefValue(localRef.current, null);
+      }
+    },
+    [],
+  );
 };

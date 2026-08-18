@@ -1,17 +1,17 @@
 import { buildBackendRequest } from '../../utils/requestBuilder';
 
 type ThemeContext = {
-	onChange: (isLightTheme: boolean) => void;
+  onChange: (isLightTheme: boolean) => void;
 };
 
 export const [themeUpdateFactory, themeUpdate] = buildBackendRequest<
-	{ isLight: boolean },
-	void,
-	ThemeContext
+  { isLight: boolean },
+  void,
+  ThemeContext
 >('customTranslator.create', {
-	factoryHandler:
-		({ onChange }) =>
-		async ({ isLight }) => {
-			onChange(isLight);
-		},
+  factoryHandler:
+    ({ onChange }) =>
+    async ({ isLight }) => {
+      onChange(isLight);
+    },
 });

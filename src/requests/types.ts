@@ -7,19 +7,19 @@ import { PageTranslationContext } from '../app/ContentScript/PageTranslationCont
 import { AppConfigType } from '../types/runtime';
 
 export type RequestHandlerFactoryProps = {
-	config: ObservableAsyncStorage<AppConfigType>;
-	backgroundContext: Background;
+  config: ObservableAsyncStorage<AppConfigType>;
+  backgroundContext: Background;
 };
 
 export type RequestHandlerFactory<T = RequestHandlerFactoryProps> = (
-	props: T,
+  props: T,
 ) => () => void;
 
 export type ClientRequestHandlerFactoryProps = {
-	$config: Store<AppConfigType>;
-	pageTranslationContext: PageTranslationContext;
+  $config: Store<AppConfigType>;
+  pageTranslationContext: PageTranslationContext;
 };
 
 export type ClientRequestHandlerFactory = (
-	props: ClientRequestHandlerFactoryProps,
+  props: ClientRequestHandlerFactoryProps,
 ) => () => void;

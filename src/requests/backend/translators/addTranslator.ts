@@ -7,15 +7,15 @@ import * as db from './data';
 import { TranslatorEntry } from './data';
 
 export const [addTranslatorFactory, addTranslator] = buildBackendRequest(
-	'addTranslator',
-	{
-		requestValidator: TranslatorEntry,
+  'addTranslator',
+  {
+    requestValidator: TranslatorEntry,
 
-		factoryHandler: () => async (data) => {
-			await validateTranslatorCode(data.code);
+    factoryHandler: () => async (data) => {
+      await validateTranslatorCode(data.code);
 
-			await db.addTranslator(data);
-			await applyTranslators();
-		},
-	},
+      await db.addTranslator(data);
+      await applyTranslators();
+    },
+  },
 );

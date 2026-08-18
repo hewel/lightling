@@ -22,172 +22,170 @@ import { TextTranslatorTab } from './tabs/TextTranslator/TextTranslator@tab';
 import './global.css';
 
 interface PopupPageProps {
-	rootElement: HTMLElement;
+  rootElement: HTMLElement;
 }
 
 const baseTabs: IPopupWindowTab[] = [
-	{
-		id: 'translateText',
-		component: TextTranslatorTab,
-	},
+  {
+    id: 'translateText',
+    component: TextTranslatorTab,
+  },
 ];
 
 const contentScriptRequiredTabs: IPopupWindowTab[] = [
-	{
-		id: 'translatePage',
-		component: PageTranslatorTab,
-	},
+  {
+    id: 'translatePage',
+    component: PageTranslatorTab,
+  },
 ];
 
 const tabsOrder = ['translatePage', 'translateText'];
 
 const PopupPage: FC<PopupPageProps> = ({ rootElement }) => {
-	const [tabs, setTabs] = useState<IPopupWindowTab[]>();
-	const [activeTab, setActiveTab] = useState<string>();
+  const [tabs, setTabs] = useState<IPopupWindowTab[]>();
+  const [activeTab, setActiveTab] = useState<string>();
 
-	const [config, setConfig] = useState<AppConfigType>();
-	const [translatorFeatures, setTranslatorFeatures] = useState<TranslatorFeatures>();
+  const [config, setConfig] = useState<AppConfigType>();
+  const [translatorFeatures, setTranslatorFeatures] = useState<TranslatorFeatures>();
 
-	const [error, setError] = useState<string>();
+  const [error, setError] = useState<string>();
 
-	const getTabsHash = useCallback(() => {
-		if (tabs === undefined) {
-			return null;
-		}
+  const getTabsHash = useCallback(() => {
+    if (tabs === undefined) {
+      return null;
+    }
 
-		const tabsHash = tabs
-			.map(({ id }) => id)
-			// Sort for independent hash of string order
-			.sort((str1, str2) => {
-				if (str1 > str2) {
-					return 1;
-				} else if (str2 > str1) {
-					return -1;
-				}
-				return 0;
-			})
-			.join(';');
+    const tabsHash = tabs
+      .map(({ id }) => id)
+      // Sort for independent hash of string order
+      .sort((str1, str2) => {
+        if (str1 > str2) {
+          return 1;
+        } else if (str2 > str1) {
+          return -1;
+        }
+        return 0;
+      })
+      .join(';');
 
-		return tabsHash;
-	}, [tabs]);
+    return tabsHash;
+  }, [tabs]);
 
-	const popupStorage = useMemo(() => new PopupWindowStorage(), []);
+  const popupStorage = useMemo(() => new PopupWindowStorage(), []);
 
-	const isRememberLastTab = config?.popup.rememberLastTab;
-	const setActiveTabProxy = useCallback(
-		(id: string) => {
-			// Remember active tab
-			if (isRememberLastTab) {
-				const tabsHash = getTabsHash();
-				if (tabsHash !== null) {
-					popupStorage.setActiveTab(tabsHash, id);
-				}
-			}
+  const isRememberLastTab = config?.popup.rememberLastTab;
+  const setActiveTabProxy = useCallback(
+    (id: string) => {
+      // Remember active tab
+      if (isRememberLastTab) {
+        const tabsHash = getTabsHash();
+        if (tabsHash !== null) {
+          popupStorage.setActiveTab(tabsHash, id);
+        }
+      }
 
-			setActiveTab(id);
-		},
-		[isRememberLastTab, getTabsHash, popupStorage],
-	);
+      setActiveTab(id);
+    },
+    [isRememberLastTab, getTabsHash, popupStorage],
+  );
 
-	// Init
-	useEffect(() => {
-		const tabs: IPopupWindowTab[] = [];
+  // Init
+  useEffect(() => {
+    const tabs: IPopupWindowTab[] = [];
 
-		Promise.all([
-			// Contentscript may be not available, it's ok for special pages
-			pingClient({ timeout: 200 }).then((isSuccess) => {
-				if (isSuccess) {
-					tabs.push(...contentScriptRequiredTabs);
-				}
-			}),
+    Promise.all([
+      // Contentscript may be not available, it's ok for special pages
+      pingClient({ timeout: 200 }).then((isSuccess) => {
+        if (isSuccess) {
+          tabs.push(...contentScriptRequiredTabs);
+        }
+      }),
 
-			// Background is required
-			pingBackend({ timeout: 1000 }).then((isSuccess) => {
-				if (!isSuccess) {
-					throw new Error(getMessage('common_bgUnavailable'));
-				}
+      // Background is required
+      pingBackend({ timeout: 1000 }).then((isSuccess) => {
+        if (!isSuccess) {
+          throw new Error(getMessage('common_bgUnavailable'));
+        }
 
-				tabs.push(...baseTabs);
+        tabs.push(...baseTabs);
 
-				// Set config
-				getConfig().then(setConfig);
+        // Set config
+        getConfig().then(setConfig);
 
-				// Set features
-				getTranslatorFeatures().then(setTranslatorFeatures);
-			}),
-		])
-			.then(() => {
-				// Sort tabs list and set
-				const sortedTabs = tabs.sort(
-					(a, b) => tabsOrder.indexOf(a.id) - tabsOrder.indexOf(b.id),
-				);
+        // Set features
+        getTranslatorFeatures().then(setTranslatorFeatures);
+      }),
+    ])
+      .then(() => {
+        // Sort tabs list and set
+        const sortedTabs = tabs.sort(
+          (a, b) => tabsOrder.indexOf(a.id) - tabsOrder.indexOf(b.id),
+        );
 
-				setTabs(sortedTabs);
-			})
-			.catch((reason) => {
-				setError(
-					reason instanceof Error
-						? reason.message
-						: getMessage('message_unknownError'),
-				);
-			});
-	}, []);
+        setTabs(sortedTabs);
+      })
+      .catch((reason) => {
+        setError(
+          reason instanceof Error ? reason.message : getMessage('message_unknownError'),
+        );
+      });
+  }, []);
 
-	// Update active tab
-	useEffect(() => {
-		// Skip pre init state
-		if (tabs === undefined || config === undefined) return;
+  // Update active tab
+  useEffect(() => {
+    // Skip pre init state
+    if (tabs === undefined || config === undefined) return;
 
-		const firstTabId = tabs[0].id;
-		const tabsHash = getTabsHash();
+    const firstTabId = tabs[0].id;
+    const tabsHash = getTabsHash();
 
-		if (!config.popup.rememberLastTab || tabsHash === null) {
-			setActiveTabProxy(firstTabId);
-		} else {
-			popupStorage.getActiveTab(tabsHash).then((lastActiveTab) => {
-				// Validate tab id
-				if (
-					lastActiveTab !== null &&
-					tabs.findIndex(({ id }) => id === lastActiveTab) !== -1
-				) {
-					setActiveTabProxy(lastActiveTab);
-				} else {
-					setActiveTabProxy(firstTabId);
-				}
-			});
-		}
-	}, [config, getTabsHash, popupStorage, setActiveTabProxy, tabs]);
+    if (!config.popup.rememberLastTab || tabsHash === null) {
+      setActiveTabProxy(firstTabId);
+    } else {
+      popupStorage.getActiveTab(tabsHash).then((lastActiveTab) => {
+        // Validate tab id
+        if (
+          lastActiveTab !== null &&
+          tabs.findIndex(({ id }) => id === lastActiveTab) !== -1
+        ) {
+          setActiveTabProxy(lastActiveTab);
+        } else {
+          setActiveTabProxy(firstTabId);
+        }
+      });
+    }
+  }, [config, getTabsHash, popupStorage, setActiveTabProxy, tabs]);
 
-	const minWidth = useMemo(() => (isMobileBrowser() ? undefined : 450), []);
+  const minWidth = useMemo(() => (isMobileBrowser() ? undefined : 450), []);
 
-	return (
-		<PopupWindow
-			rootElement={rootElement}
-			tabs={tabs}
-			activeTab={activeTab}
-			setActiveTab={setActiveTabProxy}
-			error={error}
-			config={config}
-			translatorFeatures={translatorFeatures}
-			minWidth={minWidth}
-		/>
-	);
+  return (
+    <PopupWindow
+      rootElement={rootElement}
+      tabs={tabs}
+      activeTab={activeTab}
+      setActiveTab={setActiveTabProxy}
+      error={error}
+      config={config}
+      translatorFeatures={translatorFeatures}
+      minWidth={minWidth}
+    />
+  );
 };
 
 function renderPage() {
-	const rootElement = document.body.querySelector('#root');
-	if (rootElement !== null && rootElement instanceof HTMLElement) {
-		createRoot(rootElement).render(
-			<AstryxProvider>
-				<PopupPage rootElement={rootElement} />
-			</AstryxProvider>,
-		);
-	}
+  const rootElement = document.body.querySelector('#root');
+  if (rootElement !== null && rootElement instanceof HTMLElement) {
+    createRoot(rootElement).render(
+      <AstryxProvider>
+        <PopupPage rootElement={rootElement} />
+      </AstryxProvider>,
+    );
+  }
 }
 
 // For universal render
 if (document.readyState == 'loading') {
-	document.addEventListener('DOMContentLoaded', renderPage);
+  document.addEventListener('DOMContentLoaded', renderPage);
 } else {
-	renderPage();
+  renderPage();
 }

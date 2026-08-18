@@ -1,21 +1,21 @@
 export const codeBlock = (code: string, language?: string) =>
-	['```' + (language ?? ''), code, '```'].join('\n');
+  ['```' + (language ?? ''), code, '```'].join('\n');
 
 export const getJsonTranslationPrompt = (json: string, from: string, to: string) => {
-	// use full language name
-	const langFormatter = new Intl.DisplayNames(['en'], { type: 'language' });
-	const originLang = from == 'auto' ? 'auto' : langFormatter.of(from);
-	const targetLang = langFormatter.of(to);
+  // use full language name
+  const langFormatter = new Intl.DisplayNames(['en'], { type: 'language' });
+  const originLang = from == 'auto' ? 'auto' : langFormatter.of(from);
+  const targetLang = langFormatter.of(to);
 
-	const prettifiedJson = JSON.stringify(JSON.parse(json), null, 2);
+  const prettifiedJson = JSON.stringify(JSON.parse(json), null, 2);
 
-	const languageRulesMap: Record<string, undefined | string[]> = {
-		ru: ["Use letters ё whenever it's necessary, instead of ё"],
-	};
+  const languageRulesMap: Record<string, undefined | string[]> = {
+    ru: ["Use letters ё whenever it's necessary, instead of ё"],
+  };
 
-	const languageRules = languageRulesMap[to];
+  const languageRules = languageRulesMap[to];
 
-	return `You are a translation service for translate localization files.
+  return `You are a translation service for translate localization files.
 
 	I will provide a JSON string with text, and your purpose is to translate all string values (not keys) from language ${originLang} to language ${targetLang}.
 
@@ -70,10 +70,10 @@ export const getJsonTranslationPrompt = (json: string, from: string, to: string)
 	Make sure twice, that every translated message sounds natively in ${targetLang} language.
 
 	${
-		languageRules
-			? `# Language specific rules\nFollow the next rules for ${targetLang} language:\n${languageRules}`
-			: ''
-	}
+    languageRules
+      ? `# Language specific rules\nFollow the next rules for ${targetLang} language:\n${languageRules}`
+      : ''
+  }
 
 	# Your task
 

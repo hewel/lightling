@@ -6,10 +6,10 @@ import { pingFactory } from '../../requests/contentscript/ping';
 import { translateSelectedTextFactory } from '../../requests/contentscript/translateSelectedText';
 
 export const requestHandlers = [
-	pingFactory,
-	getPageTranslateStateFactory,
-	getPageLanguageFactory,
-	enableTranslatePageFactory,
-	disableTranslatePageFactory,
-	translateSelectedTextFactory,
+  pingFactory,
+  getPageTranslateStateFactory,
+  getPageLanguageFactory,
+  enableTranslatePageFactory,
+  disableTranslatePageFactory,
+  translateSelectedTextFactory,
 ];

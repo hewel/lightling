@@ -1,10 +1,10 @@
 /* Infrastructure exception: Astryx Collapsible has no trigger xstyle slot. */
 .TextTranslatorDisclosure > button {
-	min-height: auto;
-	padding: var(--spacing-1) 0;
-	font-family: inherit;
-	font-size: inherit;
-	font-weight: var(--font-weight-normal);
-	line-height: inherit;
-	color: var(--color-text-secondary);
+  min-height: auto;
+  padding: var(--spacing-1) 0;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: var(--font-weight-normal);
+  line-height: inherit;
+  color: var(--color-text-secondary);
 }

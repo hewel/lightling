@@ -3,97 +3,97 @@ import traverse, { Traverse, TraverseContext } from 'traverse';
 export type ValuesEqualityPredicate = (a: unknown, b: unknown) => boolean;
 
 export const sliceJsonString = (
-	sourceJson: string,
-	maxLength: number,
-	maxSize?: number,
+  sourceJson: string,
+  maxLength: number,
+  maxSize?: number,
 ) => {
-	const json = JSON.parse(sourceJson);
-	if (typeof json !== 'object' || json === null)
-		throw new TypeError('Json data cannot be split to slices');
+  const json = JSON.parse(sourceJson);
+  if (typeof json !== 'object' || json === null)
+    throw new TypeError('Json data cannot be split to slices');
 
-	const result: [string, unknown][][] = [];
-	let offset = 0;
-	for (const slice of Object.entries(json)) {
-		const isEmptyChunk = result[offset] && result[offset].length > 0;
+  const result: [string, unknown][][] = [];
+  let offset = 0;
+  for (const slice of Object.entries(json)) {
+    const isEmptyChunk = result[offset] && result[offset].length > 0;
 
-		// Fill immediately for empty chunks
-		if (!isEmptyChunk) {
-			result[offset] = [slice];
-			continue;
-		}
+    // Fill immediately for empty chunks
+    if (!isEmptyChunk) {
+      result[offset] = [slice];
+      continue;
+    }
 
-		// Fill if fit
-		const candidate = [...result[offset], slice];
-		if (
-			JSON.stringify(Object.fromEntries(candidate)).length <= maxLength &&
-			(!maxSize || result[offset].length < maxSize)
-		) {
-			result[offset] = candidate;
-			continue;
-		}
+    // Fill if fit
+    const candidate = [...result[offset], slice];
+    if (
+      JSON.stringify(Object.fromEntries(candidate)).length <= maxLength &&
+      (!maxSize || result[offset].length < maxSize)
+    ) {
+      result[offset] = candidate;
+      continue;
+    }
 
-		// Fill next chunk
-		result[++offset] = [slice];
-		continue;
-	}
+    // Fill next chunk
+    result[++offset] = [slice];
+    continue;
+  }
 
-	return result.map((entries) => JSON.stringify(Object.fromEntries(entries)));
+  return result.map((entries) => JSON.stringify(Object.fromEntries(entries)));
 };
 
 export function getType(value: unknown): string {
-	if (Array.isArray(value)) return 'array';
-	if (value === null) return 'null';
-	return typeof value;
+  if (Array.isArray(value)) return 'array';
+  if (value === null) return 'null';
+  return typeof value;
 }
 
 export function isEqualStructures(
-	a: unknown,
-	b: unknown,
-	predicate?: ValuesEqualityPredicate,
+  a: unknown,
+  b: unknown,
+  predicate?: ValuesEqualityPredicate,
 ): boolean {
-	const typeA = getType(a);
-	const typeB = getType(b);
-	if (typeA !== typeB) return false;
+  const typeA = getType(a);
+  const typeB = getType(b);
+  if (typeA !== typeB) return false;
 
-	if (typeA === 'object') {
-		const keysA = Object.keys(a as object);
-		const keysB = Object.keys(b as object);
-		if (keysA.length !== keysB.length) return false;
-		keysA.sort();
-		keysB.sort();
-		for (let i = 0; i < keysA.length; i++) {
-			if (keysA[i] !== keysB[i]) return false;
-		}
-		for (const key of keysA) {
-			if (
-				!isEqualStructures(
-					(a as Record<string, unknown>)[key],
-					(b as Record<string, unknown>)[key],
-					predicate,
-				)
-			) {
-				return false;
-			}
-		}
-		return true;
-	}
+  if (typeA === 'object') {
+    const keysA = Object.keys(a as object);
+    const keysB = Object.keys(b as object);
+    if (keysA.length !== keysB.length) return false;
+    keysA.sort();
+    keysB.sort();
+    for (let i = 0; i < keysA.length; i++) {
+      if (keysA[i] !== keysB[i]) return false;
+    }
+    for (const key of keysA) {
+      if (
+        !isEqualStructures(
+          (a as Record<string, unknown>)[key],
+          (b as Record<string, unknown>)[key],
+          predicate,
+        )
+      ) {
+        return false;
+      }
+    }
+    return true;
+  }
 
-	if (typeA === 'array') {
-		const arrA = a as unknown[];
-		const arrB = b as unknown[];
-		if (arrA.length !== arrB.length) return false;
-		for (let i = 0; i < arrA.length; i++) {
-			if (!isEqualStructures(arrA[i], arrB[i], predicate)) return false;
-		}
-		return true;
-	}
+  if (typeA === 'array') {
+    const arrA = a as unknown[];
+    const arrB = b as unknown[];
+    if (arrA.length !== arrB.length) return false;
+    for (let i = 0; i < arrA.length; i++) {
+      if (!isEqualStructures(arrA[i], arrB[i], predicate)) return false;
+    }
+    return true;
+  }
 
-	if (predicate) {
-		return predicate(a, b);
-	}
+  if (predicate) {
+    return predicate(a, b);
+  }
 
-	// For primitive types: types must match, values don't matter
-	return true;
+  // For primitive types: types must match, values don't matter
+  return true;
 }
 
 /**
@@ -105,54 +105,54 @@ export function isEqualStructures(
  * @param target Object to patch
  */
 export const getObjectPatch = (
-	source: Record<any, any>,
-	target: Record<any, any>,
-	predicate?: ValuesEqualityPredicate,
+  source: Record<any, any>,
+  target: Record<any, any>,
+  predicate?: ValuesEqualityPredicate,
 ): {
-	/**
-	 * Subset of `target` object with structure equal to `source`
-	 */
-	subset: Record<any, any>;
-	/**
-	 * Part of `source` object that is not present in `subset`
-	 */
-	superset: Record<any, any>;
+  /**
+   * Subset of `target` object with structure equal to `source`
+   */
+  subset: Record<any, any>;
+  /**
+   * Part of `source` object that is not present in `subset`
+   */
+  superset: Record<any, any>;
 } => {
-	const subset = Object.fromEntries(
-		Object.entries(target).filter(([key]) =>
-			isEqualStructures(source[key], target[key], predicate),
-		),
-	);
-	const superset = Object.fromEntries(
-		Object.entries(source).filter(([key]) => !(key in subset)),
-	);
+  const subset = Object.fromEntries(
+    Object.entries(target).filter(([key]) =>
+      isEqualStructures(source[key], target[key], predicate),
+    ),
+  );
+  const superset = Object.fromEntries(
+    Object.entries(source).filter(([key]) => !(key in subset)),
+  );
 
-	return {
-		subset,
-		superset,
-	};
+  return {
+    subset,
+    superset,
+  };
 };
 
 export const getPathHash = (path: string[]) => path.join('.');
 
 export const getObjectPathsFromTraverse = (
-	traverseContext: Traverse<any>,
-	allPaths = false,
+  traverseContext: Traverse<any>,
+  allPaths = false,
 ) => {
-	const paths: string[] = [];
-	traverseContext.forEach(function () {
-		if (this.isRoot) return;
+  const paths: string[] = [];
+  traverseContext.forEach(function () {
+    if (this.isRoot) return;
 
-		if (allPaths || this.isLeaf) {
-			paths.push(getPathHash(this.path));
-		}
-	});
+    if (allPaths || this.isLeaf) {
+      paths.push(getPathHash(this.path));
+    }
+  });
 
-	return paths;
+  return paths;
 };
 
 export const getObjectPaths = (object: Record<any, any>, allPaths = false) =>
-	getObjectPathsFromTraverse(traverse(object), allPaths);
+  getObjectPathsFromTraverse(traverse(object), allPaths);
 
 // TODO: simplify implementation
 /**
@@ -168,85 +168,85 @@ export const getObjectPaths = (object: Record<any, any>, allPaths = false) =>
  * @returns
  */
 export const getObjectsDiff = (
-	source: Record<any, any>,
-	target: Record<any, any>,
-	mode: 'diff' | 'intersection',
-	isEqual: ValuesEqualityPredicate = Object.is,
+  source: Record<any, any>,
+  target: Record<any, any>,
+  mode: 'diff' | 'intersection',
+  isEqual: ValuesEqualityPredicate = Object.is,
 ) => {
-	const sourceWalker = traverse(source);
-	const targetWalker = traverse(target);
+  const sourceWalker = traverse(source);
+  const targetWalker = traverse(target);
 
-	const intersection = targetWalker.map(function () {
-		if (this.isRoot) return;
+  const intersection = targetWalker.map(function () {
+    if (this.isRoot) return;
 
-		// Remove whole subtrees that is not match the search mode
-		if (!sourceWalker.has(this.path)) {
-			this.block();
-			this.remove();
+    // Remove whole subtrees that is not match the search mode
+    if (!sourceWalker.has(this.path)) {
+      this.block();
+      this.remove();
 
-			return;
-		}
+      return;
+    }
 
-		const currentNode = this.node;
-		const targetNode = sourceWalker.get(this.path);
+    const currentNode = this.node;
+    const targetNode = sourceWalker.get(this.path);
 
-		// Handle case if node types is not equal
-		if (getType(currentNode) !== getType(targetNode)) {
-			// Don't traverse nested nodes
-			this.block();
-			this.remove();
+    // Handle case if node types is not equal
+    if (getType(currentNode) !== getType(targetNode)) {
+      // Don't traverse nested nodes
+      this.block();
+      this.remove();
 
-			return;
-		}
+      return;
+    }
 
-		// Continue traversing for objects
-		if (getType(currentNode) === 'object' || getType(currentNode) === 'array') return;
+    // Continue traversing for objects
+    if (getType(currentNode) === 'object' || getType(currentNode) === 'array') return;
 
-		// Check primitive values equality with a predicate
-		if (!isEqual(currentNode, targetNode)) {
-			// Don't traverse nested nodes (just for safe, to ensure it will not continue)
-			this.block();
-			this.remove();
+    // Check primitive values equality with a predicate
+    if (!isEqual(currentNode, targetNode)) {
+      // Don't traverse nested nodes (just for safe, to ensure it will not continue)
+      this.block();
+      this.remove();
 
-			return;
-		}
-	});
+      return;
+    }
+  });
 
-	if (mode === 'intersection') return intersection;
+  if (mode === 'intersection') return intersection;
 
-	const intersectionWalker = traverse(intersection);
-	return targetWalker.map(function () {
-		if (this.isRoot || !this.isLeaf) return;
+  const intersectionWalker = traverse(intersection);
+  return targetWalker.map(function () {
+    if (this.isRoot || !this.isLeaf) return;
 
-		if (!intersectionWalker.has(this.path)) return;
+    if (!intersectionWalker.has(this.path)) return;
 
-		this.remove();
+    this.remove();
 
-		// Remove parents
-		let context: TraverseContext | undefined = this;
-		while ((context = context.parent)) {
-			if (context.isRoot) break;
+    // Remove parents
+    let context: TraverseContext | undefined = this;
+    while ((context = context.parent)) {
+      if (context.isRoot) break;
 
-			if (!intersectionWalker.has(context.path)) break;
+      if (!intersectionWalker.has(context.path)) break;
 
-			let shouldRemoveParent = true;
+      let shouldRemoveParent = true;
 
-			// Check parent for nodes out of intersection
-			const objectKeys = context.keys ?? [];
-			if (objectKeys.length > 0) {
-				for (const key of objectKeys) {
-					if (!intersectionWalker.has([...context.path, key])) {
-						shouldRemoveParent = false;
-						break;
-					}
-				}
-			}
+      // Check parent for nodes out of intersection
+      const objectKeys = context.keys ?? [];
+      if (objectKeys.length > 0) {
+        for (const key of objectKeys) {
+          if (!intersectionWalker.has([...context.path, key])) {
+            shouldRemoveParent = false;
+            break;
+          }
+        }
+      }
 
-			if (shouldRemoveParent) {
-				context.remove();
-			} else {
-				break;
-			}
-		}
-	});
+      if (shouldRemoveParent) {
+        context.remove();
+      } else {
+        break;
+      }
+    }
+  });
 };

@@ -6,8 +6,8 @@ import { deleteTranslationHistoryEntryFactory } from './deleteTranslationHistory
 import { getTranslationHistoryEntriesFactory } from './getHistoryEntries';
 
 export const historyRequestHandlersFactory = joinRequestHandlers([
-	addTranslationHistoryEntryFactory,
-	deleteTranslationHistoryEntryFactory,
-	clearTranslationHistoryFactory,
-	getTranslationHistoryEntriesFactory,
+  addTranslationHistoryEntryFactory,
+  deleteTranslationHistoryEntryFactory,
+  clearTranslationHistoryFactory,
+  getTranslationHistoryEntriesFactory,
 ]);

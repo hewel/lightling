@@ -12,11 +12,11 @@ import { ITranslation } from '@/types/translation/Translation';
 import { Button } from '../../primitives/Button/Button.bundle/desktop';
 
 export type TranslationCardProps = {
-	translation: ITranslation;
-	timestamp?: number;
-	onPressTTS: (target: 'original' | 'translation') => void;
-	controlPanelSlot?: ReactNode | ReactNode[];
-	headStartSlot?: ReactNode | ReactNode[];
+  translation: ITranslation;
+  timestamp?: number;
+  onPressTTS: (target: 'original' | 'translation') => void;
+  controlPanelSlot?: ReactNode | ReactNode[];
+  headStartSlot?: ReactNode | ReactNode[];
 };
 
 // TODO: implement text highlighting for search results
@@ -24,77 +24,71 @@ export type TranslationCardProps = {
  * Represent translation data
  */
 export const TranslationCard: FC<TranslationCardProps> = ({
-	translation,
-	timestamp,
-	onPressTTS,
-	controlPanelSlot,
-	headStartSlot,
+  translation,
+  timestamp,
+  onPressTTS,
+  controlPanelSlot,
+  headStartSlot,
 }) => {
-	const ContentStack = isMobileBrowser() ? VStack : HStack;
+  const ContentStack = isMobileBrowser() ? VStack : HStack;
 
-	return (
-		<Card width="100%">
-			<VStack gap={3}>
-				<HStack justify="between" align="center">
-					<HStack gap={2} align="center">
-						{headStartSlot}
-						{timestamp !== undefined ? (
-							<Text type="supporting" color="secondary" hasTabularNumbers>
-								{new Date(timestamp).toLocaleDateString()}
-							</Text>
-						) : null}
-					</HStack>
-					<HStack gap={2}>{controlPanelSlot}</HStack>
-				</HStack>
+  return (
+    <Card width="100%">
+      <VStack gap={3}>
+        <HStack justify="between" align="center">
+          <HStack gap={2} align="center">
+            {headStartSlot}
+            {timestamp !== undefined ? (
+              <Text type="supporting" color="secondary" hasTabularNumbers>
+                {new Date(timestamp).toLocaleDateString()}
+              </Text>
+            ) : null}
+          </HStack>
+          <HStack gap={2}>{controlPanelSlot}</HStack>
+        </HStack>
 
-				<ContentStack gap={3}>
-					<VStack gap={2} width="100%">
-						<HStack gap={2} align="center">
-							<Button
-								onPress={() => {
-									onPressTTS('original');
-								}}
-								view="clear"
-								size="s"
-							>
-								<IconVolume2 />
-							</Button>
-							<Badge
-								label={getLanguageNameByCode(translation.from)}
-								variant="neutral"
-							/>
-						</HStack>
-						<VStack isScrollable>
-							<Text as="div" type="body" textWrap="pretty">
-								{translation.originalText}
-							</Text>
-						</VStack>
-					</VStack>
+        <ContentStack gap={3}>
+          <VStack gap={2} width="100%">
+            <HStack gap={2} align="center">
+              <Button
+                onPress={() => {
+                  onPressTTS('original');
+                }}
+                view="clear"
+                size="s"
+              >
+                <IconVolume2 />
+              </Button>
+              <Badge label={getLanguageNameByCode(translation.from)} variant="neutral" />
+            </HStack>
+            <VStack isScrollable>
+              <Text as="div" type="body" textWrap="pretty">
+                {translation.originalText}
+              </Text>
+            </VStack>
+          </VStack>
 
-					<VStack gap={2} width="100%">
-						<HStack gap={2} align="center">
-							<Button
-								onPress={() => {
-									onPressTTS('translation');
-								}}
-								view="clear"
-								size="s"
-							>
-								<IconVolume2 />
-							</Button>
-							<Badge
-								label={getLanguageNameByCode(translation.to)}
-								variant="neutral"
-							/>
-						</HStack>
-						<VStack isScrollable>
-							<Text as="div" type="body" textWrap="pretty">
-								{translation.translatedText}
-							</Text>
-						</VStack>
-					</VStack>
-				</ContentStack>
-			</VStack>
-		</Card>
-	);
+          <VStack gap={2} width="100%">
+            <HStack gap={2} align="center">
+              <Button
+                onPress={() => {
+                  onPressTTS('translation');
+                }}
+                view="clear"
+                size="s"
+              >
+                <IconVolume2 />
+              </Button>
+              <Badge label={getLanguageNameByCode(translation.to)} variant="neutral" />
+            </HStack>
+            <VStack isScrollable>
+              <Text as="div" type="body" textWrap="pretty">
+                {translation.translatedText}
+              </Text>
+            </VStack>
+          </VStack>
+        </ContentStack>
+      </VStack>
+    </Card>
+  );
 };

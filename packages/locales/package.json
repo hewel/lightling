@@ -1,26 +1,26 @@
 {
-	"name": "locales",
-	"scripts": {
-		"proofread": "tsx cli proofread -l en ../../_locales/",
-		"proofread:all": "tsx cli proofread ../../_locales/",
-		"sync": "tsx cli sync en ../../_locales/",
-		"prettify": "tsx cli prettify ../../_locales/",
-		"update": "npm run proofread && npm run sync"
-	},
-	"version": "1.0.0",
-	"main": "index.js",
-	"description": "",
-	"dependencies": {
-		"commander": "^14.0.0",
-		"deep-equal": "^2.2.3",
-		"deepmerge": "^4.3.1",
-		"dotenv": "^17.0.1",
-		"openai": "^5.8.2",
-		"traverse": "^0.6.11",
-		"zod": "^3.25.74"
-	},
-	"devDependencies": {
-		"@types/deep-equal": "^1.0.4",
-		"@types/traverse": "^0.6.37"
-	}
+  "name": "locales",
+  "scripts": {
+    "proofread": "tsx cli proofread -l en ../../_locales/",
+    "proofread:all": "tsx cli proofread ../../_locales/",
+    "sync": "tsx cli sync en ../../_locales/",
+    "prettify": "tsx cli prettify ../../_locales/",
+    "update": "npm run proofread && npm run sync"
+  },
+  "version": "1.0.0",
+  "main": "index.js",
+  "description": "",
+  "dependencies": {
+    "commander": "^14.0.0",
+    "deep-equal": "^2.2.3",
+    "deepmerge": "^4.3.1",
+    "dotenv": "^17.0.1",
+    "openai": "^5.8.2",
+    "traverse": "^0.6.11",
+    "zod": "^3.25.74"
+  },
+  "devDependencies": {
+    "@types/deep-equal": "^1.0.4",
+    "@types/traverse": "^0.6.37"
+  }
 }

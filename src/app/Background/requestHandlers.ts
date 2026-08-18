@@ -35,47 +35,47 @@ import { ttsRequestHandlers } from '../../requests/backend/tts';
 import { updateConfigFactory } from '../../requests/backend/updateConfig';
 
 export const requestHandlers = [
-	translateFactory,
-	telemetryFactory,
-	suggestLanguageFactory,
-	getTranslatorFeaturesFactory,
-	getUserLanguagePreferencesFactory,
-	getAvailableTranslatorsFactory,
-	clearCacheFactory,
+  translateFactory,
+  telemetryFactory,
+  suggestLanguageFactory,
+  getTranslatorFeaturesFactory,
+  getUserLanguagePreferencesFactory,
+  getAvailableTranslatorsFactory,
+  clearCacheFactory,
 
-	...ttsRequestHandlers,
+  ...ttsRequestHandlers,
 
-	historyRequestHandlersFactory,
+  historyRequestHandlersFactory,
 
-	bergamotHandlersFactory,
+  bergamotHandlersFactory,
 
-	getConfigFactory,
-	setConfigFactory,
-	resetConfigFactory,
-	updateConfigFactory,
+  getConfigFactory,
+  setConfigFactory,
+  resetConfigFactory,
+  updateConfigFactory,
 
-	getLanguagePreferencesFactory,
-	addLanguagePreferencesFactory,
-	deleteLanguagePreferencesFactory,
-	setSitePreferencesFactory,
-	getSitePreferencesFactory,
-	deleteSitePreferencesFactory,
+  getLanguagePreferencesFactory,
+  addLanguagePreferencesFactory,
+  deleteLanguagePreferencesFactory,
+  setSitePreferencesFactory,
+  getSitePreferencesFactory,
+  deleteSitePreferencesFactory,
 
-	addTranslationFactory,
-	deleteTranslationFactory,
-	findTranslationFactory,
-	getTranslationsFactory,
-	clearTranslationsFactory,
+  addTranslationFactory,
+  deleteTranslationFactory,
+  findTranslationFactory,
+  getTranslationsFactory,
+  clearTranslationsFactory,
 
-	addTranslatorFactory,
-	deleteTranslatorFactory,
-	updateTranslatorFactory,
-	getTranslatorsFactory,
-	applyTranslatorsFactory,
+  addTranslatorFactory,
+  deleteTranslatorFactory,
+  updateTranslatorFactory,
+  getTranslatorsFactory,
+  applyTranslatorsFactory,
 
-	getRecentUsedLanguagesFactory,
-	addRecentUsedLanguageFactory,
+  getRecentUsedLanguagesFactory,
+  addRecentUsedLanguageFactory,
 
-	// Up ping last to give success response only when all request handlers is ready
-	pingFactory,
+  // Up ping last to give success response only when all request handlers is ready
+  pingFactory,
 ];

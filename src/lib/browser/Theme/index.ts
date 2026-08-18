@@ -7,11 +7,11 @@ import { FirefoxThemeInfo } from './FirefoxThemeInfo';
  * WARNING: it's can't explore chromium theme
  */
 export const getBrowserThemeInfo = () => {
-	if (navigator.userAgent.includes('Firefox')) {
-		return FirefoxThemeInfo;
-	}
+  if (navigator.userAgent.includes('Firefox')) {
+    return FirefoxThemeInfo;
+  }
 
-	return BrowserThemeInfo;
+  return BrowserThemeInfo;
 };
 
 export * from './ThemeInfo';
