@@ -123,23 +123,6 @@ export const TextTranslatorPopup: FC<TextTranslatorPopupProps> = ({
 		};
 	}, [x, y]);
 
-	const modifiers = useMemo(
-		() => [
-			{ name: 'hide', enabled: false },
-			{
-				// Compute as simply as possible, use only top and left
-				// Otherwise, with use `inset` may be invalid position
-				// Mod docs: https://popper.js.org/docs/v2/modifiers/compute-styles/#adaptive
-				name: 'computeStyles',
-				options: {
-					gpuAcceleration: false,
-					adaptive: false,
-				},
-			},
-		],
-		[],
-	);
-
 	// Focus on translate button or root node by change `translating` state
 	const containerRef = useRef<HTMLDivElement>(null);
 	const translateButtonRef = useRef<HTMLDivElement>(null);
@@ -254,7 +237,7 @@ export const TextTranslatorPopup: FC<TextTranslatorPopupProps> = ({
 					anchor={cursorRef}
 					visible={true}
 					zIndex={zIndex}
-					modifiers={modifiers}
+					hideWhenDetached={false}
 					onClose={closeHandler}
 					view={translating ? 'default' : undefined}
 					UNSTABLE_updatePosition={updateRef}

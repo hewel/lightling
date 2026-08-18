@@ -26,5 +26,4 @@ oxfmt
 oxlint
 papaparse
 penpal
-popperjs
 unparse

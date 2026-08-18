@@ -1,29 +1,44 @@
-export * from 'react-elegant-ui/esm/components/Select/Select.registry/desktop';
-
-import { Popup } from 'react-elegant-ui/esm/components/Popup/Popup.bundle/desktop';
-import { cnSelect } from 'react-elegant-ui/esm/components/Select/Select';
-import {
-	ISelectDesktopRegistry,
-	regObjects as regObjectsBasic,
-} from 'react-elegant-ui/esm/components/Select/Select.registry/desktop';
+import { Button } from 'react-elegant-ui/esm/components/Button/Button.bundle/desktop';
+import { Icon } from 'react-elegant-ui/esm/components/Icon/Icon.bundle/desktop';
+import { Menu } from 'react-elegant-ui/esm/components/Menu/Menu.bundle/desktop';
+import { SelectList } from 'react-elegant-ui/esm/components/Select/List/Select-List';
+import { SelectPopup } from 'react-elegant-ui/esm/components/Select/Popup/Select-Popup';
+import { cnSelect } from 'react-elegant-ui/esm/components/Select/Select@desktop';
+import { SelectTrigger } from 'react-elegant-ui/esm/components/Select/Trigger/Select-Trigger';
 import { withDefaultProps } from 'react-elegant-ui/esm/hocs/withDefaultProps';
-import { applyMinWidth } from 'react-elegant-ui/esm/hooks/behavior/usePopper/modifiers/applyMinWidth';
 import { Registry } from 'react-elegant-ui/esm/lib/di';
+import { size } from '@floating-ui/react';
 
-import { applyMaxHeight } from '../applyMaxHeight';
+import { Popup } from '../../Popup/Popup';
 
-export const regObjects: ISelectDesktopRegistry = {
-	...regObjectsBasic, // Desktop features
-	// FIXME: remove cast when bug will fixed https://github.com/vitonsky/react-elegant-ui/issues/253
+export const regObjects = {
+	Trigger: SelectTrigger,
+	Button: withDefaultProps(Button, {
+		view: 'default',
+		size: 'm',
+	}),
+	Icon: withDefaultProps(Icon, {
+		glyph: 'unfold-more',
+		size: 's',
+	}),
 	PopupComponent: withDefaultProps(Popup, {
-		// at the moment `applyMaxHeight` decrease block size while scroll, it's bug
-		modifiers: [
-			applyMaxHeight,
-			applyMinWidth,
-			{ name: applyMaxHeight.name, options: { maxHeight: 200 } },
+		middleware: [
+			size({
+				padding: 16,
+				apply({ availableHeight, elements, rects }) {
+					elements.floating.style.minWidth = `${rects.reference.width}px`;
+					elements.floating.style.maxHeight = `${Math.max(availableHeight, 200)}px`;
+				},
+			}),
 		],
 		view: 'default',
-	}) as ISelectDesktopRegistry['PopupComponent'],
+	}),
+	Popup: SelectPopup,
+	Menu: withDefaultProps(Menu, {
+		size: 'm',
+		isRenderHidden: true,
+	}),
+	List: SelectList,
 };
 
 export const SelectDesktopRegistry = new Registry({ id: cnSelect() }).fill(regObjects);

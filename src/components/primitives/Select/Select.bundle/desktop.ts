@@ -1,5 +1,3 @@
-export * from 'react-elegant-ui/esm/components/Select/Select.bundle/desktop';
-
 import { createElement, FC } from 'react';
 // _listboxSize
 import { withModSelectListboxSizeMax } from 'react-elegant-ui/esm/components/Select/_listboxSize/Select_listboxSize_max';
