@@ -1,8 +1,8 @@
 import { Schema } from 'effect';
-import { cloneDeep, set } from 'lodash';
 
 import { getMessage } from '../../lib/language';
 import { checkTypeByPath } from '../../lib/types';
+import { setValueAtPath } from '../../lib/utils';
 import { AppConfig } from '../../types/runtime';
 
 import { buildBackendRequest } from '../utils/requestBuilder';
@@ -24,7 +24,7 @@ export const [updateConfigFactory, updateConfig] = buildBackendRequest('updateCo
       const actualConfig = await config.get();
 
       // Clone
-      const newConfigSegments = cloneDeep(actualConfig);
+      const newConfigSegments = structuredClone(actualConfig);
 
       // Handle
       const errors: Record<string, string> = {};
@@ -38,7 +38,7 @@ export const [updateConfigFactory, updateConfig] = buildBackendRequest('updateCo
 
         // Validate type of new value
         if (checkTypeByPath(AppConfig, pathArray, value)) {
-          set(newConfigSegments, path, value);
+          setValueAtPath(newConfigSegments, pathArray, value);
         } else {
           errors[path] = getMessage('settings_message_common_invalidValueType');
         }

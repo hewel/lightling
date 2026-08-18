@@ -1,6 +1,5 @@
-import { isEqual } from 'lodash';
-
 import { createObservableStore, ObservableStore } from '@/lib/store';
+import { isDeepEqual } from '@/lib/utils';
 
 import { onHotkeysPressed } from '../../components/controls/Hotkey/utils';
 import { getPageLanguage } from '../../lib/browser';
@@ -49,7 +48,7 @@ export class PageTranslationContext {
   private readonly updatePageTranslationState = (
     pageTranslation: PageTranslationOptions | null,
   ) => {
-    if (isEqual(this.$context.getState().pageTranslation, pageTranslation)) return;
+    if (isDeepEqual(this.$context.getState().pageTranslation, pageTranslation)) return;
     this.$context.setState({ pageTranslation });
   };
 
@@ -84,7 +83,7 @@ export class PageTranslationContext {
     this.$context.subscribe(
       selectSlice,
       (slice) => $selectTranslatorState.setState(slice),
-      { equalityFn: isEqual },
+      { equalityFn: isDeepEqual },
     );
 
     const selectTranslatorManager = new SelectTranslatorManager($selectTranslatorState);
@@ -101,7 +100,7 @@ export class PageTranslationContext {
       pageSlice(this.$context.getState()),
     );
     this.$context.subscribe(pageSlice, (slice) => $pageTranslatorState.setState(slice), {
-      equalityFn: isEqual,
+      equalityFn: isDeepEqual,
     });
 
     const pageTranslatorManager = new PageTranslatorManager($pageTranslatorState);
@@ -145,7 +144,7 @@ export class PageTranslationContext {
           });
         }
       },
-      { equalityFn: isEqual, fireImmediately: true },
+      { equalityFn: isDeepEqual, fireImmediately: true },
     );
   }
 

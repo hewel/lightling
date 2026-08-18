@@ -1,4 +1,3 @@
-import { get, isEqual } from 'lodash';
 import { FC, ReactNode, useCallback } from 'react';
 import { CheckboxInput } from '@astryxdesign/core/CheckboxInput';
 import { Selector } from '@astryxdesign/core/Selector';
@@ -9,6 +8,7 @@ import { Hotkey } from '@/components/controls/Hotkey';
 import { Button } from '@/components/primitives/Button/Button.bundle/desktop';
 import { Textarea } from '@/components/primitives/Textarea/Textarea.bundle/desktop';
 import { Textinput } from '@/components/primitives/Textinput/Textinput.bundle/desktop';
+import { getValueAtPath, isDeepEqual } from '@/lib/utils';
 import { AppConfigType } from '@/types/runtime';
 
 import { OptionSection } from '../OptionSection/OptionSection';
@@ -57,6 +57,21 @@ export interface OptionHotkey {
 
 type HeadingLevel = 1 | 2 | 3 | 4 | 5 | 6;
 type OptionValue = boolean | null | number | string | string[] | undefined;
+const getOptionValue = (config: AppConfigType, path: string): OptionValue => {
+  const value = getValueAtPath(config, path);
+  if (
+    value === undefined ||
+    value === null ||
+    typeof value === 'boolean' ||
+    typeof value === 'number' ||
+    typeof value === 'string' ||
+    (Array.isArray(value) && value.every((item) => typeof item === 'string'))
+  ) {
+    return value;
+  }
+
+  throw new TypeError(`Invalid option value at "${path}"`);
+};
 
 export interface OptionItem {
   title?: string;
@@ -272,11 +287,11 @@ export const OptionsTree: FC<OptionsTreeProps> = ({
           if (path !== undefined) {
             if (path in modifiedConfigStorage) {
               configValue = modifiedConfigStorage[path];
-              if (!isEqual(configValue, get(config, path))) {
+              if (!isDeepEqual(configValue, getOptionValue(config, path))) {
                 changed = true;
               }
             } else {
-              configValue = get(config, path);
+              configValue = getOptionValue(config, path);
             }
           }
 

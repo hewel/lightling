@@ -1,9 +1,9 @@
-import { isEqual } from 'lodash';
 import { useCallback, useEffect, useState } from 'react';
 
 import { getTTSLanguages } from '../../requests/backend/tts/getTTSLanguages';
 import { onAppConfigUpdated } from '../../requests/global/appConfigUpdate';
 
+import { isDeepEqual } from '../utils';
 import { useIsMounted } from './useIsMounted';
 
 export const useTTSLanguages = () => {
@@ -22,7 +22,7 @@ export const useTTSLanguages = () => {
         if (!isMounted()) return;
 
         setSupportedLanguages((value) => {
-          return isEqual(value, langs) ? value : langs;
+          return isDeepEqual(value, langs) ? value : langs;
         });
       });
     });

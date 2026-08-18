@@ -5,6 +5,9 @@
     "cspell lint --no-progress --no-summary --no-must-find-files",
     "oxfmt --write --no-error-on-unmatched-pattern"
   ],
-  "*.css": ["stylelint --fix", "oxfmt --write --no-error-on-unmatched-pattern"],
+  "*.css": [
+    "stylelint --fix --allow-empty-input",
+    "oxfmt --write --no-error-on-unmatched-pattern"
+  ],
   "*.{json,jsonc}": ["oxfmt --write --no-error-on-unmatched-pattern"]
 }

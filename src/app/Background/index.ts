@@ -5,11 +5,11 @@ import {
   GoogleTranslatorTokenFree,
   TranslatorConstructor,
 } from 'anylang/translators';
-import { isEqual } from 'lodash';
 
 import { TELEMETRY_EVENT_NAME } from '../../lib/telemetry';
 import { telemetry } from '../../lib/telemetry/singleton';
 import { BergamotTranslator } from '../../lib/translators/bergamot/BergamotTranslator';
+import { isDeepEqual } from '../../lib/utils';
 import {
   createPromiseWithControls,
   PromiseWithControls,
@@ -151,7 +151,7 @@ export class Background {
 
         this.translateManager.setConfig(config);
       },
-      { equalityFn: isEqual, fireImmediately: true },
+      { equalityFn: isDeepEqual, fireImmediately: true },
     );
 
     // Update TTS module

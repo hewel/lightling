@@ -1,9 +1,9 @@
-import { isEqual } from 'lodash';
 import { useCallback, useEffect, useState } from 'react';
 
 import { isExtensionContext } from '@/lib/browser';
 import { useImmutableCallback } from '@/lib/hooks/useImmutableCallback';
 import { TELEMETRY_EVENT_NAME } from '@/lib/telemetry';
+import { isDeepEqual } from '@/lib/utils';
 import { trackClientEvent } from '@/requests/backend/telemetry';
 import {
   onClearDictionary,
@@ -121,7 +121,7 @@ export const useDictionary = (translation: ITranslation | null) => {
       const cleanup = onDictionaryEntryAdd((newTranslation) => {
         if (translation === null) return;
 
-        const isEqualData = isEqual(newTranslation, translation);
+        const isEqualData = isDeepEqual(newTranslation, translation);
         if (isEqualData) {
           update();
         }

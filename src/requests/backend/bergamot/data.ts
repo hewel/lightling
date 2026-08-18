@@ -1,8 +1,8 @@
 import { Schema } from 'effect';
 import * as IDB from 'idb';
-import { isEqual } from 'lodash';
 
 import { NonNaNNumber } from '@/lib/types';
+import { isDeepEqual } from '@/lib/utils';
 
 export type File = {
   name: string;
@@ -139,7 +139,7 @@ export const getFile = async (searchParams: FileSearchParams) => {
 
       // Search file by exact match params
       const isMatchSearchParams = searchParamsEntry.every(([key, value]) =>
-        isEqual(fileData[key as keyof FileSearchParams], value),
+        isDeepEqual(fileData[key as keyof FileSearchParams], value),
       );
       if (!isMatchSearchParams) continue;
 

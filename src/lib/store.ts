@@ -1,6 +1,7 @@
-import { isEqual } from 'lodash';
 import { subscribeWithSelector } from 'zustand/middleware';
 import { createStore, StoreApi } from 'zustand/vanilla';
+
+import { isDeepEqual } from './utils';
 
 /**
  * Vanilla store with selector subscriptions. Replaces the role effector stores played.
@@ -31,7 +32,7 @@ export const updateNotEqualProps = <T extends Record<string, unknown>>(
 ): T => {
   const newState = { ...state };
   for (const key in data) {
-    if (!isEqual(state[key as keyof T], data[key as keyof T])) {
+    if (!isDeepEqual(state[key as keyof T], data[key as keyof T])) {
       newState[key as keyof T] = data[key as keyof T];
     }
   }

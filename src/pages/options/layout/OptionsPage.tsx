@@ -1,4 +1,3 @@
-import { get, isEqual } from 'lodash';
 import {
   createContext,
   FC,
@@ -21,6 +20,7 @@ import { openFileDialog, readAsText, saveFile } from '@/lib/files';
 import { getMessage } from '@/lib/language';
 import { TELEMETRY_EVENT_NAME } from '@/lib/telemetry';
 import { telemetry } from '@/lib/telemetry/singleton';
+import { getValueAtPath, isDeepEqual } from '@/lib/utils';
 // Requests
 import { clearCache as clearCacheReq } from '@/requests/backend/clearCache';
 import { getConfig } from '@/requests/backend/getConfig';
@@ -216,19 +216,19 @@ export const OptionsPage: FC<OptionsPageProps> = () => {
       // Copy current object
       let modifiedConfigLocal: Record<string, any> | null = {};
       for (const path in modifiedConfig) {
-        const configItem = get(config, path);
+        const configItem = getValueAtPath(config, path);
 
         // Copy only if it different from config value
-        if (!isEqual(configItem, modifiedConfig[path])) {
+        if (!isDeepEqual(configItem, modifiedConfig[path])) {
           modifiedConfigLocal[path] = modifiedConfig[path];
         }
       }
 
       // Set value if not exist equal
-      const modConfigItem = get(modifiedConfig, inputPath);
-      if (!isEqual(modConfigItem, value)) {
-        const configItem = get(config, inputPath);
-        if (isEqual(configItem, value)) {
+      const modConfigItem = getValueAtPath(modifiedConfig, inputPath);
+      if (!isDeepEqual(modConfigItem, value)) {
+        const configItem = getValueAtPath(config, inputPath);
+        if (isDeepEqual(configItem, value)) {
           delete modifiedConfigLocal[inputPath];
         } else {
           modifiedConfigLocal[inputPath] = value;

@@ -1,10 +1,10 @@
-import { isEqual } from 'lodash';
 import { FC, useCallback, useEffect, useLayoutEffect, useState } from 'react';
 import * as stylex from '@stylexjs/stylex';
 
 import { Page } from '@/components/layouts/Page/Page';
 import { TELEMETRY_EVENT_NAME } from '@/lib/telemetry';
 import { telemetry } from '@/lib/telemetry/singleton';
+import { isDeepEqual } from '@/lib/utils';
 import { getConfig } from '@/requests/backend/getConfig';
 import { ITranslationHistoryEntryWithKey } from '@/requests/backend/history/data';
 import { getTranslationHistoryEntries } from '@/requests/backend/history/getHistoryEntries';
@@ -37,7 +37,7 @@ export const HistoryPage: FC = () => {
         const hasChanges =
           currentEntries === null ||
           currentEntries.length !== entries.length ||
-          !isEqual(currentEntries, entries);
+          !isDeepEqual(currentEntries, entries);
         setIsHasMoreTranslations(hasChanges);
 
         return entries;
