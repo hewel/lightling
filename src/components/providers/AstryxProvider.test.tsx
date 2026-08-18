@@ -49,6 +49,10 @@ describe('AstryxShadowRootProvider', () => {
 		);
 		expect(scope).not.toBeNull();
 		expect(scope?.style.getPropertyValue('--color-accent')).not.toBe('');
+		expect(scope?.style.getPropertyValue('--spacing-2')).not.toBe('');
+		expect(scope?.style.getPropertyValue('--size-element-md')).not.toBe('');
+		expect(scope?.style.getPropertyValue('--focus-outline-offset')).not.toBe('');
+		expect(scope?.style.getPropertyValue('--ease-standard')).not.toBe('');
 		expect(scope?.querySelector('output')?.textContent).toBe('neutral');
 		expect(document.documentElement.dataset.astryxTheme).toBe('host-theme');
 		expect(document.documentElement.dataset.theme).toBe('dark');

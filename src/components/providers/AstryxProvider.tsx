@@ -2,10 +2,23 @@ import { type FC, type ReactNode, useCallback, useMemo } from 'react';
 import { LayerProvider } from '@astryxdesign/core/Layer';
 import { Stack } from '@astryxdesign/core/Stack';
 import {
+	borderDefaults,
+	colorDefaults,
+	durationDefaults,
+	easeDefaults,
+	focusDefaults,
+	fontWeightDefaults,
+	radiusDefaults,
 	registerTheme,
+	shadowDefaults,
+	sizeDefaults,
+	spacingDefaults,
+	textSizeDefaults,
 	Theme,
 	ThemeContext,
+	typeScaleDefaults,
 	type ThemeMode,
+	typographyDefaults,
 } from '@astryxdesign/core/theme';
 import { neutralTheme } from '@astryxdesign/theme-neutral/built';
 
@@ -19,6 +32,23 @@ interface AstryxProviderProps {
 	children: ReactNode;
 	mode?: ThemeMode;
 }
+
+const shadowRootTokens = {
+	...borderDefaults,
+	...colorDefaults,
+	...durationDefaults,
+	...easeDefaults,
+	...focusDefaults,
+	...fontWeightDefaults,
+	...radiusDefaults,
+	...shadowDefaults,
+	...sizeDefaults,
+	...spacingDefaults,
+	...textSizeDefaults,
+	...typeScaleDefaults,
+	...typographyDefaults,
+	...neutralTheme.tokens,
+};
 
 registerTheme(neutralTheme);
 
@@ -43,7 +73,9 @@ export const AstryxShadowRootProvider: FC<AstryxProviderProps> = ({
 	const applyThemeTokens = useCallback((element: HTMLElement | null) => {
 		if (element === null) return;
 
-		for (const [token, value] of Object.entries(neutralTheme.tokens)) {
+		// Astryx defines foundational defaults on :root, which does not cross into
+		// a shadow tree. Materialize them on this scope before theme overrides.
+		for (const [token, value] of Object.entries(shadowRootTokens)) {
 			element.style.setProperty(token, value);
 		}
 	}, []);
