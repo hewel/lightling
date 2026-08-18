@@ -1,7 +1,7 @@
-import { createEvent, createStore, Store } from 'effector';
 import browser from 'webextension-polyfill';
 
-import { updateNotEqualProps } from '../../lib/effector/reducers';
+import { createObservableStore, ObservableStore, updateNotEqualProps } from '@/lib/store';
+
 import { decodeStruct } from '../../lib/types';
 import { AppConfig, AppConfigType } from '../../types/runtime';
 
@@ -51,14 +51,12 @@ export class ObservableAsyncStorage<
     this.config = config;
   }
 
-  private store: Store<T> | null = null;
-  private readonly updateData = createEvent<T>();
+  private store: ObservableStore<T> | null = null;
 
-  public async getObservableStore() {
+  public async getObservableStore(): Promise<ObservableStore<T>> {
     if (this.store === null) {
       const state = await this.config.get();
-      this.store = createStore<T>(state);
-      this.store.on(this.updateData, updateNotEqualProps);
+      this.store = createObservableStore<T>(state);
     }
 
     return this.store;
@@ -72,6 +70,8 @@ export class ObservableAsyncStorage<
     const newObject = { ...data };
 
     await this.config.set(newObject);
-    this.updateData(newObject);
+    if (this.store !== null) {
+      this.store.setState((state) => updateNotEqualProps(state, newObject));
+    }
   }
 }

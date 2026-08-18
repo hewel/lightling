@@ -1,5 +1,6 @@
-import { createEvent, createStore } from 'effector';
 import browser from 'webextension-polyfill';
+
+import { createObservableStore } from '@/lib/store';
 
 import { isFirefox } from '../../lib/browser';
 import { getCurrentTabId, isValidBrowserTabId } from '../../lib/browser/tabs';
@@ -21,18 +22,10 @@ type PageTranslationState = {
 export class TranslatePageContextMenu {
   private readonly menuId = 'translatePage';
 
-  private readonly tabStateUpdated;
-  private readonly $tabState;
-
-  constructor() {
-    this.tabStateUpdated = createEvent<PageTranslationState>();
-    this.$tabState = createStore<PageTranslationState>({
-      tabId: null,
-      isTranslating: false,
-    });
-
-    this.$tabState.on(this.tabStateUpdated, (_state, payload) => payload);
-  }
+  private readonly $tabState = createObservableStore<PageTranslationState>({
+    tabId: null,
+    isTranslating: false,
+  });
 
   private isEnabled = false;
   private cleanupCallback: null | (() => void) = null;
@@ -60,20 +53,24 @@ export class TranslatePageContextMenu {
       (state, tabId) => {
         if (tabId === undefined || tabId !== this.$tabState.getState().tabId) return;
 
-        this.tabStateUpdated({
+        this.$tabState.setState({
           tabId,
           isTranslating: state.isTranslated,
         });
       },
     );
 
-    const unwatchMenuItemState = this.$tabState.watch((state) => {
-      browser.contextMenus.update(this.menuId, {
-        title: state.isTranslating
-          ? getMessage('contextMenu_disablePageTranslation')
-          : getMessage('contextMenu_translatePage'),
-      });
-    });
+    const unwatchMenuItemState = this.$tabState.subscribe(
+      (state) => state,
+      (state) => {
+        browser.contextMenus.update(this.menuId, {
+          title: state.isTranslating
+            ? getMessage('contextMenu_disablePageTranslation')
+            : getMessage('contextMenu_translatePage'),
+        });
+      },
+      { fireImmediately: true },
+    );
 
     this.cleanupCallback = () => {
       browser.contextMenus.onClicked.removeListener(this.onClickMenu);
@@ -144,7 +141,7 @@ export class TranslatePageContextMenu {
             visible: true,
           });
 
-          this.tabStateUpdated({
+          this.$tabState.setState({
             tabId,
             isTranslating: translateState.isTranslated,
           });

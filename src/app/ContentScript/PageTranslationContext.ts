@@ -1,8 +1,9 @@
-import { combine, createEffect, createEvent, createStore, sample, Store } from 'effector';
+import { isEqual } from 'lodash';
+
+import { createObservableStore, ObservableStore } from '@/lib/store';
 
 import { onHotkeysPressed } from '../../components/controls/Hotkey/utils';
 import { getPageLanguage } from '../../lib/browser';
-import { isNotEqual } from '../../lib/effector/filters';
 import { isRequireTranslateBySitePreferences } from '../../pages/popup/tabs/PageTranslator/PageTranslator.utils/utils';
 import { getLanguagePreferences } from '../../requests/backend/autoTranslation/languagePreferences/getLanguagePreferences';
 // Requests
@@ -24,79 +25,33 @@ export type PageData = {
   language: string | null;
 };
 
-type TranslatorsState = {
+type PageContextState = {
+  config: AppConfigType;
   pageTranslation: PageTranslationOptions | null;
-  textTranslation: boolean;
+  pageData: PageData;
 };
 
 export class PageTranslationContext {
-  private readonly events = {
-    updatePageTranslationState: createEvent<PageTranslationOptions | null>(),
-  };
+  private readonly $config: ObservableStore<AppConfigType>;
+  private readonly $context: ObservableStore<PageContextState>;
 
-  private readonly $config: Store<AppConfigType>;
-
-  /**
-   * Collected data about page
-   */
-  private readonly $pageData: Store<PageData>;
-
-  /**
-   * The translators state source of truth
-   */
-  private readonly $translatorsState: Store<TranslatorsState>;
-
-  constructor($config: Store<AppConfigType>) {
+  constructor($config: ObservableStore<AppConfigType>) {
     this.$config = $config;
-
-    this.$pageData = createStore<PageData>({
-      language: null,
+    this.$context = createObservableStore<PageContextState>({
+      config: $config.getState(),
+      pageTranslation: null,
+      pageData: { language: null },
     });
 
-    this.$translatorsState = createStore<TranslatorsState>(
-      {
-        pageTranslation: null,
-        textTranslation: false,
-      },
-      { updateFilter: isNotEqual },
-    );
-
-    // Subscribe on events
-    this.$translatorsState.on(
-      this.events.updatePageTranslationState,
-      (state, pageTranslation) => ({ ...state, pageTranslation }),
-    );
-
-    // Update text translator state
-    const textTranslatorStateChanged = createEvent<boolean>();
-    this.$translatorsState.on(textTranslatorStateChanged, (state, textTranslation) => ({
-      ...state,
-      textTranslation,
-    }));
-
-    const $isTextTranslatorForceDisabled = createStore(false);
-    sample({
-      source: {
-        config: this.$config,
-        translatorsState: this.$translatorsState,
-      },
-      fn({ config, translatorsState }) {
-        if (translatorsState.pageTranslation === null) return false;
-
-        return config.selectTranslator.disableWhileTranslatePage;
-      },
-      target: $isTextTranslatorForceDisabled,
-    });
-
-    combine({
-      config: this.$config,
-      isTextTranslatorForceDisabled: $isTextTranslatorForceDisabled,
-    })
-      .map(({ config, isTextTranslatorForceDisabled }) => {
-        return config.selectTranslator.enabled && !isTextTranslatorForceDisabled;
-      })
-      .watch(textTranslatorStateChanged);
+    this.$config.subscribe((config) => this.$context.setState({ config }));
   }
+
+  private readonly updatePageTranslationState = (
+    pageTranslation: PageTranslationOptions | null,
+  ) => {
+    if (isEqual(this.$context.getState().pageTranslation, pageTranslation)) return;
+    this.$context.setState({ pageTranslation });
+  };
 
   private readonly controllers: {
     pageTranslator: PageTranslatorController | null;
@@ -115,133 +70,101 @@ export class PageTranslationContext {
   }
 
   public async start() {
-    const $masterStore = combine({
-      config: this.$config,
-      translatorsState: this.$translatorsState,
-      pageData: this.$pageData,
+    const selectSlice = (state: PageContextState) => ({
+      enabled:
+        state.config.selectTranslator.enabled &&
+        (state.pageTranslation === null ||
+          !state.config.selectTranslator.disableWhileTranslatePage),
+      config: state.config.selectTranslator,
+      pageData: state.pageData,
     });
-
-    // Init text translator
-    const $selectTranslatorState = $masterStore.map(
-      ({ config, translatorsState, pageData }) => ({
-        enabled: translatorsState.textTranslation,
-        config: config.selectTranslator,
-        pageData,
-      }),
+    const $selectTranslatorState = createObservableStore(
+      selectSlice(this.$context.getState()),
+    );
+    this.$context.subscribe(
+      selectSlice,
+      (slice) => $selectTranslatorState.setState(slice),
+      { equalityFn: isEqual },
     );
 
     const selectTranslatorManager = new SelectTranslatorManager($selectTranslatorState);
     selectTranslatorManager.start();
-
     this.controllers.selectTranslator = new SelectTranslatorController(
       selectTranslatorManager,
     );
 
-    // Init page translator
-    const $pageTranslatorState = $masterStore.map(({ config, translatorsState }) => ({
-      state: translatorsState.pageTranslation,
-      config: config.pageTranslator,
-    }));
+    const pageSlice = (state: PageContextState) => ({
+      state: state.pageTranslation,
+      config: state.config.pageTranslator,
+    });
+    const $pageTranslatorState = createObservableStore(
+      pageSlice(this.$context.getState()),
+    );
+    this.$context.subscribe(pageSlice, (slice) => $pageTranslatorState.setState(slice), {
+      equalityFn: isEqual,
+    });
 
     const pageTranslatorManager = new PageTranslatorManager($pageTranslatorState);
     pageTranslatorManager.start();
-
     this.controllers.pageTranslator = new PageTranslatorController(
       pageTranslatorManager,
-      this.events.updatePageTranslationState,
+      this.updatePageTranslationState,
     );
 
-    // Watch ready state
-    const $docReadyState = createStore(document.readyState);
-    const updatedDocReadyState = createEvent<DocumentReadyState>();
-    $docReadyState.on(updatedDocReadyState, (_, state) => state);
+    void this.scanPage();
 
-    document.addEventListener('readystatechange', () => {
-      updatedDocReadyState(document.readyState);
-    });
-
-    // TODO: add option to define stage to detect language and run auto translate
-    // Init page translate
-    const $isPageLoaded = $docReadyState.map((readyState) => {
-      const getReadyStateIndex = (state: DocumentReadyState) =>
-        ['loading', 'interactive', 'complete'].indexOf(state);
-
-      return getReadyStateIndex(readyState) >= getReadyStateIndex('interactive');
-    });
-
-    // Scan page to collect data
-    const scanPageFx = createEffect(async (config: AppConfigType) => {
-      const pageLanguage = await getPageLanguage(
-        config.pageTranslator.detectLanguageByContent,
-      );
-
-      return { pageLanguage };
-    });
-
-    this.$pageData.on(scanPageFx.doneData, (state, payload) => ({
-      ...state,
-      language: payload.pageLanguage,
-    }));
-
-    sample({
-      clock: $isPageLoaded,
-      source: this.$config,
-    }).watch(scanPageFx);
-
-    // Init auto translate page
-    sample({
-      clock: scanPageFx.doneData,
-      source: $masterStore,
-    }).watch(this.initTranslation);
-
-    // Setup hotkeys
     let hotkeysObserverCleanup: (() => void) | null = null;
-    $masterStore
-      .map(({ config, pageData, translatorsState }) => ({
-        hotkeys: config.pageTranslator.toggleTranslationHotkey,
-        userLanguage: config.language,
-        pageLanguage: pageData.language,
-        isPageTranslated: translatorsState.pageTranslation !== null,
-      }))
-      .watch(({ hotkeys, pageLanguage, userLanguage, isPageTranslated }) => {
-        // Reset current observer
+    this.$context.subscribe(
+      (state) => ({
+        hotkeys: state.config.pageTranslator.toggleTranslationHotkey,
+        userLanguage: state.config.language,
+        pageLanguage: state.pageData.language,
+        isPageTranslated: state.pageTranslation !== null,
+      }),
+      ({ hotkeys, pageLanguage, userLanguage, isPageTranslated }) => {
         if (hotkeysObserverCleanup) {
           hotkeysObserverCleanup();
           hotkeysObserverCleanup = null;
         }
 
         if (hotkeys) {
-          hotkeysObserverCleanup = onHotkeysPressed(hotkeys, (e) => {
-            e.preventDefault();
-            // Toggle translation
+          hotkeysObserverCleanup = onHotkeysPressed(hotkeys, (event) => {
+            event.preventDefault();
             if (isPageTranslated) {
-              this.events.updatePageTranslationState(null);
+              this.updatePageTranslationState(null);
             } else {
               if (pageLanguage === null) {
                 throw new Error('Page language not set');
               }
 
-              this.events.updatePageTranslationState({
+              this.updatePageTranslationState({
                 from: pageLanguage,
                 to: userLanguage,
               });
             }
           });
         }
-      });
+      },
+      { equalityFn: isEqual, fireImmediately: true },
+    );
   }
+
+  private readonly scanPage = async () => {
+    const config = this.$context.getState().config;
+    const pageLanguage = await getPageLanguage(
+      config.pageTranslator.detectLanguageByContent,
+    );
+    this.$context.setState({ pageData: { language: pageLanguage } });
+    await this.initTranslation(this.$context.getState());
+  };
 
   private readonly initTranslation = async ({
     config,
-    translatorsState,
+    pageTranslation,
     pageData,
-  }: {
-    config: AppConfigType;
-    translatorsState: TranslatorsState;
-    pageData: PageData;
-  }) => {
+  }: PageContextState) => {
     // Skip if page already in translating
-    if (translatorsState.pageTranslation !== null) return;
+    if (pageTranslation !== null) return;
 
     // TODO: make it option
     const isAllowTranslateSameLanguages = true;
@@ -287,7 +210,7 @@ export class PageTranslationContext {
       );
 
       if (isLanguagesSupportedByTranslator) {
-        this.events.updatePageTranslationState({
+        this.updatePageTranslationState({
           from: pageLanguage,
           to: userLanguage,
         });

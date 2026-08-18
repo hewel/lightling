@@ -1,5 +1,3 @@
-import { Event } from 'effector';
-
 import { TELEMETRY_EVENT_NAME } from '@/lib/telemetry';
 import { trackClientEvent } from '@/requests/backend/telemetry';
 
@@ -19,10 +17,12 @@ export type PageTranslatorState = {
 
 export class PageTranslatorController {
   private readonly manager: PageTranslatorManager;
-  private readonly updateTranslationState: Event<PageTranslationOptions | null>;
+  private readonly updateTranslationState: (
+    options: PageTranslationOptions | null,
+  ) => void;
   constructor(
     manager: PageTranslatorManager,
-    updateTranslationState: Event<PageTranslationOptions | null>,
+    updateTranslationState: (options: PageTranslationOptions | null) => void,
   ) {
     this.manager = manager;
     this.updateTranslationState = updateTranslationState;

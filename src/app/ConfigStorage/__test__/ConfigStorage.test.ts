@@ -88,14 +88,14 @@ describe('use config', () => {
     expect(config2).toEqual(newData);
   });
 
-  test.skip('observable storage', async () => {
+  test('observable storage', async () => {
     const configStorage = new ConfigStorage(defaultConfig);
     const observableConfigStorage = new ObservableAsyncStorage(configStorage);
 
     // Listen config update
     const $config = await observableConfigStorage.getObservableStore();
     const updateConfigPromise = new Promise<AppConfigType>((res) => {
-      $config.updates.watch(res);
+      $config.subscribe((state) => res(state));
     });
 
     const latestConfig = await configStorage.get();

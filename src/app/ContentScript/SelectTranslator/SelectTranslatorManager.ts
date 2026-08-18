@@ -1,5 +1,4 @@
-import { Store } from 'effector';
-
+import { ObservableStore } from '@/lib/store';
 import { AppConfigType } from '@/types/runtime';
 
 import { PageData } from '../PageTranslationContext';
@@ -8,7 +7,7 @@ import { SelectTranslator } from './SelectTranslator';
 export class SelectTranslatorManager {
   private readonly $state;
   constructor(
-    $state: Store<{
+    $state: ObservableStore<{
       enabled: boolean;
       config: AppConfigType['selectTranslator'];
       pageData: PageData;
@@ -25,52 +24,59 @@ export class SelectTranslatorManager {
 
   public start() {
     // Manage text translation instance
-    this.$state.watch(({ config: preferences, pageData }) => {
-      if (preferences.enabled) {
-        const { mode, ...restPreferences } = preferences;
-        const config = {
-          ...restPreferences,
-          pageLanguage: pageData.language || undefined,
-          quickTranslate: mode === 'quickTranslate',
-          enableTranslateFromContextMenu: mode === 'contextMenu',
-        };
+    this.$state.subscribe(
+      (state) => state,
+      ({ config: preferences, pageData }) => {
+        if (preferences.enabled) {
+          const { mode, ...restPreferences } = preferences;
+          const config = {
+            ...restPreferences,
+            pageLanguage: pageData.language || undefined,
+            quickTranslate: mode === 'quickTranslate',
+            enableTranslateFromContextMenu: mode === 'contextMenu',
+          };
 
-        if (this.selectTranslator === null) {
-          this.selectTranslator = new SelectTranslator(config);
+          if (this.selectTranslator === null) {
+            this.selectTranslator = new SelectTranslator(config);
+          } else {
+            const isRun = this.selectTranslator.isRun();
+            if (isRun) {
+              this.selectTranslator.stop();
+            }
+
+            this.selectTranslator = new SelectTranslator(config);
+
+            if (isRun) {
+              this.selectTranslator.start();
+            }
+          }
         } else {
-          const isRun = this.selectTranslator.isRun();
-          if (isRun) {
+          if (this.selectTranslator === null) return;
+
+          if (this.selectTranslator.isRun()) {
             this.selectTranslator.stop();
           }
 
-          this.selectTranslator = new SelectTranslator(config);
-
-          if (isRun) {
-            this.selectTranslator.start();
-          }
+          this.selectTranslator = null;
         }
-      } else {
-        if (this.selectTranslator === null) return;
-
-        if (this.selectTranslator.isRun()) {
-          this.selectTranslator.stop();
-        }
-
-        this.selectTranslator = null;
-      }
-    });
+      },
+      { fireImmediately: true },
+    );
 
     // Manage text translation state
-    const $isTextTranslationStarted = this.$state.map(({ enabled }) => enabled);
-    $isTextTranslationStarted.watch((isTranslating) => {
-      if (this.selectTranslator === null) return;
-      if (isTranslating === this.selectTranslator.isRun()) return;
+    this.$state.subscribe(
+      ({ enabled }) => enabled,
+      (isTranslating) => {
+        if (this.selectTranslator === null) return;
+        if (isTranslating === this.selectTranslator.isRun()) return;
 
-      if (isTranslating) {
-        this.selectTranslator.start();
-      } else {
-        this.selectTranslator.stop();
-      }
-    });
+        if (isTranslating) {
+          this.selectTranslator.start();
+        } else {
+          this.selectTranslator.stop();
+        }
+      },
+      { fireImmediately: true },
+    );
   }
 }

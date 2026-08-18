@@ -1,5 +1,4 @@
-import { Store } from 'effector';
-
+import { ObservableStore } from '@/lib/store';
 import { AppConfigType } from '@/types/runtime';
 
 import { PageTranslationOptions } from '../PageTranslationContext';
@@ -10,7 +9,7 @@ export class PageTranslatorManager {
   private readonly pageTranslator: PageTranslator;
 
   constructor(
-    $state: Store<{
+    $state: ObservableStore<{
       state: PageTranslationOptions | null;
       config: AppConfigType['pageTranslator'];
     }>,
@@ -28,9 +27,9 @@ export class PageTranslatorManager {
 
   public start() {
     // Manage page translation instance
-    this.$state
-      .map(({ config }) => config)
-      .watch((config) => {
+    this.$state.subscribe(
+      ({ config }) => config,
+      (config) => {
         if (!this.pageTranslator.isRun()) {
           this.pageTranslator.updateConfig(config);
           return;
@@ -44,12 +43,14 @@ export class PageTranslatorManager {
         this.pageTranslator.stop();
         this.pageTranslator.updateConfig(config);
         this.pageTranslator.run(direction.from, direction.to);
-      });
+      },
+      { fireImmediately: true },
+    );
 
     // Manage page translation state
-    this.$state
-      .map(({ state }) => state)
-      .watch((pageTranslation) => {
+    this.$state.subscribe(
+      ({ state }) => state,
+      (pageTranslation) => {
         const shouldTranslate = pageTranslation !== null;
         if (shouldTranslate === this.pageTranslator.isRun()) return;
 
@@ -58,6 +59,8 @@ export class PageTranslatorManager {
         } else {
           this.pageTranslator.stop();
         }
-      });
+      },
+      { fireImmediately: true },
+    );
   }
 }

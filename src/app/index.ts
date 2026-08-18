@@ -1,5 +1,5 @@
-import { createEvent, createStore, Store } from 'effector';
 import browser from 'webextension-polyfill';
+import { createStore, StoreApi } from 'zustand/vanilla';
 
 import { defaultConfig } from '../config';
 import { isBackgroundContext, isChromium, isFirefox } from '../lib/browser';
@@ -42,11 +42,10 @@ export class App {
    * Run application
    */
   public static async main() {
-    const onInstalled = createEvent<browser.Runtime.OnInstalledDetailsType>();
-    browser.runtime.onInstalled.addListener(onInstalled);
-
-    const $onInstalledData = createStore<OnInstalledData>(null);
-    $onInstalledData.on(onInstalled, (_, onInstalledData) => onInstalledData);
+    const onInstalledStore = createStore<OnInstalledData>()(() => null);
+    browser.runtime.onInstalled.addListener((details) =>
+      onInstalledStore.setState(details),
+    );
 
     // Migrate data
     await migrateAll();
@@ -58,14 +57,14 @@ export class App {
     const app = new App({
       config: observableConfig,
       background,
-      $onInstalledData,
+      $onInstalledData: onInstalledStore,
     });
     await app.start();
   }
 
   private readonly config: ObservableAsyncStorage<AppConfigType>;
   private readonly background: Background;
-  private readonly $onInstalledData: Store<OnInstalledData>;
+  private readonly $onInstalledData: StoreApi<OnInstalledData>;
   constructor({
     config,
     background,
@@ -73,7 +72,7 @@ export class App {
   }: {
     config: ObservableAsyncStorage<AppConfigType>;
     background: Background;
-    $onInstalledData: Store<OnInstalledData>;
+    $onInstalledData: StoreApi<OnInstalledData>;
   }) {
     this.config = config;
     this.background = background;
@@ -94,7 +93,8 @@ export class App {
     await this.setupRequestHandlers();
     await this.handleConfigUpdates();
 
-    this.$onInstalledData.watch(this.onInstalled);
+    this.onInstalled(this.$onInstalledData.getState());
+    this.$onInstalledData.subscribe((state) => this.onInstalled(state));
 
     // Send telemetry info
     this.config
@@ -158,60 +158,71 @@ export class App {
     const $appConfig = await this.config.getObservableStore();
 
     // Send update event
-    $appConfig.watch((config) => {
-      sendAppConfigUpdateEvent(config);
-    });
+    $appConfig.subscribe(
+      (state) => state,
+      (config) => {
+        sendAppConfigUpdateEvent(config);
+      },
+      { fireImmediately: true },
+    );
 
     // Watch for updates
-    $appConfig.updates.watch(() => {
+    $appConfig.subscribe(() => {
       telemetry.track(TELEMETRY_EVENT_NAME.SETTINGS_UPDATED);
     });
 
     // Clear cache while disable
-    $appConfig
-      .map((config) => config.scheduler.useCache)
-      .watch((useCache) => {
+    $appConfig.subscribe(
+      (config) => config.scheduler.useCache,
+      (useCache) => {
         if (!useCache) {
           clearCache();
         }
-      });
+      },
+      { fireImmediately: true },
+    );
 
     // Clear TextTranslator state
     const textTranslatorStorage = new TextTranslatorStorage();
-    $appConfig
-      .map((config) => config.textTranslator.rememberText)
-      .watch((rememberText) => {
+    $appConfig.subscribe(
+      (config) => config.textTranslator.rememberText,
+      (rememberText) => {
         if (!rememberText) {
           textTranslatorStorage.forgetText();
         }
-      });
+      },
+      { fireImmediately: true },
+    );
 
     // Configure context menu
     const translateSelectionContextMenu = new TranslateSelectionContextMenu();
-    $appConfig
-      .map((config) => {
+    $appConfig.subscribe(
+      (config) => {
         const { enabled, mode } = config.selectTranslator;
-        const isEnabled = enabled && mode === 'contextMenu';
-        return isEnabled;
-      })
-      .watch((isEnabled) => {
+        return enabled && mode === 'contextMenu';
+      },
+      (isEnabled) => {
         if (isEnabled) {
           translateSelectionContextMenu.enable();
         } else {
           translateSelectionContextMenu.disable();
         }
-      });
+      },
+      { fireImmediately: true },
+    );
 
     const translatePageContextMenu = new TranslatePageContextMenu();
-    $appConfig
-      .map((config) => config.pageTranslator.enableContextMenu)
-      .watch((isEnabled) => {
+    $appConfig.subscribe(
+      (config) => config.pageTranslator.enableContextMenu,
+      (isEnabled) => {
         if (isEnabled) {
           translatePageContextMenu.enable();
         } else {
           translatePageContextMenu.disable();
         }
-      });
+      },
+      { fireImmediately: true },
+    );
   }
 
   private readonly onInstalled = async (details: OnInstalledData) => {

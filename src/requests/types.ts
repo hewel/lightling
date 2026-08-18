@@ -1,4 +1,4 @@
-import { Store } from 'effector';
+import { ObservableStore } from '@/lib/store';
 
 // NOTE: probably should make factory builder which control update props and rebuild factories which require changed props
 import { Background } from '../app/Background';
@@ -16,7 +16,7 @@ export type RequestHandlerFactory<T = RequestHandlerFactoryProps> = (
 ) => () => void;
 
 export type ClientRequestHandlerFactoryProps = {
-  $config: Store<AppConfigType>;
+  $config: ObservableStore<AppConfigType>;
   pageTranslationContext: PageTranslationContext;
 };
 

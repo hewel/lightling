@@ -7,7 +7,6 @@ import {
 } from 'anylang/translators';
 import { isEqual } from 'lodash';
 
-import { createSelector } from '../../lib/effector/createSelector';
 import { TELEMETRY_EVENT_NAME } from '../../lib/telemetry';
 import { telemetry } from '../../lib/telemetry/singleton';
 import { BergamotTranslator } from '../../lib/translators/bergamot/BergamotTranslator';
@@ -128,43 +127,42 @@ export class Background {
 
   public async start() {
     const $config = await this.config.getObservableStore();
-    const $translateManagerConfig = createSelector(
-      $config,
-      ({ scheduler, translatorModule, cache }) => ({
-        scheduler,
-        translatorModule,
-        cache,
-      }),
-      {
-        updateFilter: (update, state) => !isEqual(update, state),
-      },
-    );
 
     // Build translators list
     const translators: TranslatorsMap = await getTranslatorsClasses();
 
     // Update config of translate manager
-    $translateManagerConfig.watch((config) => {
-      if (this.translateManager === null) {
-        this.translateManager = new TranslatorManager(config, translators);
+    $config.subscribe(
+      ({ scheduler, translatorModule, cache }) => ({
+        scheduler,
+        translatorModule,
+        cache,
+      }),
+      (config) => {
+        if (this.translateManager === null) {
+          this.translateManager = new TranslatorManager(config, translators);
 
-        // Return a scheduler instance for awaiters
-        if (this.translateManagerPromise !== null) {
-          this.translateManagerPromise.resolve(this.translateManager);
+          // Return a scheduler instance for awaiters
+          if (this.translateManagerPromise !== null) {
+            this.translateManagerPromise.resolve(this.translateManager);
+          }
+          return;
         }
-        return;
-      }
 
-      this.translateManager.setConfig(config);
-    });
+        this.translateManager.setConfig(config);
+      },
+      { equalityFn: isEqual, fireImmediately: true },
+    );
 
     // Update TTS module
-    $config
-      .map(({ ttsModule }) => ttsModule)
-      .watch((ttsModule) => {
+    $config.subscribe(
+      ({ ttsModule }) => ttsModule,
+      (ttsModule) => {
         this.getTTSController().then((ttsController) => {
           ttsController.updateSpeaker(ttsModule);
         });
-      });
+      },
+      { fireImmediately: true },
+    );
   }
 }

@@ -1,14 +1,12 @@
-import { createEvent, createStore, Store } from 'effector';
+import { createObservableStore, ObservableStore, updateNotEqualProps } from '@/lib/store';
 
-import { updateNotEqualProps } from '../../lib/effector/reducers';
 import { getConfig } from '../../requests/backend/getConfig';
 import { ping } from '../../requests/backend/ping';
 import { onAppConfigUpdated } from '../../requests/global/appConfigUpdate';
 import { AppConfigType } from '../../types/runtime';
 
 export class ClientConfig {
-  private store: Store<AppConfigType> | null = null;
-  private readonly updateData = createEvent<AppConfigType>();
+  private store: ObservableStore<AppConfigType> | null = null;
 
   private readonly cleanupCallbacks: (() => void)[] = [];
   public async getStore() {
@@ -18,11 +16,10 @@ export class ClientConfig {
       await ping({ delay: 100 });
 
       const state = await getConfig();
-      this.store = createStore(state);
-      this.store.on(this.updateData, updateNotEqualProps);
+      this.store = createObservableStore(state);
 
       const unsubscribeRequestHandler = onAppConfigUpdated((config) => {
-        this.updateData(config);
+        this.store?.setState((state) => updateNotEqualProps(state, config));
       });
 
       this.cleanupCallbacks.push(unsubscribeRequestHandler);
