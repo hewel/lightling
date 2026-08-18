@@ -5,6 +5,7 @@ node_modules
 # Editors
 .idea
 .vscode
+.codegraph
 debug.log
 
 # Temporary files
