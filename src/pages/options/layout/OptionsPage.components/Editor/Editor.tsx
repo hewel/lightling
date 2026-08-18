@@ -1,15 +1,14 @@
-import { FC, useContext, useEffect, useRef, useState } from 'react';
+import { FC, useContext, useEffect, useState } from 'react';
 import * as stylex from '@stylexjs/stylex';
 
 import { Button } from '@/components/primitives/Button/Button.bundle/universal';
 import { IModalProps, Modal } from '@/components/primitives/Modal/Modal.bundle/desktop';
+import { Textarea } from '@/components/primitives/Textarea/Textarea.bundle/desktop';
 import { Textinput } from '@/components/primitives/Textinput/Textinput.bundle/desktop';
 import { useImmutableCallback } from '@/lib/hooks/useImmutableCallback';
 import { getMessage } from '@/lib/language';
 
 import { OptionsModalsContext } from '../../OptionsPage';
-
-import { EditorObject, MonacoEditor } from './MonakoEditor/MonacoEditor';
 
 const styles = stylex.create({
   modalContent: {
@@ -36,6 +35,10 @@ const styles = stylex.create({
   editorContainer: {
     display: 'flex',
     flexGrow: 5,
+  },
+  editor: {
+    flexGrow: 1,
+    fontFamily: 'var(--font-family-code)',
   },
   error: {
     borderRadius: 'var(--typography-layout-border-radius)',
@@ -96,15 +99,6 @@ export const Editor: FC<EditorProps> = ({ data, onClose, onSave, error }) => {
 
   const actualError = localError || error;
 
-  // Update dimensions
-  const editorObjectRef = useRef<EditorObject>(null);
-  useEffect(() => {
-    const editorObject = editorObjectRef.current;
-    if (!editorObject) return;
-
-    editorObject.updateDimensions();
-  }, [actualError]);
-
   return (
     <Modal
       contentXstyle={styles.modalContent}
@@ -124,10 +118,15 @@ export const Editor: FC<EditorProps> = ({ data, onClose, onSave, error }) => {
         </div>
 
         <div {...stylex.props(styles.editorContainer)}>
-          <MonacoEditor
+          <Textarea
+            label={getMessage('editorWindow_data_title')}
+            isLabelHidden
             value={code}
-            setValue={setCode}
-            editorObjectRef={editorObjectRef}
+            onInputText={setCode}
+            spellCheck={false}
+            rows={20}
+            width="100%"
+            controlProps={{ fieldXstyle: styles.editor }}
           />
         </div>
 

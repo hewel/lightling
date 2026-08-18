@@ -1,10 +1,5 @@
-import { getContentScriptStyles } from '@/lib/browser';
-import { ShadowDOMContainerManager } from '@/lib/ShadowDOMContainerManager';
 import { TELEMETRY_EVENT_NAME } from '@/lib/telemetry';
 import { trackClientEvent } from '@/requests/backend/telemetry';
-import { translate } from '@/requests/backend/translate';
-
-import { TextTranslatorPopup } from './components/TextTranslatorPopup/TextTranslatorPopup';
 
 export interface Options {
   /**
@@ -69,6 +64,28 @@ export interface Options {
 
   enableTranslateFromContextMenu?: boolean;
 }
+export type SelectTranslatorPopupRenderOptions = {
+  closeHandler: () => void;
+  quickTranslate: boolean;
+  pageLanguage?: string;
+  showOriginalText: boolean;
+  detectedLangFirst: boolean;
+  isUseAutoForDetectLang: boolean;
+  rememberDirection: boolean;
+  zIndex?: number;
+  timeoutForHideButton?: number;
+  focusOnTranslateButton?: boolean;
+  text: string;
+  x: number;
+  y: number;
+};
+
+type PopupRenderer = {
+  getRootNode: () => HTMLElement | null;
+  show: (options: SelectTranslatorPopupRenderOptions) => void;
+  hide: () => void;
+  destroy: () => void;
+};
 
 export const getSelectedTextOfInput = (elm: HTMLInputElement | HTMLTextAreaElement) => {
   const { selectionStart, selectionEnd } = elm;
@@ -105,9 +122,7 @@ export class SelectTranslator {
 
   constructor(options?: Partial<Options>) {
     if (options !== undefined) {
-      for (const key in options) {
-        (this.options as any)[key] = (options as any)[key];
-      }
+      Object.assign(this.options, options);
     }
   }
 
@@ -119,55 +134,72 @@ export class SelectTranslator {
     this.selectionTarget = evt.target instanceof HTMLElement ? evt.target : null;
   };
 
-  private readonly shadowRoot = new ShadowDOMContainerManager({
-    styles: getContentScriptStyles(),
-  });
+  private started = false;
+  private popupRenderer: PopupRenderer | null = null;
+  private popupRendererPromise: Promise<PopupRenderer | null> | null = null;
+  private popupContext = Symbol('popup');
+  private lifecycleContext = Symbol('lifecycle');
 
   public start() {
-    if (this.shadowRoot.getRootNode() !== null) {
+    if (this.started) {
       throw new Error('Already started');
     }
 
-    this.shadowRoot.createRootNode();
-    const root = this.shadowRoot.getRootNode()!;
-
-    // Add event listeners
-    root.addEventListener('keydown', this.keyDown);
+    this.started = true;
+    this.lifecycleContext = Symbol('lifecycle');
     document.addEventListener('selectionchange', this.selectionFlagUpdater);
-
     document.addEventListener('pointerdown', this.pointerDown);
     document.addEventListener('pointerup', this.pointerUp);
-
     document.addEventListener('touchstart', this.pointerDown);
     document.addEventListener('touchend', this.pointerUp);
-
-    this.mountEmptyComponent();
   }
 
   public stop() {
-    const root = this.shadowRoot.getRootNode();
-    if (root === null) {
+    if (!this.started) {
       throw new Error('Not started');
     }
 
-    // Remove event listeners
-    root.removeEventListener('keydown', this.keyDown);
+    this.started = false;
+    this.popupContext = Symbol('popup');
+    this.lifecycleContext = Symbol('lifecycle');
     document.removeEventListener('selectionchange', this.selectionFlagUpdater);
-
     document.removeEventListener('pointerdown', this.pointerDown);
     document.removeEventListener('pointerup', this.pointerUp);
-
     document.removeEventListener('touchstart', this.pointerDown);
     document.removeEventListener('touchend', this.pointerUp);
 
-    // Unmount component and remove root node
-    this.shadowRoot.unmountComponent();
-    this.shadowRoot.removeRootNode();
+    this.popupRenderer?.destroy();
+    this.popupRenderer = null;
+    this.popupRendererPromise = null;
   }
 
   public isRun() {
-    return this.shadowRoot.getRootNode() !== null;
+    return this.started;
   }
+
+  private readonly getPopupRenderer = async (): Promise<PopupRenderer | null> => {
+    if (this.popupRenderer !== null) return this.popupRenderer;
+
+    if (this.popupRendererPromise === null) {
+      const lifecycleContext = this.lifecycleContext;
+      // Performance seam: React popup code loads only after a qualifying selection.
+      this.popupRendererPromise = import(
+        /* webpackChunkName: "content-selected-translator" */
+        './SelectTranslatorPopupRenderer'
+      ).then(({ SelectTranslatorPopupRenderer }) => {
+        const renderer = new SelectTranslatorPopupRenderer();
+        if (!this.started || lifecycleContext !== this.lifecycleContext) {
+          renderer.destroy();
+          return null;
+        }
+
+        this.popupRenderer = renderer;
+        return renderer;
+      });
+    }
+
+    return this.popupRendererPromise;
+  };
 
   public translateSelectedText = () => {
     this.hidePopup();
@@ -192,14 +224,14 @@ export class SelectTranslator {
       }
 
       if (text !== null) {
-        this.showPopup(text, x, y);
+        void this.showPopup(text, x, y);
       }
     });
   };
 
   private readonly getSelectedText = () =>
     new Promise<{ selection: Selection; text: string } | null>((res) => {
-      const root = this.shadowRoot.getRootNode();
+      const root = this.popupRenderer?.getRootNode() ?? null;
 
       this.context = Symbol('context');
       const context = this.context;
@@ -220,30 +252,25 @@ export class SelectTranslator {
           return;
         }
 
-        // Skip if selected a text inside root node
         if (
-          root === null ||
-          root.contains(selection.anchorNode) ||
-          root.contains(selection.focusNode)
-        )
+          root !== null &&
+          (root.contains(selection.anchorNode) || root.contains(selection.focusNode))
+        ) {
+          res(null);
           return;
+        }
 
         const selectedText = selection.toString();
         res(selectedText.length > 0 ? { selection, text: selectedText } : null);
       });
     });
 
-  // Prevent handle keys by page. It important for search language on pages like youtube where F key can open fullscreen mode
-  private readonly keyDown = (evt: KeyboardEvent) => {
-    evt.stopImmediatePropagation();
-  };
-
   // NOTE: maybe it should be removed after start use popup
   /**
    * Close popup by click outside the root
    */
   private readonly pointerDown = (evt: PointerEvent | TouchEvent) => {
-    const root = this.shadowRoot.getRootNode();
+    const root = this.popupRenderer?.getRootNode() ?? null;
     if (root !== null && evt.target instanceof Node && root.contains(evt.target)) return;
 
     this.hidePopup();
@@ -285,10 +312,10 @@ export class SelectTranslator {
       return;
 
     const target = evt.target;
-    const root = this.shadowRoot.getRootNode();
+    const root = this.popupRenderer?.getRootNode() ?? null;
 
     // Skip events inside root node
-    if (root === null || (target instanceof Node && root.contains(target))) return;
+    if (root !== null && target instanceof Node && root.contains(target)) return;
 
     this.getSelectedText().then((selectedTextObj) => {
       let text: string | null = null;
@@ -317,19 +344,26 @@ export class SelectTranslator {
       }
 
       if (text !== null) {
-        this.showPopup(text, pageX, pageY);
+        void this.showPopup(text, pageX, pageY);
       }
     });
   };
 
-  private readonly showPopup = (text: string, x: number, y: number) => {
+  private readonly showPopup = async (text: string, x: number, y: number) => {
     const trimmedText = text.trim();
-
     if (trimmedText.length === 0) return;
 
-    // Update selection value
     this.unhandledSelection = false;
+    const popupContext = Symbol('popup');
+    this.popupContext = popupContext;
 
+    const renderer = await this.getPopupRenderer();
+    if (renderer === null || popupContext !== this.popupContext) return;
+
+    const rootNode = renderer.getRootNode();
+    if (rootNode === null) throw new Error('Root node is not found');
+
+    const rootPosition = getAbsolutePositionOfElement(rootNode);
     const {
       pageLanguage,
       quickTranslate,
@@ -343,41 +377,21 @@ export class SelectTranslator {
       enableTranslateFromContextMenu,
     } = this.options;
 
-    const isForceQuickTranslate = enableTranslateFromContextMenu;
-
-    const rootNode = this.shadowRoot.getRootNode();
-    if (!rootNode) throw new Error('Root node is not found');
-
-    // Fix x/y position to set position related to root node
-    // Otherwise, in case a root node is shifted (for example when the body is resized),
-    // the element will be rendered too far of requested coordinates,
-    // because element renders related root node
-    // See issue #529
-    const rootPosition = getAbsolutePositionOfElement(rootNode);
-    const fixedPosition = {
+    renderer.show({
+      closeHandler: this.hidePopup,
+      quickTranslate: enableTranslateFromContextMenu === true || quickTranslate,
+      pageLanguage,
+      showOriginalText,
+      detectedLangFirst,
+      isUseAutoForDetectLang,
+      rememberDirection,
+      zIndex,
+      timeoutForHideButton,
+      focusOnTranslateButton,
+      text: trimmedText,
       x: x - rootPosition.x,
       y: y - rootPosition.y,
-    };
-
-    this.shadowRoot.mountComponent(
-      <TextTranslatorPopup
-        closeHandler={this.hidePopup}
-        quickTranslate={isForceQuickTranslate || quickTranslate}
-        {...{
-          translate,
-          pageLanguage,
-          showOriginalText,
-          detectedLangFirst,
-          isUseAutoForDetectLang,
-          rememberDirection,
-          zIndex,
-          timeoutForHideButton,
-          focusOnTranslateButton,
-          text: trimmedText,
-          ...fixedPosition,
-        }}
-      />,
-    );
+    });
 
     trackClientEvent(TELEMETRY_EVENT_NAME.SELECTED_TEXT_POPUP_SHOWN, {
       length: trimmedText.length,
@@ -385,10 +399,7 @@ export class SelectTranslator {
   };
 
   private readonly hidePopup = () => {
-    this.mountEmptyComponent();
-  };
-
-  private readonly mountEmptyComponent = () => {
-    this.shadowRoot.mountComponent();
+    this.popupContext = Symbol('popup');
+    this.popupRenderer?.hide();
   };
 }

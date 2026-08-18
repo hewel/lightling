@@ -17,7 +17,7 @@ export const [enableTranslatePageFactory, enableTranslatePageReq] = buildTabRequ
       async ({ from, to }) => {
         const domTranslator = pageTranslationContext.getDOMTranslator();
         if (domTranslator !== null) {
-          domTranslator.translate({ from, to });
+          await domTranslator.translate({ from, to });
         }
       },
   },

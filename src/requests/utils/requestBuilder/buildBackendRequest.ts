@@ -1,8 +1,8 @@
 import { type SyncSchema, tryDecode } from '@/lib/types';
 
-import { RequestHandlerFactory, RequestHandlerFactoryProps } from '../../types';
+import type { RequestHandlerFactory, RequestHandlerFactoryProps } from '../../types';
 
-import { addRequestHandler, sendBackgroundRequest } from '..';
+import { addRequestHandler, ensureBackgroundRuntime, sendBackgroundRequest } from '..';
 
 type BackgroundOptions<O = unknown, R = unknown, C = RequestHandlerFactoryProps> = {
   factoryHandler: (props: C) => (options: O) => Promise<R>;
@@ -56,15 +56,16 @@ export const buildBackendRequest = <O = void, R = void, C = RequestHandlerFactor
       return preparedRequestHandler.handler(options);
     }
 
-    // Send request
-    return sendBackgroundRequest(endpoint, options).then((response): R => {
-      // Validate request props
-      if (responseValidator !== undefined) {
-        tryDecode(responseValidator, response);
-      }
+    // Ensure Chromium's offscreen runtime exists before sending the request.
+    return ensureBackgroundRuntime()
+      .then(() => sendBackgroundRequest(endpoint, options))
+      .then((response): R => {
+        if (responseValidator !== undefined) {
+          tryDecode(responseValidator, response);
+        }
 
-      return response;
-    });
+        return response;
+      });
   };
 
   const factory: RequestHandlerFactory<C> = (factoryProps) => {

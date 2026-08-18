@@ -8,7 +8,7 @@ export const [disableTranslatePageFactory, disableTranslatePage] = buildTabReque
       async () => {
         const domTranslator = pageTranslationContext.getDOMTranslator();
         if (domTranslator !== null) {
-          domTranslator.stopTranslate();
+          await domTranslator.stopTranslate();
         }
       },
   },

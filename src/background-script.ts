@@ -1,3 +1,3 @@
 import { App } from './app';
 
-App.main();
+void App.main();

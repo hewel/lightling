@@ -63,6 +63,9 @@ class ShadowDomContentStylesPlugin {
 }
 
 export default {
+  perfBudgets: {
+    runtime: 6 * 1024 * 1024,
+  },
   config(config) {
     config.module ??= { rules: [] };
     config.module.rules ??= [];

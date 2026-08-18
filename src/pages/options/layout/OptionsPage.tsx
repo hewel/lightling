@@ -1,7 +1,9 @@
 import {
   createContext,
-  FC,
-  RefObject,
+  type FC,
+  lazy,
+  type RefObject,
+  Suspense,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -9,6 +11,7 @@ import {
   useRef,
   useState,
 } from 'react';
+import { Spinner } from '@astryxdesign/core/Spinner';
 import { HStack, VStack } from '@astryxdesign/core/Stack';
 import { useToast } from '@astryxdesign/core/Toast';
 import * as stylex from '@stylexjs/stylex';
@@ -30,18 +33,28 @@ import { setConfig as setConfigReq } from '@/requests/backend/setConfig';
 import { getAvailableTranslators } from '@/requests/backend/translators/getAvailableTranslators';
 import { getSpeakers } from '@/requests/backend/tts/getSpeakers';
 import { updateConfig as updateConfigReq } from '@/requests/backend/updateConfig';
-import { AppConfigType } from '@/types/runtime';
+import type { AppConfigType } from '@/types/runtime';
 
-import { TranslatorsManager } from './OptionsPage.components/TranslatorsManager/TranslatorsManager';
-import { TTSList } from './OptionsPage.components/TTSList/TTSList';
 import { optionsPageStyles } from './OptionsPage.stylex';
 import { generateTree } from './OptionsPage.utils/generateTree';
-import { OptionsGroup, OptionsTree } from './OptionsTree/OptionsTree';
+import { type OptionsGroup, OptionsTree } from './OptionsTree/OptionsTree';
 import { PageSection } from './PageSection/PageSection';
 
 export const OptionsModalsContext = createContext<
   RefObject<HTMLDivElement | null> | undefined
 >(undefined);
+
+// Performance seam: manager dialogs load only after their controls are activated.
+const TranslatorsManager = lazy(() =>
+  import('./OptionsPage.components/TranslatorsManager/TranslatorsManager').then(
+    ({ TranslatorsManager }) => ({ default: TranslatorsManager }),
+  ),
+);
+const TTSList = lazy(() =>
+  import('./OptionsPage.components/TTSList/TTSList').then(({ TTSList }) => ({
+    default: TTSList,
+  })),
+);
 
 type Errors = null | Record<string, string>;
 
@@ -343,20 +356,28 @@ export const OptionsPage: FC<OptionsPageProps> = () => {
         <div ref={windowsStackRef} />
 
         <OptionsModalsContext.Provider value={windowsStackRef}>
-          <TranslatorsManager
-            visible={isOpenCustomTranslatorsWindow}
-            onClose={() => {
-              setIsOpenCustomTranslatorsWindow(false);
-            }}
-            updateConfig={updateConfig}
-          />
-          <TTSList
-            visible={isTTSModulesWindowOpen}
-            onClose={() => {
-              setIsTTSModulesWindowOpen(false);
-            }}
-            updateConfig={updateConfig}
-          />
+          {isOpenCustomTranslatorsWindow && (
+            <Suspense fallback={<Spinner />}>
+              <TranslatorsManager
+                visible
+                onClose={() => {
+                  setIsOpenCustomTranslatorsWindow(false);
+                }}
+                updateConfig={updateConfig}
+              />
+            </Suspense>
+          )}
+          {isTTSModulesWindowOpen && (
+            <Suspense fallback={<Spinner />}>
+              <TTSList
+                visible
+                onClose={() => {
+                  setIsTTSModulesWindowOpen(false);
+                }}
+                updateConfig={updateConfig}
+              />
+            </Suspense>
+          )}
         </OptionsModalsContext.Provider>
       </div>
     </Page>

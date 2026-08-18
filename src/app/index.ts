@@ -1,18 +1,21 @@
 import browser from 'webextension-polyfill';
-import { createStore, StoreApi } from 'zustand/vanilla';
+import { createStore, type StoreApi } from 'zustand/vanilla';
 
 import { defaultConfig } from '../config';
-import { isBackgroundContext, isChromium, isFirefox } from '../lib/browser';
+import { isChromium } from '../lib/browser';
 import { getAllTabs } from '../lib/browser/tabs';
 import { TELEMETRY_EVENT_NAME } from '../lib/telemetry';
 import { telemetry } from '../lib/telemetry/singleton';
 import { TextTranslatorStorage } from '../pages/popup/tabs/TextTranslator/TextTranslator.utils/TextTranslatorStorage';
 import { clearCache } from '../requests/backend/clearCache';
 import { sendAppConfigUpdateEvent } from '../requests/global/appConfigUpdate';
-import { customTranslatorsFactory } from '../requests/offscreen/customTranslators';
-import { AppConfigType } from '../types/runtime';
-import { Background } from './Background';
-import { requestHandlers } from './Background/requestHandlers';
+import {
+  addRequestHandler,
+  backgroundRuntimeEnsureAction,
+  backgroundRuntimeReadyAction,
+  sendBackgroundRequest,
+} from '../requests/utils';
+import type { AppConfigType } from '../types/runtime';
 import { ConfigStorage, ObservableAsyncStorage } from './ConfigStorage/ConfigStorage';
 import { TranslatePageContextMenu } from './ContextMenus/TranslatePageContextMenu';
 import { TranslateSelectionContextMenu } from './ContextMenus/TranslateSelectionContextMenu';
@@ -33,6 +36,34 @@ async function getWebGpuStatus() {
 
   return 'available';
 }
+let offscreenDocumentPromise: Promise<void> | null = null;
+async function ensureOffscreenDocument() {
+  if (!isChromium()) return;
+  if (offscreenDocumentPromise !== null) return offscreenDocumentPromise;
+
+  const offscreen = globalThis.chrome.offscreen;
+  const promise = (async () => {
+    if (!(await offscreen.hasDocument())) {
+      await offscreen.createDocument({
+        url: 'pages/offscreen-documents/main/main.html',
+        reasons: ['WORKERS', 'IFRAME_SCRIPTING', 'MATCH_MEDIA'],
+        justification:
+          'Run translation, text-to-speech, WASM, and custom translator code',
+      });
+    }
+
+    await sendBackgroundRequest(backgroundRuntimeReadyAction);
+  })();
+  offscreenDocumentPromise = promise;
+
+  try {
+    await promise;
+  } finally {
+    if (offscreenDocumentPromise === promise) {
+      offscreenDocumentPromise = null;
+    }
+  }
+}
 
 /**
  * Manage global states and application context
@@ -41,7 +72,10 @@ export class App {
   /**
    * Run application
    */
-  public static async main() {
+  public static async main(
+    startRuntime?: (config: ObservableAsyncStorage<AppConfigType>) => Promise<void>,
+  ) {
+    addRequestHandler(backgroundRuntimeEnsureAction, ensureOffscreenDocument);
     const onInstalledStore = createStore<OnInstalledData>()(() => null);
     browser.runtime.onInstalled.addListener((details) =>
       onInstalledStore.setState(details),
@@ -52,30 +86,25 @@ export class App {
 
     const config = new ConfigStorage(defaultConfig);
     const observableConfig = new ObservableAsyncStorage(config);
-    const background = new Background(observableConfig);
+    await startRuntime?.(observableConfig);
 
     const app = new App({
       config: observableConfig,
-      background,
       $onInstalledData: onInstalledStore,
     });
     await app.start();
   }
 
   private readonly config: ObservableAsyncStorage<AppConfigType>;
-  private readonly background: Background;
   private readonly $onInstalledData: StoreApi<OnInstalledData>;
   constructor({
     config,
-    background,
     $onInstalledData,
   }: {
     config: ObservableAsyncStorage<AppConfigType>;
-    background: Background;
     $onInstalledData: StoreApi<OnInstalledData>;
   }) {
     this.config = config;
-    this.background = background;
     this.$onInstalledData = $onInstalledData;
   }
 
@@ -87,10 +116,6 @@ export class App {
 
     this.isStarted = true;
 
-    await this.setupOffscreenDocuments();
-    await this.background.start();
-
-    await this.setupRequestHandlers();
     await this.handleConfigUpdates();
 
     this.onInstalled(this.$onInstalledData.getState());
@@ -112,46 +137,6 @@ export class App {
           hardwareConcurrency: navigator.hardwareConcurrency,
         });
       });
-  }
-
-  private async setupOffscreenDocuments() {
-    // Setup sandboxed iframes
-    if (isChromium()) {
-      // Currently `offscreen` API is non standard, so we cast type
-      const offscreen = (globalThis as any).chrome.offscreen;
-
-      // We may have only one offscreen document, but we need more,
-      // so we create only one "main" document, that creates embedded iframes
-      try {
-        offscreen.createDocument({
-          url: 'pages/offscreen-documents/main/main.html',
-          reasons: ['WORKERS', 'IFRAME_SCRIPTING', 'MATCH_MEDIA'],
-          justification:
-            'Main offscreen document, to run WASM and custom translators code in sandbox',
-        });
-      } catch (error) {
-        if (
-          !(error instanceof Error) ||
-          !error.message.startsWith('Only a single offscreen')
-        )
-          throw error;
-      }
-    } else {
-      customTranslatorsFactory();
-    }
-  }
-
-  private async setupRequestHandlers() {
-    // TODO: debug this condition and remove or move on top
-    // Prevent run it again on other pages, such as options page
-    if (!isFirefox() || isBackgroundContext()) {
-      requestHandlers.forEach((factory) => {
-        factory({
-          config: this.config,
-          backgroundContext: this.background,
-        });
-      });
-    }
   }
 
   private async handleConfigUpdates() {

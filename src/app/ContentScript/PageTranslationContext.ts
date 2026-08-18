@@ -1,4 +1,4 @@
-import { createObservableStore, ObservableStore } from '@/lib/store';
+import { createObservableStore, type ObservableStore } from '@/lib/store';
 import { isDeepEqual } from '@/lib/utils';
 
 import { onHotkeysPressed } from '../../components/controls/Hotkey/utils';
@@ -8,10 +8,10 @@ import { getLanguagePreferences } from '../../requests/backend/autoTranslation/l
 // Requests
 import { getSitePreferences } from '../../requests/backend/autoTranslation/sitePreferences/getSitePreferences';
 import { getTranslatorFeatures } from '../../requests/backend/getTranslatorFeatures';
-import { AppConfigType } from '../../types/runtime';
+import type { AppConfigType } from '../../types/runtime';
 
 import { PageTranslatorController } from './PageTranslator/PageTranslatorController';
-import { PageTranslatorManager } from './PageTranslator/PageTranslatorManager';
+import type { PageTranslatorManager } from './PageTranslator/PageTranslatorManager';
 import { SelectTranslatorController } from './SelectTranslator/SelectTranslatorController';
 import { SelectTranslatorManager } from './SelectTranslator/SelectTranslatorManager';
 
@@ -103,11 +103,40 @@ export class PageTranslationContext {
       equalityFn: isDeepEqual,
     });
 
-    const pageTranslatorManager = new PageTranslatorManager($pageTranslatorState);
-    pageTranslatorManager.start();
+    let pageTranslatorManagerPromise: Promise<PageTranslatorManager> | null = null;
+    const getPageTranslatorManager = async () => {
+      // Performance seam: page translation is absent from the navigation bootstrap.
+      if (pageTranslatorManagerPromise === null) {
+        pageTranslatorManagerPromise = import(
+          /* webpackChunkName: "content-page-translator" */
+          './PageTranslator/PageTranslatorManager'
+        ).then(({ PageTranslatorManager }) => {
+          const manager = new PageTranslatorManager($pageTranslatorState);
+          manager.start();
+          return manager;
+        });
+      }
+
+      try {
+        return await pageTranslatorManagerPromise;
+      } catch (error) {
+        pageTranslatorManagerPromise = null;
+        throw error;
+      }
+    };
+
     this.controllers.pageTranslator = new PageTranslatorController(
-      pageTranslatorManager,
+      getPageTranslatorManager,
       this.updatePageTranslationState,
+    );
+    this.$context.subscribe(
+      ({ pageTranslation }) => pageTranslation,
+      (pageTranslation) => {
+        if (pageTranslation !== null) {
+          void getPageTranslatorManager();
+        }
+      },
+      { fireImmediately: true },
     );
 
     void this.scanPage();

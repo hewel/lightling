@@ -1,7 +1,7 @@
-import { ObservableStore } from '@/lib/store';
-import { AppConfigType } from '@/types/runtime';
+import type { ObservableStore } from '@/lib/store';
+import type { AppConfigType } from '@/types/runtime';
 
-import { PageTranslationOptions } from '../PageTranslationContext';
+import type { PageTranslationOptions } from '../PageTranslationContext';
 import { PageTranslator } from './PageTranslator';
 
 export class PageTranslatorManager {

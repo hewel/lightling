@@ -1,9 +1,9 @@
 import { TELEMETRY_EVENT_NAME } from '@/lib/telemetry';
 import { trackClientEvent } from '@/requests/backend/telemetry';
 
-import { PageTranslationOptions } from '../PageTranslationContext';
-import { PageTranslatorStats } from './PageTranslator';
-import { PageTranslatorManager } from './PageTranslatorManager';
+import type { PageTranslationOptions } from '../PageTranslationContext';
+import type { PageTranslatorStats } from './PageTranslator';
+import type { PageTranslatorManager } from './PageTranslatorManager';
 import { pageTranslatorStateUpdated } from './requests/pageTranslatorStateUpdated';
 
 export type PageTranslatorState = {
@@ -16,21 +16,21 @@ export type PageTranslatorState = {
 };
 
 export class PageTranslatorController {
-  private readonly manager: PageTranslatorManager;
+  private readonly getManager: () => Promise<PageTranslatorManager>;
   private readonly updateTranslationState: (
     options: PageTranslationOptions | null,
   ) => void;
   constructor(
-    manager: PageTranslatorManager,
+    getManager: () => Promise<PageTranslatorManager>,
     updateTranslationState: (options: PageTranslationOptions | null) => void,
   ) {
-    this.manager = manager;
+    this.getManager = getManager;
     this.updateTranslationState = updateTranslationState;
   }
 
-  public translate(options: PageTranslationOptions) {
+  public async translate(options: PageTranslationOptions) {
     this.updateTranslationState(options);
-    this.notifyState();
+    await this.notifyState();
     trackClientEvent(TELEMETRY_EVENT_NAME.PAGE_TRANSLATION_CHANGED, {
       action: 'run',
       from: options.from,
@@ -38,16 +38,17 @@ export class PageTranslatorController {
     });
   }
 
-  public stopTranslate() {
+  public async stopTranslate() {
     this.updateTranslationState(null);
-    this.notifyState();
+    await this.notifyState();
     trackClientEvent(TELEMETRY_EVENT_NAME.PAGE_TRANSLATION_CHANGED, {
       action: 'stop',
     });
   }
 
-  public getStatus(): PageTranslatorState {
-    const domTranslator = this.manager.getDomTranslator();
+  public async getStatus(): Promise<PageTranslatorState> {
+    const manager = await this.getManager();
+    const domTranslator = manager.getDomTranslator();
     return {
       isTranslated: domTranslator.isRun(),
       counters: domTranslator.getStatus(),
@@ -55,7 +56,7 @@ export class PageTranslatorController {
     };
   }
 
-  private notifyState() {
-    pageTranslatorStateUpdated(this.getStatus());
+  private async notifyState() {
+    pageTranslatorStateUpdated(await this.getStatus());
   }
 }

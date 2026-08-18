@@ -1,9 +1,8 @@
-import { ObservableStore } from '@/lib/store';
-import { AppConfigType } from '@/types/runtime';
+import type { ObservableStore } from '@/lib/store';
+import type { AppConfigType } from '@/types/runtime';
 
-import { PageData } from '../PageTranslationContext';
+import type { PageData } from '../PageTranslationContext';
 import { SelectTranslator } from './SelectTranslator';
-
 export class SelectTranslatorManager {
   private readonly $state;
   constructor(

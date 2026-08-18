@@ -1,13 +1,18 @@
 import browser from 'webextension-polyfill';
 
-import { createObservableStore, ObservableStore, updateNotEqualProps } from '@/lib/store';
+import {
+  createObservableStore,
+  type ObservableStore,
+  updateNotEqualProps,
+} from '@/lib/store';
 
 import { decodeStruct } from '../../lib/types';
-import { AppConfig, AppConfigType } from '../../types/runtime';
+import { AppConfig, type AppConfigType } from '../../types/runtime';
 
 export interface AsyncStorage<T> {
   get(): Promise<T>;
   set(data: T): Promise<void>;
+  subscribe?(listener: (data: T) => void): () => void;
 }
 
 export class ConfigStorage implements AsyncStorage<AppConfigType> {
@@ -19,15 +24,28 @@ export class ConfigStorage implements AsyncStorage<AppConfigType> {
   }
 
   public async get(): Promise<AppConfigType> {
-    // Get data from storage if possible
     const { [this.storageName]: data } = await browser.storage.local.get(
       this.storageName,
     );
+    return this.decode(data);
+  }
 
-    // Return default data for empty storage
-    if (data === undefined) {
-      return this.defaultData;
-    }
+  public subscribe(listener: (data: AppConfigType) => void) {
+    const handleStorageChange: Parameters<
+      typeof browser.storage.onChanged.addListener
+    >[0] = (changes, areaName) => {
+      if (areaName !== 'local' || !Object.hasOwn(changes, this.storageName)) return;
+      listener(this.decode(changes[this.storageName]?.newValue));
+    };
+
+    browser.storage.onChanged.addListener(handleStorageChange);
+    return () => {
+      browser.storage.onChanged.removeListener(handleStorageChange);
+    };
+  }
+
+  private decode(data: unknown): AppConfigType {
+    if (data === undefined) return this.defaultData;
 
     const configCodec = decodeStruct(AppConfig, data);
     if (configCodec.errors !== null) {
@@ -52,11 +70,16 @@ export class ObservableAsyncStorage<
   }
 
   private store: ObservableStore<T> | null = null;
+  private unsubscribe: (() => void) | null = null;
 
   public async getObservableStore(): Promise<ObservableStore<T>> {
     if (this.store === null) {
       const state = await this.config.get();
       this.store = createObservableStore<T>(state);
+      this.unsubscribe =
+        this.config.subscribe?.((data) => {
+          this.store?.setState((state) => updateNotEqualProps(state, data));
+        }) ?? null;
     }
 
     return this.store;
@@ -73,5 +96,10 @@ export class ObservableAsyncStorage<
     if (this.store !== null) {
       this.store.setState((state) => updateNotEqualProps(state, newObject));
     }
+  }
+
+  public dispose() {
+    this.unsubscribe?.();
+    this.unsubscribe = null;
   }
 }
