@@ -75,6 +75,7 @@
     "src/themes/astryx-*.css",
     "src/themes/vivid/**",
     "src/themes/stylex.css",
+    "src/content-shadow.css.txt",
     "*.d.ts",
     "*.html",
     "*.md",

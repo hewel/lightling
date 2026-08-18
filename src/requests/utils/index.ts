@@ -36,26 +36,6 @@ export function sendBackgroundRequest(action: string, data?: any) {
   return browser.runtime.sendMessage({ action, data });
 }
 
-export const backgroundRuntimeEnsureAction = 'backgroundRuntime.ensure';
-export const backgroundRuntimeReadyAction = 'backgroundRuntime.ready';
-
-let backgroundRuntimePromise: Promise<void> | null = null;
-export const ensureBackgroundRuntime = () => {
-  if (backgroundRuntimePromise === null) {
-    const promise = sendBackgroundRequest(backgroundRuntimeEnsureAction).then(
-      () => undefined,
-    );
-    backgroundRuntimePromise = promise;
-    void promise.catch(() => {
-      if (backgroundRuntimePromise === promise) {
-        backgroundRuntimePromise = null;
-      }
-    });
-  }
-
-  return backgroundRuntimePromise;
-};
-
 /**
  * Send request to tab
  */

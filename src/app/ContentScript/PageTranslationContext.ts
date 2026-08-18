@@ -11,7 +11,7 @@ import { getTranslatorFeatures } from '../../requests/backend/getTranslatorFeatu
 import type { AppConfigType } from '../../types/runtime';
 
 import { PageTranslatorController } from './PageTranslator/PageTranslatorController';
-import type { PageTranslatorManager } from './PageTranslator/PageTranslatorManager';
+import { PageTranslatorManager } from './PageTranslator/PageTranslatorManager';
 import { SelectTranslatorController } from './SelectTranslator/SelectTranslatorController';
 import { SelectTranslatorManager } from './SelectTranslator/SelectTranslatorManager';
 
@@ -103,26 +103,13 @@ export class PageTranslationContext {
       equalityFn: isDeepEqual,
     });
 
-    let pageTranslatorManagerPromise: Promise<PageTranslatorManager> | null = null;
+    let pageTranslatorManager: PageTranslatorManager | null = null;
     const getPageTranslatorManager = async () => {
-      // Performance seam: page translation is absent from the navigation bootstrap.
-      if (pageTranslatorManagerPromise === null) {
-        pageTranslatorManagerPromise = import(
-          /* webpackChunkName: "content-page-translator" */
-          './PageTranslator/PageTranslatorManager'
-        ).then(({ PageTranslatorManager }) => {
-          const manager = new PageTranslatorManager($pageTranslatorState);
-          manager.start();
-          return manager;
-        });
+      if (pageTranslatorManager === null) {
+        pageTranslatorManager = new PageTranslatorManager($pageTranslatorState);
+        pageTranslatorManager.start();
       }
-
-      try {
-        return await pageTranslatorManagerPromise;
-      } catch (error) {
-        pageTranslatorManagerPromise = null;
-        throw error;
-      }
+      return pageTranslatorManager;
     };
 
     this.controllers.pageTranslator = new PageTranslatorController(

@@ -1,6 +1,8 @@
 import { TELEMETRY_EVENT_NAME } from '@/lib/telemetry';
 import { trackClientEvent } from '@/requests/backend/telemetry';
 
+import { SelectTranslatorPopupRenderer } from './SelectTranslatorPopupRenderer';
+
 export interface Options {
   /**
    * Key modifiers to activate translate of selected text
@@ -136,9 +138,7 @@ export class SelectTranslator {
 
   private started = false;
   private popupRenderer: PopupRenderer | null = null;
-  private popupRendererPromise: Promise<PopupRenderer | null> | null = null;
   private popupContext = Symbol('popup');
-  private lifecycleContext = Symbol('lifecycle');
 
   public start() {
     if (this.started) {
@@ -146,7 +146,6 @@ export class SelectTranslator {
     }
 
     this.started = true;
-    this.lifecycleContext = Symbol('lifecycle');
     document.addEventListener('selectionchange', this.selectionFlagUpdater);
     document.addEventListener('pointerdown', this.pointerDown);
     document.addEventListener('pointerup', this.pointerUp);
@@ -161,7 +160,6 @@ export class SelectTranslator {
 
     this.started = false;
     this.popupContext = Symbol('popup');
-    this.lifecycleContext = Symbol('lifecycle');
     document.removeEventListener('selectionchange', this.selectionFlagUpdater);
     document.removeEventListener('pointerdown', this.pointerDown);
     document.removeEventListener('pointerup', this.pointerUp);
@@ -170,35 +168,23 @@ export class SelectTranslator {
 
     this.popupRenderer?.destroy();
     this.popupRenderer = null;
-    this.popupRendererPromise = null;
   }
 
   public isRun() {
     return this.started;
   }
 
-  private readonly getPopupRenderer = async (): Promise<PopupRenderer | null> => {
+  private readonly getPopupRenderer = (): PopupRenderer | null => {
     if (this.popupRenderer !== null) return this.popupRenderer;
 
-    if (this.popupRendererPromise === null) {
-      const lifecycleContext = this.lifecycleContext;
-      // Performance seam: React popup code loads only after a qualifying selection.
-      this.popupRendererPromise = import(
-        /* webpackChunkName: "content-selected-translator" */
-        './SelectTranslatorPopupRenderer'
-      ).then(({ SelectTranslatorPopupRenderer }) => {
-        const renderer = new SelectTranslatorPopupRenderer();
-        if (!this.started || lifecycleContext !== this.lifecycleContext) {
-          renderer.destroy();
-          return null;
-        }
-
-        this.popupRenderer = renderer;
-        return renderer;
-      });
+    const renderer = new SelectTranslatorPopupRenderer();
+    if (!this.started) {
+      renderer.destroy();
+      return null;
     }
 
-    return this.popupRendererPromise;
+    this.popupRenderer = renderer;
+    return renderer;
   };
 
   public translateSelectedText = () => {

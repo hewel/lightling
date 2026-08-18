@@ -9,3 +9,4 @@ src/themes/astryx-*.css
 # Built Astryx theme artifacts
 src/themes/vivid/
 src/themes/stylex.css
+src/content-shadow.css.txt

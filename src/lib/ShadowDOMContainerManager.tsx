@@ -1,9 +1,10 @@
-import { CSSProperties, ReactNode } from 'react';
-import { createRoot, Root } from 'react-dom/client';
+import type { CSSProperties, ReactNode } from 'react';
+import { createRoot, type Root } from 'react-dom/client';
 import root from 'react-shadow';
 import browser from 'webextension-polyfill';
 
-import { AstryxShadowRootProvider } from '../components/providers/AstryxProvider';
+import { AstryxShadowRootProvider } from '../components/providers/AstryxShadowRootProvider';
+import contentShadowStylesUrl from '../content-shadow.css.txt';
 
 // Set position explicitly
 const rootContainerStyles = {
@@ -21,6 +22,9 @@ export class ShadowDOMContainerManager {
   private reactRoot: Root | null = null;
 
   private readonly styles: string[];
+  private child: ReactNode;
+  private contentShadowStyles: string | null = null;
+  private contentShadowStylesPromise: Promise<string> | null = null;
 
   constructor(options?: { styles?: string[] }) {
     const { styles } = options ?? {};
@@ -57,8 +61,48 @@ export class ShadowDOMContainerManager {
   }
 
   public mountComponent = (child?: ReactNode) => {
-    // Skip when root node is not exist
     if (this.root === null) return;
+
+    this.child = child;
+    if (this.contentShadowStyles !== null) {
+      this.render();
+      return;
+    }
+
+    void this.getContentShadowStyles().then((styles) => {
+      this.contentShadowStyles = styles;
+      this.render();
+    });
+  };
+
+  private getContentShadowStyles() {
+    if (
+      typeof contentShadowStylesUrl === 'string' &&
+      (contentShadowStylesUrl.startsWith('/*') ||
+        contentShadowStylesUrl.startsWith('@layer') ||
+        contentShadowStylesUrl.includes('{'))
+    ) {
+      return Promise.resolve(contentShadowStylesUrl);
+    }
+
+    const resolvedUrl =
+      typeof browser?.runtime?.getURL === 'function'
+        ? browser.runtime.getURL(contentShadowStylesUrl)
+        : contentShadowStylesUrl;
+
+    this.contentShadowStylesPromise ??= fetch(resolvedUrl).then(async (response) => {
+      if (!response.ok) {
+        throw new Error(
+          `Could not load Shadow DOM styles: ${response.status} ${response.statusText}`,
+        );
+      }
+      return response.text();
+    });
+    return this.contentShadowStylesPromise;
+  }
+
+  private render() {
+    if (this.root === null || this.contentShadowStyles === null) return;
 
     // #123 attach root node again on the page, for cases when whole DOM been replaced
     if (!document.body.contains(this.root)) {
@@ -68,16 +112,18 @@ export class ShadowDOMContainerManager {
     this.reactRoot ??= createRoot(this.root);
     this.reactRoot.render(
       <root.div style={{ ...rootContainerStyles }} mode="closed">
-        {/* Include styles and scripts */}
+        {/* Infrastructure seam: raw CSS stays inside this closed shadow tree. */}
+        <style>{this.contentShadowStyles}</style>
         {this.styles.map((path, index) => (
           <link key={index} rel="stylesheet" href={browser.runtime.getURL(path)} />
         ))}
-        <AstryxShadowRootProvider>{child}</AstryxShadowRootProvider>
+        <AstryxShadowRootProvider>{this.child}</AstryxShadowRootProvider>
       </root.div>,
     );
-  };
+  }
 
   public unmountComponent = () => {
+    this.child = undefined;
     if (this.reactRoot !== null) {
       this.reactRoot.unmount();
       this.reactRoot = null;

@@ -2,7 +2,7 @@ import { act, type ReactNode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { useThemeName } from '@astryxdesign/core/theme';
 
-import { AstryxShadowRootProvider } from './AstryxProvider';
+import { AstryxShadowRootProvider } from './AstryxShadowRootProvider';
 
 Object.defineProperty(globalThis, 'IS_REACT_ACT_ENVIRONMENT', {
   configurable: true,

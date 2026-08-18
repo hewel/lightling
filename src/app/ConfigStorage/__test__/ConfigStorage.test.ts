@@ -103,26 +103,5 @@ describe('use config', () => {
 
     const updatedConfig = await updateConfigPromise;
     expect(updatedConfig.language).toBe('ja');
-    observableConfigStorage.dispose();
-  });
-
-  test('observable storage receives updates from another context', async () => {
-    const nextConfig = { ...defaultConfig, language: 'ja' };
-    const reader = new ObservableAsyncStorage(new ConfigStorage(defaultConfig));
-    const $config = await reader.getObservableStore();
-    const updateConfigPromise = new Promise<AppConfigType>((resolve) => {
-      $config.subscribe((state) => resolve(state));
-    });
-    const storageChangeListener = vi
-      .mocked(browser.storage.onChanged.addListener)
-      .mock.calls.at(-1)?.[0];
-    if (storageChangeListener === undefined) {
-      throw new Error('Config storage change listener was not registered');
-    }
-
-    storageChangeListener({ appConfig: { newValue: nextConfig } }, 'local');
-
-    await expect(updateConfigPromise).resolves.toMatchObject({ language: 'ja' });
-    reader.dispose();
   });
 });

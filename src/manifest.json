@@ -17,23 +17,6 @@
       "js": ["contentscript.tsx"]
     }
   ],
-  "chromium:web_accessible_resources": [
-    {
-      "resources": [
-        "content-page-translator.js",
-        "content-page-translator.css",
-        "content-selected-translator.js",
-        "content-selected-translator.css"
-      ],
-      "matches": ["*://*/*"]
-    }
-  ],
-  "firefox:web_accessible_resources": [
-    "content-page-translator.js",
-    "content-page-translator.css",
-    "content-selected-translator.js",
-    "content-selected-translator.css"
-  ],
   "options_ui": {
     "page": "pages/options/options.html",
     "open_in_tab": true
@@ -50,7 +33,7 @@
     "type": "module"
   },
   "firefox:background": {
-    "scripts": ["background-script.firefox.ts"]
+    "scripts": ["background-script.ts"]
   },
   "chromium:action": {
     "default_popup": "pages/popup/popup.html",

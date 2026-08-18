@@ -64,6 +64,8 @@ class ShadowDomContentStylesPlugin {
 
 export default {
   perfBudgets: {
+    'content-script': 1024 * 1024,
+    'service-worker': 768 * 1024,
     runtime: 6 * 1024 * 1024,
   },
   config(config) {

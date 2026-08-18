@@ -3,16 +3,9 @@
  * that include another ones as iframes
  */
 
-import { startLocalRuntime } from '@/app/Background/startLocalRuntime';
-import { ConfigStorage, ObservableAsyncStorage } from '@/app/ConfigStorage/ConfigStorage';
-import { defaultConfig } from '@/config';
-import { createPromiseWithControls } from '@/lib/utils/createPromiseWithControls';
-import { addRequestHandler, backgroundRuntimeReadyAction } from '@/requests/utils';
-
+import { customTranslatorsFactory } from '../../requests/offscreen/customTranslators';
 import { themeUpdate } from '../../requests/offscreen/theme';
 
-const runtimeReady = createPromiseWithControls();
-addRequestHandler(backgroundRuntimeReadyAction, () => runtimeReady.promise);
 const createOffscreenWorker = () => {
   const workerIframe = document.createElement('iframe', {});
   workerIframe.src = '/pages/offscreen-documents/worker/worker.html';
@@ -32,16 +25,8 @@ const setupThemeListener = () => {
   themeUpdate({ isLight: lightThemeQuery.matches });
 };
 
-document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener('DOMContentLoaded', () => {
   createOffscreenWorker();
+  customTranslatorsFactory();
   setupThemeListener();
-
-  try {
-    const config = new ObservableAsyncStorage(new ConfigStorage(defaultConfig));
-    await startLocalRuntime(config);
-    runtimeReady.resolve();
-  } catch (error) {
-    runtimeReady.reject(error);
-    throw error;
-  }
 });

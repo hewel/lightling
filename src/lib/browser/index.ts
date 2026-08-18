@@ -23,19 +23,7 @@ export const injectStyles = (paths: string[], parent?: Node) => {
   });
 };
 
-type WebAccessibleResource = string | { resources?: string[] };
-
-export const getContentScriptStyles = () => {
-  const manifest = browser.runtime.getManifest() as ReturnType<
-    typeof browser.runtime.getManifest
-  > & {
-    web_accessible_resources?: WebAccessibleResource[];
-  };
-
-  return (manifest.web_accessible_resources ?? [])
-    .flatMap((entry) => (typeof entry === 'string' ? entry : (entry.resources ?? [])))
-    .filter((path) => path.endsWith('.css'));
-};
+export const getContentScriptStyles = () => ['content_scripts/content-0.css'];
 
 export const getOptionsPageUrl = () => {
   const optionsPage = browser.runtime.getManifest().options_ui?.page;
