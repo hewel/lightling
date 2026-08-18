@@ -3,9 +3,9 @@ import { describe, expect, it } from 'vitest';
 import { convertAstryxThemeCss } from '../prepareAstryxTheme.mjs';
 
 describe('convertAstryxThemeCss', () => {
-	it('expands neutral @scope blocks into compiler-safe descendant selectors', () => {
+	it('expands vivid @scope blocks into compiler-safe descendant selectors', () => {
 		const source = `@layer astryx-theme {
-@scope ([data-astryx-theme="neutral"]) to ([data-astryx-theme]) {
+@scope ([data-astryx-theme="vivid"]) to ([data-astryx-theme]) {
   :scope {
     --color-accent: light-dark(#111111, #eeeeee);
   }
@@ -20,9 +20,9 @@ describe('convertAstryxThemeCss', () => {
 
 		expect(converted).not.toContain('@scope');
 		expect(converted).not.toContain(':scope');
-		expect(converted).toContain('[data-astryx-theme="neutral"] {');
+		expect(converted).toContain('[data-astryx-theme="vivid"] {');
 		expect(converted).toContain(
-			'[data-astryx-theme="neutral"] .astryx-button.destructive {',
+			'[data-astryx-theme="vivid"] .astryx-button.destructive {',
 		);
 	});
 });

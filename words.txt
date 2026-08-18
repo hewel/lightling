@@ -42,3 +42,8 @@ stylexjs
 xstyle
 unplugin
 rspack
+Consolas
+Figtree
+oklch
+Segoe
+statusdot

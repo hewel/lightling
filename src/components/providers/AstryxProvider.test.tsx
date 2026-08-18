@@ -41,19 +41,17 @@ describe('AstryxShadowRootProvider', () => {
 		});
 	}
 
-	it('scopes neutral tokens without changing the host document theme', async () => {
+	it('scopes vivid tokens without changing the host document theme', async () => {
 		await render(<ThemeNameProbe />);
 
-		const scope = container.querySelector<HTMLElement>(
-			'[data-astryx-theme="neutral"]',
-		);
+		const scope = container.querySelector<HTMLElement>('[data-astryx-theme="vivid"]');
 		expect(scope).not.toBeNull();
 		expect(scope?.style.getPropertyValue('--color-accent')).not.toBe('');
 		expect(scope?.style.getPropertyValue('--spacing-2')).not.toBe('');
 		expect(scope?.style.getPropertyValue('--size-element-md')).not.toBe('');
 		expect(scope?.style.getPropertyValue('--focus-outline-offset')).not.toBe('');
 		expect(scope?.style.getPropertyValue('--ease-standard')).not.toBe('');
-		expect(scope?.querySelector('output')?.textContent).toBe('neutral');
+		expect(scope?.querySelector('output')?.textContent).toBe('vivid');
 		expect(document.documentElement.dataset.astryxTheme).toBe('host-theme');
 		expect(document.documentElement.dataset.theme).toBe('dark');
 

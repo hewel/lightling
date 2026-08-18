@@ -6,4 +6,5 @@
 	font-size: inherit;
 	font-weight: var(--font-weight-normal);
 	line-height: inherit;
+	color: var(--color-text-secondary);
 }

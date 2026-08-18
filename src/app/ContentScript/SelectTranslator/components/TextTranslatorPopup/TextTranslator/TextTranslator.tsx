@@ -1,7 +1,10 @@
 import { FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import browser from 'webextension-polyfill';
 import { Collapsible } from '@astryxdesign/core/Collapsible';
+import { Divider } from '@astryxdesign/core/Divider';
+import { IconButton } from '@astryxdesign/core/IconButton';
 import { Spinner } from '@astryxdesign/core/Spinner';
+import { HStack, StackItem, VStack } from '@astryxdesign/core/Stack';
 import * as stylex from '@stylexjs/stylex';
 import { IconVolume2, IconX } from '@tabler/icons-react';
 
@@ -27,8 +30,6 @@ import './TextTranslator.css';
 const styles = stylex.create({
 	root: {
 		boxSizing: 'border-box',
-		width: 'max-content',
-		maxWidth: '100%',
 		padding: 'var(--spacing-3)',
 		fontFamily: 'var(--font-family-body)',
 		fontSize: 'var(--text-supporting-size)',
@@ -36,43 +37,8 @@ const styles = stylex.create({
 		lineHeight: 'var(--text-supporting-leading)',
 		color: 'var(--color-text-primary)',
 		textAlign: 'initial',
-		display: 'flex',
-		flexDirection: 'column',
-		gap: 'var(--spacing-2)',
-	},
-	desktopHead: {
-		display: 'grid',
-		gridTemplateColumns: 'minmax(0, 1fr) max-content',
-		alignItems: 'start',
-		gap: 'var(--spacing-2)',
-	},
-	textContainer: {
-		display: 'grid',
-		gridTemplateColumns: 'max-content minmax(0, 1fr)',
-		alignItems: 'start',
-		columnGap: 'var(--spacing-1)',
-		borderRadius: 'var(--radius-element)',
-	},
-	textControls: {
-		display: 'flex',
-		flexDirection: 'row',
-		alignItems: 'center',
-		gap: 'var(--spacing-1)',
-		paddingBlock: 'var(--spacing-0-5)',
-	},
-	originalContainer: {
-		padding: 'var(--spacing-1)',
-		background: 'var(--color-background-muted)',
-	},
-	originalText: {
-		maxHeight: 'calc(var(--spacing-10) * 10)',
-		margin: 'var(--spacing-2) 0 0',
-		overflow: 'auto',
-		whiteSpace: 'pre-wrap',
-		scrollbarWidth: 'thin',
 	},
 	body: {
-		minWidth: 0,
 		maxWidth: 'calc(var(--spacing-10) * 15)',
 		maxHeight: 'calc(var(--spacing-10) * 10)',
 		paddingBlock: 'var(--spacing-1)',
@@ -82,13 +48,16 @@ const styles = stylex.create({
 		whiteSpace: 'pre-line',
 		scrollbarWidth: 'thin',
 	},
+	originalText: {
+		maxHeight: 'calc(var(--spacing-10) * 10)',
+		margin: 'var(--spacing-2) 0 0',
+		overflow: 'auto',
+		color: 'var(--color-text-secondary)',
+		whiteSpace: 'pre-wrap',
+		scrollbarWidth: 'thin',
+	},
 	error: {
 		color: 'var(--color-error)',
-	},
-	mobileHead: {
-		width: '100%',
-		marginBlockEnd: 'var(--spacing-2)',
-		textAlign: 'end',
 	},
 });
 
@@ -107,7 +76,6 @@ export interface TextTranslatorComponentProps {
 	showOriginalText?: boolean;
 }
 
-// TODO: improve layout
 // TODO: rename component and move to element dir
 export const TextTranslator: FC<TextTranslatorComponentProps> = ({
 	pageLanguage,
@@ -396,27 +364,30 @@ export const TextTranslator: FC<TextTranslatorComponentProps> = ({
 
 	const isMobile = useMemo(() => isMobileBrowser(), []);
 
+	const listenLabel = getMessage('common_listen');
+	const closeLabel = getMessage('common_close');
+
 	const closeButton = (
-		<div {...stylex.props(isMobile && styles.mobileHead)}>
-			<Button
-				view="clear"
-				// `onPress` is not work in shadow DOM
-				onPress={closeHandler}
-				title={getMessage('common_close')}
-				content="icon"
-			>
-				<IconX />
-			</Button>
-		</div>
+		<IconButton
+			label={closeLabel}
+			tooltip={closeLabel}
+			icon={<IconX />}
+			variant="ghost"
+			size="sm"
+			onClick={closeHandler}
+		/>
 	);
 
 	if (translatorFeatures !== undefined && (translatedText !== null || error !== null)) {
 		return (
-			<div {...stylex.props(styles.root)}>
-				<div {...stylex.props(!isMobile && styles.desktopHead)}>
-					{isMobile && closeButton}
-
-					<div>
+			<VStack gap={2} width="max-content" maxWidth="100%" xstyle={styles.root}>
+				{isMobile && (
+					<HStack justify="end" width="100%">
+						{closeButton}
+					</HStack>
+				)}
+				<HStack gap={2} width="100%" align="center">
+					<StackItem size="fill">
 						<LanguagePanel
 							languages={translatorFeatures.supportedLanguages}
 							auto={translatorFeatures.isSupportAutodetect}
@@ -428,62 +399,64 @@ export const TextTranslator: FC<TextTranslatorComponentProps> = ({
 							disableSwap={translatedText === null}
 							mobile={isMobile}
 						/>
-					</div>
+					</StackItem>
 
 					{!isMobile && closeButton}
-				</div>
+				</HStack>
 				{error === null ? (
 					<>
-						<div {...stylex.props(styles.textContainer)}>
-							<div {...stylex.props(styles.textControls)}>
-								<Button
-									onPress={ttsTranslate.toggle}
-									view="clear"
-									disabled={
+						<HStack gap={1} width="100%" align="start">
+							<StackItem size="fill" xstyle={styles.body}>
+								{translatedText}
+							</StackItem>
+							<HStack gap={0.5}>
+								<IconButton
+									label={listenLabel}
+									tooltip={listenLabel}
+									icon={<IconVolume2 />}
+									variant="ghost"
+									size="sm"
+									onClick={ttsTranslate.toggle}
+									isDisabled={
 										to === undefined ||
 										!ttsModule.isSupportedLanguage(to)
 									}
-								>
-									<IconVolume2 />
-								</Button>
+								/>
 								<DictionaryButton translation={dictionaryData} />
-							</div>
-							<div {...stylex.props(styles.body)}>{translatedText}</div>
-						</div>
+							</HStack>
+						</HStack>
 						{!showOriginalText ? undefined : (
-							<div
-								{...stylex.props(
-									styles.textContainer,
-									styles.originalContainer,
-								)}
-							>
-								<div {...stylex.props(styles.textControls)}>
-									<Button
-										onPress={ttsOriginal.toggle}
-										view="clear"
-										disabled={
+							<>
+								<Divider />
+								<HStack gap={1} width="100%" align="center">
+									<StackItem size="fill">
+										<Collapsible
+											className="TextTranslatorDisclosure"
+											trigger={getMessage(
+												'inlineTranslator_showOriginalText',
+											)}
+											defaultIsOpen={false}
+											onOpenChange={updatePopup}
+										>
+											<p {...stylex.props(styles.originalText)}>
+												{originalText}
+											</p>
+										</Collapsible>
+									</StackItem>
+									<IconButton
+										label={listenLabel}
+										tooltip={listenLabel}
+										icon={<IconVolume2 />}
+										variant="ghost"
+										size="sm"
+										onClick={ttsOriginal.toggle}
+										isDisabled={
 											from === undefined ||
 											!ttsModule.isSupportedLanguage(from)
 										}
-									>
-										<IconVolume2 />
-									</Button>
-								</div>
-								<div {...stylex.props(styles.body)}>
-									<Collapsible
-										className="TextTranslatorDisclosure"
-										trigger={getMessage(
-											'inlineTranslator_showOriginalText',
-										)}
-										defaultIsOpen={false}
-										onOpenChange={updatePopup}
-									>
-										<p {...stylex.props(styles.originalText)}>
-											{originalText}
-										</p>
-									</Collapsible>
-								</div>
-							</div>
+									/>
+								</HStack>
+							</>
 						)}
 					</>
 				) : (
@@ -496,7 +469,7 @@ export const TextTranslator: FC<TextTranslatorComponentProps> = ({
 						</div>
 					</>
 				)}
-			</div>
+			</VStack>
 		);
 	} else {
 		return <Spinner />;

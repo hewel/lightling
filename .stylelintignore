@@ -5,6 +5,8 @@ dist
 /thirdparty
 
 # Generated compatibility theme
-src/themes/astryx-neutral.css
+src/themes/astryx-vivid.css
+# Built Astryx theme artifacts
+src/themes/vivid/
 
 /build

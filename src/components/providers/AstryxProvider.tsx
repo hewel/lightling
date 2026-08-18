@@ -20,11 +20,11 @@ import {
 	type ThemeMode,
 	typographyDefaults,
 } from '@astryxdesign/core/theme';
-import { neutralTheme } from '@astryxdesign/theme-neutral/built';
+import { vividTheme } from '../../themes/vivid/vivid.js';
 
 import '@astryxdesign/core/reset.css';
 import '@astryxdesign/core/astryx.css';
-import '../../themes/astryx-neutral.css';
+import '../../themes/astryx-vivid.css';
 import '../../themes/legacy-compat.css';
 import '../../themes/stylex.css';
 
@@ -47,16 +47,16 @@ const shadowRootTokens = {
 	...textSizeDefaults,
 	...typeScaleDefaults,
 	...typographyDefaults,
-	...neutralTheme.tokens,
+	...vividTheme.tokens,
 };
 
-registerTheme(neutralTheme);
+registerTheme(vividTheme);
 
 export const AstryxProvider: FC<AstryxProviderProps> = ({
 	children,
 	mode = 'system',
 }) => (
-	<Theme mode={mode} theme={neutralTheme}>
+	<Theme mode={mode} theme={vividTheme}>
 		<LayerProvider>{children}</LayerProvider>
 	</Theme>
 );
@@ -69,7 +69,7 @@ export const AstryxShadowRootProvider: FC<AstryxProviderProps> = ({
 	children,
 	mode = 'system',
 }) => {
-	const themeContext = useMemo(() => ({ mode, theme: neutralTheme }), [mode]);
+	const themeContext = useMemo(() => ({ mode, theme: vividTheme }), [mode]);
 	const applyThemeTokens = useCallback((element: HTMLElement | null) => {
 		if (element === null) return;
 
@@ -86,7 +86,7 @@ export const AstryxShadowRootProvider: FC<AstryxProviderProps> = ({
 			wrapper without invoking its document.documentElement synchronization. */}
 			<Stack
 				ref={applyThemeTokens}
-				data-astryx-theme={neutralTheme.name}
+				data-astryx-theme={vividTheme.name}
 				data-theme={mode === 'system' ? undefined : mode}
 				style={{
 					color: 'var(--color-text-primary)',
