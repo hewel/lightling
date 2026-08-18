@@ -11,9 +11,9 @@ import {
 import { Spinner } from '@astryxdesign/core/Spinner';
 import { Tab, TabList } from '@astryxdesign/core/TabList';
 import { cn } from '@bem-react/classname';
+import { IconBook2, IconHistory, IconSettings } from '@tabler/icons-react';
 
 import { Button } from '@/components/primitives/Button/Button.bundle/desktop';
-import { Icon } from '@/components/primitives/Icon/Icon.bundle/desktop';
 import { getOptionsPageUrl, isMobileBrowser } from '@/lib/browser';
 import { getMessage } from '@/lib/language';
 import { TELEMETRY_EVENT_NAME } from '@/lib/telemetry';
@@ -88,31 +88,6 @@ export interface PopupWindowProps {
 	config?: AppConfigType;
 	translatorFeatures?: TranslatorFeatures;
 }
-
-const HistoryIcon = (className: string) => (
-	<Icon
-		glyph="history"
-		scalable={false}
-		className={cnPopupWindow('HeaderIcon', [className])}
-	/>
-);
-
-const SettingsIcon = (className: string) => (
-	<Icon
-		glyph="settings"
-		scalable={false}
-		className={cnPopupWindow('HeaderIcon', [className])}
-	/>
-);
-
-const DictionaryIcon = (className: string) => (
-	<Icon
-		glyph="dictionary"
-		scalable={false}
-		style={{ transform: 'scale(1.5)' }}
-		className={cnPopupWindow('HeaderIcon', [className])}
-	/>
-);
 
 export type PopupWindowContextProps = { activeTab?: string };
 export const PopupWindowContext = createContext<PopupWindowContextProps>({});
@@ -328,7 +303,9 @@ export const PopupWindow: FC<PopupWindowProps> = ({
 						url="/pages/history/history.html"
 						target="_blank"
 						title={getMessage('history_pageTitle')}
-						iconRight={HistoryIcon}
+						iconRight={
+							<IconHistory className={cnPopupWindow('HeaderIcon')} />
+						}
 						view="clear"
 					/>
 					<Button
@@ -337,7 +314,7 @@ export const PopupWindow: FC<PopupWindowProps> = ({
 						url="/pages/dictionary/dictionary.html"
 						target="_blank"
 						title={getMessage('dictionary_pageTitle')}
-						iconRight={DictionaryIcon}
+						iconRight={<IconBook2 className={cnPopupWindow('HeaderIcon')} />}
 						view="clear"
 					/>
 					<Button
@@ -346,7 +323,9 @@ export const PopupWindow: FC<PopupWindowProps> = ({
 						url={getOptionsPageUrl()}
 						target="_blank"
 						title={getMessage('settings_pageTitle')}
-						iconRight={SettingsIcon}
+						iconRight={
+							<IconSettings className={cnPopupWindow('HeaderIcon')} />
+						}
 						view="clear"
 					/>
 				</div>

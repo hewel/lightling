@@ -4,11 +4,11 @@ import { CheckboxInput } from '@astryxdesign/core/CheckboxInput';
 import { Spinner } from '@astryxdesign/core/Spinner';
 import { HStack, VStack } from '@astryxdesign/core/Stack';
 import { cn } from '@bem-react/classname';
+import { IconTrash } from '@tabler/icons-react';
 
 import { DictionaryButton } from '@/components/controls/DictionaryButton/DictionaryButton';
 import { TranslationCard } from '@/components/layouts/TranslationCard/TranslationCard';
 import { Button } from '@/components/primitives/Button/Button.bundle/universal';
-import { Icon } from '@/components/primitives/Icon/Icon.bundle/desktop';
 import { Textinput } from '@/components/primitives/Textinput/Textinput.bundle/desktop';
 import { getOptionsPageUrl } from '@/lib/browser';
 import { useConcurrentTTS } from '@/lib/hooks/useConcurrentTTS';
@@ -392,7 +392,7 @@ export const TranslationsHistory: FC<TranslationsHistoryProps> = ({
 											)}
 											content="icon"
 										>
-											<Icon glyph="delete" scalable={false} />
+											<IconTrash />
 										</Button>
 									</>
 								}

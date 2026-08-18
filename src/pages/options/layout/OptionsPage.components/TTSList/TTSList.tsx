@@ -2,11 +2,11 @@ import { FC, useCallback, useContext, useEffect, useState } from 'react';
 import { Spinner } from '@astryxdesign/core/Spinner';
 import { HStack, VStack } from '@astryxdesign/core/Stack';
 import { cn } from '@bem-react/classname';
+import { IconTrash } from '@tabler/icons-react';
 
 import { CustomTTS } from '@/app/Background/TTS/TTSManager';
 import { ModalLayout } from '@/components/layouts/ModalLayout/ModalLayout';
 import { Button } from '@/components/primitives/Button/Button.bundle/universal';
-import { Icon } from '@/components/primitives/Icon/Icon.bundle/desktop';
 import { Modal } from '@/components/primitives/Modal/Modal.bundle/desktop';
 import { getMessage } from '@/lib/language';
 import { addCustomSpeaker } from '@/requests/backend/tts/addCustomSpeaker';
@@ -156,7 +156,7 @@ export const TTSList: FC<{
 													'ttsManagerWindow_translator_delete'
 												}
 											>
-												<Icon glyph="delete" scalable={false} />
+												<IconTrash />
 											</Button>
 										</HStack>
 									</div>

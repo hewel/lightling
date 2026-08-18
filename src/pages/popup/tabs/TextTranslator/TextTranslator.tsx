@@ -10,11 +10,11 @@ import React, {
 } from 'react';
 import ReactDOM from 'react-dom';
 import { cn } from '@bem-react/classname';
+import { IconVolume2, IconWand } from '@tabler/icons-react';
 
 import { DictionaryButton } from '@/components/controls/DictionaryButton/DictionaryButton';
 import { LanguagePanel } from '@/components/controls/LanguagePanel/LanguagePanel';
 import { Button } from '@/components/primitives/Button/Button.bundle/desktop';
-import { Icon } from '@/components/primitives/Icon/Icon.bundle/desktop';
 import { Textarea } from '@/components/primitives/Textarea/Textarea.bundle/desktop';
 import { useDelayCallback } from '@/lib/hooks/useDelayCallback';
 import { useImmutableCallback } from '@/lib/hooks/useImmutableCallback';
@@ -415,7 +415,7 @@ export const TextTranslator: FC<TextTranslatorProps> = ({
 				<div className={cnTextTranslator('InputContainerWrapper')}>
 					{langSuggestion && (
 						<div className={cnTextTranslator('LanguageSuggestion')}>
-							<Icon glyph="autoFix" scalable={false} size="s" />
+							<IconWand size="1em" />
 							<span>
 								{getLocalizedNode({
 									messageName: 'textTranslator_suggestLanguage',
@@ -457,7 +457,7 @@ export const TextTranslator: FC<TextTranslatorProps> = ({
 										view="clear"
 										size="s"
 									>
-										<Icon glyph="volume-up" scalable={false} />
+										<IconVolume2 />
 									</Button>
 									<DictionaryButton translation={dictionaryData} />
 								</div>
@@ -481,7 +481,7 @@ export const TextTranslator: FC<TextTranslatorProps> = ({
 								view="clear"
 								size="s"
 							>
-								<Icon glyph="volume-up" scalable={false} />
+								<IconVolume2 />
 							</Button>
 						</div>
 					</div>

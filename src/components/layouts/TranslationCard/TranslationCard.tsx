@@ -3,13 +3,13 @@ import { Badge } from '@astryxdesign/core/Badge';
 import { Card } from '@astryxdesign/core/Card';
 import { HStack, VStack } from '@astryxdesign/core/Stack';
 import { Text } from '@astryxdesign/core/Text';
+import { IconVolume2 } from '@tabler/icons-react';
 
 import { isMobileBrowser } from '@/lib/browser';
 import { getLanguageNameByCode } from '@/lib/language';
 import { ITranslation } from '@/types/translation/Translation';
 
 import { Button } from '../../primitives/Button/Button.bundle/desktop';
-import { Icon } from '../../primitives/Icon/Icon.bundle/desktop';
 
 export type TranslationCardProps = {
 	translation: ITranslation;
@@ -57,7 +57,7 @@ export const TranslationCard: FC<TranslationCardProps> = ({
 								view="clear"
 								size="s"
 							>
-								<Icon glyph="volume-up" scalable={false} />
+								<IconVolume2 />
 							</Button>
 							<Badge
 								label={getLanguageNameByCode(translation.from)}
@@ -80,7 +80,7 @@ export const TranslationCard: FC<TranslationCardProps> = ({
 								view="clear"
 								size="s"
 							>
-								<Icon glyph="volume-up" scalable={false} />
+								<IconVolume2 />
 							</Button>
 							<Badge
 								label={getLanguageNameByCode(translation.to)}

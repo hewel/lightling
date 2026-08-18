@@ -5,11 +5,11 @@ import { Selector } from '@astryxdesign/core/Selector';
 import { HStack, VStack } from '@astryxdesign/core/Stack';
 import { useToast } from '@astryxdesign/core/Toast';
 import { cn } from '@bem-react/classname';
+import { IconTrash } from '@tabler/icons-react';
 
 import { Page } from '@/components/layouts/Page/Page';
 import { TranslationCard } from '@/components/layouts/TranslationCard/TranslationCard';
 import { Button } from '@/components/primitives/Button/Button.bundle/desktop';
-import { Icon } from '@/components/primitives/Icon/Icon.bundle/desktop';
 import { Textinput } from '@/components/primitives/Textinput/Textinput.bundle/desktop';
 import { isMobileBrowser } from '@/lib/browser';
 import { saveFile } from '@/lib/files';
@@ -257,7 +257,7 @@ export const DictionaryPage: FC<IDictionaryPageProps> = ({ confirmDelete = true 
 							title={getMessage('common_action_removeFromDictionary')}
 							content="icon"
 						>
-							<Icon glyph="delete" scalable={false} />
+							<IconTrash />
 						</Button>
 					}
 				/>

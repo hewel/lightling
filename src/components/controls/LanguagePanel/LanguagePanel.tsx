@@ -2,12 +2,11 @@ import { FC, useCallback, useEffect, useMemo, useState } from 'react';
 import { IconButton } from '@astryxdesign/core/IconButton';
 import { Selector } from '@astryxdesign/core/Selector';
 import { HStack, VStack } from '@astryxdesign/core/Stack';
+import { IconArrowsExchange } from '@tabler/icons-react';
 
 import { getLanguageNameByCode, getMessage } from '@/lib/language';
 import { addRecentUsedLanguage } from '@/requests/backend/recentUsedLanguages/addRecentUsedLanguage';
 import { getRecentUsedLanguages } from '@/requests/backend/recentUsedLanguages/getRecentUsedLanguages';
-
-import { Icon } from '../../primitives/Icon/Icon.bundle/desktop';
 
 export interface LanguagePanelProps {
 	languages: string[];
@@ -137,7 +136,7 @@ export const LanguagePanel: FC<LanguagePanelProps> = ({
 			<IconButton
 				label={getMessage('lang_swap')}
 				tooltip={getMessage('lang_swap')}
-				icon={<Icon glyph="swap-horiz" scalable={false} />}
+				icon={<IconArrowsExchange />}
 				variant="ghost"
 				size="sm"
 				onClick={swapLanguages}

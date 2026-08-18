@@ -3,12 +3,12 @@ import browser from 'webextension-polyfill';
 import { Collapsible } from '@astryxdesign/core/Collapsible';
 import { Spinner } from '@astryxdesign/core/Spinner';
 import { cn } from '@bem-react/classname';
+import { IconVolume2, IconX } from '@tabler/icons-react';
 
 import { DictionaryButton } from '@/components/controls/DictionaryButton/DictionaryButton';
 import { LanguagePanel } from '@/components/controls/LanguagePanel/LanguagePanel';
 // Components
 import { Button } from '@/components/primitives/Button/Button.bundle/desktop';
-import { Icon } from '@/components/primitives/Icon/Icon.bundle/desktop';
 import { isMobileBrowser } from '@/lib/browser';
 import { useTTS } from '@/lib/hooks/useTTS';
 import { useTTSLanguages } from '@/lib/hooks/useTTSLanguages';
@@ -347,7 +347,7 @@ export const TextTranslator: FC<TextTranslatorComponentProps> = ({
 				title={getMessage('common_close')}
 				content="icon"
 			>
-				<Icon glyph="close" />
+				<IconX />
 			</Button>
 		</div>
 	);
@@ -398,7 +398,7 @@ export const TextTranslator: FC<TextTranslatorComponentProps> = ({
 										!ttsModule.isSupportedLanguage(to)
 									}
 								>
-									<Icon glyph="volume-up" scalable={false} />
+									<IconVolume2 />
 								</Button>
 								<DictionaryButton translation={dictionaryData} />
 							</div>
@@ -421,7 +421,7 @@ export const TextTranslator: FC<TextTranslatorComponentProps> = ({
 											!ttsModule.isSupportedLanguage(from)
 										}
 									>
-										<Icon glyph="volume-up" scalable={false} />
+										<IconVolume2 />
 									</Button>
 								</div>
 								<div className={cnTextTranslator('Body')}>

@@ -1,10 +1,9 @@
 import { FC } from 'react';
 import { IconButton } from '@astryxdesign/core/IconButton';
+import { IconBookmark, IconBookmarkFilled } from '@tabler/icons-react';
 
 import { getMessage } from '@/lib/language';
 import { ITranslation } from '@/types/translation/Translation';
-
-import { Icon } from '../../primitives/Icon/Icon.bundle/desktop';
 
 import { useDictionary } from './useDictionary';
 
@@ -21,12 +20,7 @@ export const DictionaryButton: FC<{ translation: ITranslation | null }> = ({
 		<IconButton
 			label={label}
 			tooltip={label}
-			icon={
-				<Icon
-					glyph={dictionary.has ? 'bookmark' : 'bookmark-border'}
-					scalable={false}
-				/>
-			}
+			icon={dictionary.has ? <IconBookmarkFilled /> : <IconBookmark />}
 			variant="ghost"
 			size="sm"
 			onClick={dictionary.toggle}

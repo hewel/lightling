@@ -35,4 +35,5 @@ pressend
 pressstart
 retargeted
 retargets
+tabler
 unparse

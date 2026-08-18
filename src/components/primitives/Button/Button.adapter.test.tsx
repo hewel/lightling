@@ -1,7 +1,7 @@
 import { act, type ReactNode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
+import { IconHistory, IconX } from '@tabler/icons-react';
 
-import { Icon } from '@/components/primitives/Icon/Icon.bundle/desktop';
 import { AstryxProvider } from '@/components/providers/AstryxProvider';
 
 import { Button } from './Button';
@@ -52,7 +52,7 @@ describe('Button compatibility adapter', () => {
 	it('maps a legacy link button to an accessible anchor', async () => {
 		await render(
 			<Button title="History" type="link" url="/pages/history/history.html">
-				<Icon glyph="history" />
+				<IconHistory />
 			</Button>,
 		);
 
@@ -65,10 +65,10 @@ describe('Button compatibility adapter', () => {
 		expect(link.dataset.variant).toBe('secondary');
 	});
 
-	it('maps legacy icon-only buttons and glyphs to Astryx primitives', async () => {
+	it('renders Tabler icons inside legacy icon-only buttons', async () => {
 		await render(
 			<Button content="icon" title="Delete" view="clear">
-				<Icon data-testid="close-icon" glyph="close" />
+				<IconX data-testid="close-icon" />
 			</Button>,
 		);
 
@@ -80,6 +80,6 @@ describe('Button compatibility adapter', () => {
 
 		expect(button.dataset.variant).toBe('ghost');
 		expect(button.getAttribute('aria-label')).toBe('Delete');
-		expect(icon.classList.contains('astryx-icon')).toBe(true);
+		expect(icon.tagName.toLowerCase()).toBe('svg');
 	});
 });
