@@ -1,4 +1,4 @@
-import { buildBackendRequest } from '../../../utils/requestBuilder';
+import { buildBackendRequest } from '@/requests/utils/requestBuilder';
 
 import { deleteLanguage } from './utils';
 

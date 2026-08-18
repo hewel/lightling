@@ -1,4 +1,5 @@
-import { serialize, unserialize } from '../../../lib/serializer';
+import { serialize, unserialize } from '@/lib/serializer';
+
 import { buildBackendRequest } from '../../utils/requestBuilder';
 
 import { sendEventToOffscreenWorker } from './offscreenWorkerEvent';

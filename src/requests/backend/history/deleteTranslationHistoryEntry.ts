@@ -1,4 +1,5 @@
-import { NonNaNNumber } from '../../../lib/types';
+import { NonNaNNumber } from '@/lib/types';
+
 import { buildBackendRequest } from '../../utils/requestBuilder';
 
 import { deleteEntry } from './data';

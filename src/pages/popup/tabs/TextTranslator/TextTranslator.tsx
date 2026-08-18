@@ -13,26 +13,23 @@ import { useDelayCallback } from 'react-elegant-ui/esm/hooks/useDelayCallback';
 import { useImmutableCallback } from 'react-elegant-ui/esm/hooks/useImmutableCallback';
 import { cn } from '@bem-react/classname';
 
-import { DictionaryButton } from '../../../../components/controls/DictionaryButton/DictionaryButton';
-import { LanguagePanel } from '../../../../components/controls/LanguagePanel/LanguagePanel';
-import { Button } from '../../../../components/primitives/Button/Button.bundle/desktop';
-import { Icon } from '../../../../components/primitives/Icon/Icon.bundle/desktop';
-import { Textarea } from '../../../../components/primitives/Textarea/Textarea.bundle/desktop';
-import { useIsFirstRenderRef } from '../../../../lib/hooks/useIsFirstRenderRef';
-import { useTTS } from '../../../../lib/hooks/useTTS';
-import { useTTSLanguages } from '../../../../lib/hooks/useTTSLanguages';
-import {
-	getLanguageNameByCode,
-	getLocalizedNode,
-	getMessage,
-} from '../../../../lib/language';
-import { TELEMETRY_EVENT_NAME } from '../../../../lib/telemetry';
-import { addTranslationHistoryEntry } from '../../../../requests/backend/history/addTranslationHistoryEntry';
-import { TRANSLATION_ORIGIN } from '../../../../requests/backend/history/constants';
-import { suggestLanguage } from '../../../../requests/backend/suggestLanguage';
-import { trackClientEvent } from '../../../../requests/backend/telemetry';
-import { ITranslation } from '../../../../types/translation/Translation';
-import { MutableValue } from '../../../../types/utils';
+import { DictionaryButton } from '@/components/controls/DictionaryButton/DictionaryButton';
+import { LanguagePanel } from '@/components/controls/LanguagePanel/LanguagePanel';
+import { Button } from '@/components/primitives/Button/Button.bundle/desktop';
+import { Icon } from '@/components/primitives/Icon/Icon.bundle/desktop';
+import { Textarea } from '@/components/primitives/Textarea/Textarea.bundle/desktop';
+import { useIsFirstRenderRef } from '@/lib/hooks/useIsFirstRenderRef';
+import { useTTS } from '@/lib/hooks/useTTS';
+import { useTTSLanguages } from '@/lib/hooks/useTTSLanguages';
+import { getLanguageNameByCode, getLocalizedNode, getMessage } from '@/lib/language';
+import { TELEMETRY_EVENT_NAME } from '@/lib/telemetry';
+import { addTranslationHistoryEntry } from '@/requests/backend/history/addTranslationHistoryEntry';
+import { TRANSLATION_ORIGIN } from '@/requests/backend/history/constants';
+import { suggestLanguage } from '@/requests/backend/suggestLanguage';
+import { trackClientEvent } from '@/requests/backend/telemetry';
+import { ITranslation } from '@/types/translation/Translation';
+import { MutableValue } from '@/types/utils';
+
 import { TabData } from '../../layout/PopupWindow';
 
 import './TextTranslator.css';

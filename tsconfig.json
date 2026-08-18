@@ -27,7 +27,10 @@
 		"jsx": "react-jsx",
 		"allowJs": true,
 		"resolveJsonModule": true,
-		"types": ["vitest/globals"]
+		"types": ["vitest/globals"],
+		"paths": {
+			"@/*": ["./src/*"]
+		}
 	},
 	"include": ["**/*.ts", "**/*.tsx"]
 }

@@ -2,13 +2,11 @@ import { FC, useContext, useEffect, useRef, useState } from 'react';
 import { useImmutableCallback } from 'react-elegant-ui/esm/hooks/useImmutableCallback';
 import { cn } from '@bem-react/classname';
 
-import { Button } from '../../../../../components/primitives/Button/Button.bundle/universal';
-import {
-	IModalProps,
-	Modal,
-} from '../../../../../components/primitives/Modal/Modal.bundle/desktop';
-import { Textinput } from '../../../../../components/primitives/Textinput/Textinput.bundle/desktop';
-import { getMessage } from '../../../../../lib/language';
+import { Button } from '@/components/primitives/Button/Button.bundle/universal';
+import { IModalProps, Modal } from '@/components/primitives/Modal/Modal.bundle/desktop';
+import { Textinput } from '@/components/primitives/Textinput/Textinput.bundle/desktop';
+import { getMessage } from '@/lib/language';
+
 import { OptionsModalsContext } from '../../OptionsPage';
 
 import { EditorObject, MonacoEditor } from './MonakoEditor/MonacoEditor';

@@ -7,10 +7,10 @@ import {
 } from 'domtranslator';
 import { createNodesFilter, isElementNode, isTextNode } from 'domtranslator/utils/nodes';
 
-import { getContentScriptStyles } from '../../../lib/browser';
-import { ShadowDOMContainerManager } from '../../../lib/ShadowDOMContainerManager';
-import { translate } from '../../../requests/backend/translate';
-import { AppConfigType } from '../../../types/runtime';
+import { getContentScriptStyles } from '@/lib/browser';
+import { ShadowDOMContainerManager } from '@/lib/ShadowDOMContainerManager';
+import { translate } from '@/requests/backend/translate';
+import { AppConfigType } from '@/types/runtime';
 
 import { OriginalTextPopup } from './components/OriginalTextPopup/OriginalTextPopup';
 import { pageTranslatorStatsUpdated } from './requests/pageTranslatorStatsUpdated';

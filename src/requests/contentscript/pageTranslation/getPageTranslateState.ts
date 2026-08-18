@@ -1,6 +1,7 @@
 import { Schema } from 'effect';
 
-import { NonNaNNumber } from '../../../lib/types';
+import { NonNaNNumber } from '@/lib/types';
+
 import { buildTabRequest } from '../../utils/requestBuilder';
 
 export const PageTranslateStateSignature = Schema.Struct({

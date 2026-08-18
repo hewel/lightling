@@ -1,6 +1,6 @@
 import { DBSchema } from 'idb';
 
-import { IDBConstructor } from '../../../../../lib/idb/manager';
+import { IDBConstructor } from '@/lib/idb/manager';
 
 export type IDBTranslationsSchemaV1 = DBSchema & {
 	translations: {

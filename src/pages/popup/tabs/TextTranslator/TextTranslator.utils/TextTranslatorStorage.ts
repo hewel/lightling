@@ -1,9 +1,9 @@
 import { Schema } from 'effect';
 import browser from 'webextension-polyfill';
 
-import { tryDecode } from '../../../../../lib/types';
-import { LangCode, LangCodeWithAuto } from '../../../../../types/runtime';
-import { type DeepMutable } from '../../../../../types/utils';
+import { tryDecode } from '@/lib/types';
+import { LangCode, LangCodeWithAuto } from '@/types/runtime';
+import { type DeepMutable } from '@/types/utils';
 
 const storageSignature = Schema.Union([
 	Schema.Struct({

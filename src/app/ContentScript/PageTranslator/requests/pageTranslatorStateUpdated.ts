@@ -1,4 +1,4 @@
-import { addRequestHandler, sendBackgroundRequest } from '../../../../requests/utils';
+import { addRequestHandler, sendBackgroundRequest } from '@/requests/utils';
 
 import { PageTranslatorState } from '../PageTranslatorController';
 

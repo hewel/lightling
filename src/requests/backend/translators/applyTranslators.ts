@@ -1,4 +1,5 @@
-import { DEFAULT_TRANSLATOR } from '../../../config';
+import { DEFAULT_TRANSLATOR } from '@/config';
+
 import { buildBackendRequest } from '../../utils/requestBuilder';
 
 import { getTranslatorsClasses, isCustomTranslatorId } from '.';

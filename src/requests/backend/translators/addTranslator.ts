@@ -1,4 +1,5 @@
-import { validateTranslatorCode } from '../../../lib/translators/customTranslators/utils';
+import { validateTranslatorCode } from '@/lib/translators/customTranslators/utils';
+
 import { buildBackendRequest } from '../../utils/requestBuilder';
 
 import { applyTranslators } from './applyTranslators';

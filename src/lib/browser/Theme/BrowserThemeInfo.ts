@@ -1,4 +1,4 @@
-import { themeUpdateFactory } from '../../../requests/offscreen/theme';
+import { themeUpdateFactory } from '@/requests/offscreen/theme';
 
 import { ThemeChangeHandler, ThemeInfo } from './ThemeInfo';
 

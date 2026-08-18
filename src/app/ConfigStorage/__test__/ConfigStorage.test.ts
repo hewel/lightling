@@ -1,8 +1,8 @@
 import browser from 'webextension-polyfill';
 
-import { defaultConfig } from '../../../config';
-import { clearAllMocks } from '../../../lib/tests';
-import { AppConfigType } from '../../../types/runtime';
+import { defaultConfig } from '@/config';
+import { clearAllMocks } from '@/lib/tests';
+import { AppConfigType } from '@/types/runtime';
 
 import { ConfigStorage, ObservableAsyncStorage } from '../ConfigStorage';
 import { ConfigStorageMigration } from '../ConfigStorage.migrations';

@@ -1,5 +1,6 @@
-import { NonNaNNumber } from '../../../lib/types';
-import { TranslationType } from '../../../types/translation/Translation';
+import { NonNaNNumber } from '@/lib/types';
+import { TranslationType } from '@/types/translation/Translation';
+
 import { buildBackendRequest } from '../../utils/requestBuilder';
 
 import { notifyDictionaryEntryAdd } from '.';

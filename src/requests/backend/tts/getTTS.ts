@@ -1,7 +1,8 @@
 import { splitLongText } from 'anylang/utils/text';
 
-import { base64ToBlob, blobToBase64 } from '../../../lib/blob';
-import { detectLanguage } from '../../../lib/language';
+import { base64ToBlob, blobToBase64 } from '@/lib/blob';
+import { detectLanguage } from '@/lib/language';
+
 import { buildBackendRequest } from '../../utils/requestBuilder';
 
 // TODO: implement option for select TTS speed

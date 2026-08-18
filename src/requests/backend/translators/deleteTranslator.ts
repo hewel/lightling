@@ -1,5 +1,6 @@
-import { TranslatorsCacheStorage } from '../../../app/Background/TranslatorsCacheStorage';
-import { NonNaNNumber } from '../../../lib/types';
+import { TranslatorsCacheStorage } from '@/app/Background/TranslatorsCacheStorage';
+import { NonNaNNumber } from '@/lib/types';
+
 import { buildBackendRequest } from '../../utils/requestBuilder';
 
 import { formatToCustomTranslatorId } from '.';

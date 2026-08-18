@@ -4,27 +4,27 @@ import { FC, useCallback, useEffect, useLayoutEffect, useMemo, useState } from '
 import { useImmutableCallback } from 'react-elegant-ui/esm/hooks/useImmutableCallback';
 import { cn } from '@bem-react/classname';
 
-import { LayoutFlow } from '../../../components/layouts/LayoutFlow/LayoutFlow';
-import { Page } from '../../../components/layouts/Page/Page';
-import { TranslationCard } from '../../../components/layouts/TranslationCard/TranslationCard';
-import { Button } from '../../../components/primitives/Button/Button.bundle/desktop';
-import { Icon } from '../../../components/primitives/Icon/Icon.bundle/desktop';
-import { Select } from '../../../components/primitives/Select/Select.bundle/desktop';
-import { Textinput } from '../../../components/primitives/Textinput/Textinput.bundle/desktop';
-import { ToastMessages } from '../../../components/primitives/ToastMessages/ToastMessages';
-import { useToastMessages } from '../../../components/primitives/ToastMessages/useToastMessages';
-import { isMobileBrowser } from '../../../lib/browser';
-import { saveFile } from '../../../lib/files';
-import { useConcurrentTTS } from '../../../lib/hooks/useConcurrentTTS';
-import { getLanguageNameByCode, getMessage } from '../../../lib/language';
-import { TELEMETRY_EVENT_NAME } from '../../../lib/telemetry';
-import { telemetry } from '../../../lib/telemetry/singleton';
-import { isTextsContainsSubstring } from '../../../lib/utils';
-import { clearTranslations } from '../../../requests/backend/translations/clearTranslations';
-import { ITranslationEntryWithKey } from '../../../requests/backend/translations/data';
-import { deleteTranslation } from '../../../requests/backend/translations/deleteTranslation';
-import { getTranslations } from '../../../requests/backend/translations/getTranslations';
-import { ITranslation } from '../../../types/translation/Translation';
+import { LayoutFlow } from '@/components/layouts/LayoutFlow/LayoutFlow';
+import { Page } from '@/components/layouts/Page/Page';
+import { TranslationCard } from '@/components/layouts/TranslationCard/TranslationCard';
+import { Button } from '@/components/primitives/Button/Button.bundle/desktop';
+import { Icon } from '@/components/primitives/Icon/Icon.bundle/desktop';
+import { Select } from '@/components/primitives/Select/Select.bundle/desktop';
+import { Textinput } from '@/components/primitives/Textinput/Textinput.bundle/desktop';
+import { ToastMessages } from '@/components/primitives/ToastMessages/ToastMessages';
+import { useToastMessages } from '@/components/primitives/ToastMessages/useToastMessages';
+import { isMobileBrowser } from '@/lib/browser';
+import { saveFile } from '@/lib/files';
+import { useConcurrentTTS } from '@/lib/hooks/useConcurrentTTS';
+import { getLanguageNameByCode, getMessage } from '@/lib/language';
+import { TELEMETRY_EVENT_NAME } from '@/lib/telemetry';
+import { telemetry } from '@/lib/telemetry/singleton';
+import { isTextsContainsSubstring } from '@/lib/utils';
+import { clearTranslations } from '@/requests/backend/translations/clearTranslations';
+import { ITranslationEntryWithKey } from '@/requests/backend/translations/data';
+import { deleteTranslation } from '@/requests/backend/translations/deleteTranslation';
+import { getTranslations } from '@/requests/backend/translations/getTranslations';
+import { ITranslation } from '@/types/translation/Translation';
 
 import { OptionsPanel } from './OptionsPanel/OptionsPanel';
 

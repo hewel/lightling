@@ -1,4 +1,5 @@
-import { DEFAULT_TTS } from '../../../config';
+import { DEFAULT_TTS } from '@/config';
+
 import { buildBackendRequest } from '../../utils/requestBuilder';
 
 export const [deleteCustomSpeakerFactory, deleteCustomSpeaker] = buildBackendRequest(

@@ -1,6 +1,7 @@
 import { FC, useEffect, useState } from 'react';
 
-import { getMessage } from '../../../lib/language';
+import { getMessage } from '@/lib/language';
+
 import { LayoutFlow } from '../../layouts/LayoutFlow/LayoutFlow';
 import { Button } from '../../primitives/Button/Button.bundle/universal';
 import { Textinput } from '../../primitives/Textinput/Textinput.bundle/desktop';

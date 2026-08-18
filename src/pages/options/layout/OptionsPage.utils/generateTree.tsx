@@ -6,8 +6,8 @@ import {
 	getLocalizedNode,
 	getMessage,
 	getUserLanguage,
-} from '../../../../lib/language';
-import { capitalizeString } from '../../../../lib/utils';
+} from '@/lib/language';
+import { capitalizeString } from '@/lib/utils';
 
 import { OptionsGroup } from '../OptionsTree/OptionsTree';
 

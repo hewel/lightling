@@ -2,7 +2,7 @@ import { Schema } from 'effect';
 import * as IDB from 'idb';
 import { isEqual } from 'lodash';
 
-import { NonNaNNumber } from '../../../lib/types';
+import { NonNaNNumber } from '@/lib/types';
 
 export type File = {
 	name: string;

@@ -1,9 +1,9 @@
 import { Schema } from 'effect';
 import * as IDB from 'idb';
 
-import { NonNaNNumber } from '../../../lib/types';
-import { isTextsContainsSubstring } from '../../../lib/utils';
-import { ITranslation, TranslationType } from '../../../types/translation/Translation';
+import { NonNaNNumber } from '@/lib/types';
+import { isTextsContainsSubstring } from '@/lib/utils';
+import { ITranslation, TranslationType } from '@/types/translation/Translation';
 
 export type HistoryEntry = {
 	translation: ITranslation;

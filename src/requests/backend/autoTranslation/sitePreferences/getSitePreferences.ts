@@ -1,6 +1,6 @@
 import { Schema } from 'effect';
 
-import { buildBackendRequest } from '../../../utils/requestBuilder';
+import { buildBackendRequest } from '@/requests/utils/requestBuilder';
 
 import { dataSignature, getPreferences } from './utils';
 

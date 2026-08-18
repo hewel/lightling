@@ -1,11 +1,11 @@
 import { Schema } from 'effect';
 import * as IDB from 'idb';
 
-import { ExtractSchemeFromIDBConstructor, getIDBPlan } from '../../../lib/idb/manager';
-import { NonNaNNumber } from '../../../lib/types';
-import { isEqualIntersection } from '../../../lib/utils';
-import { ITranslation, TranslationType } from '../../../types/translation/Translation';
-import { DeepPartial } from '../../../types/utils';
+import { ExtractSchemeFromIDBConstructor, getIDBPlan } from '@/lib/idb/manager';
+import { NonNaNNumber } from '@/lib/types';
+import { isEqualIntersection } from '@/lib/utils';
+import { ITranslation, TranslationType } from '@/types/translation/Translation';
+import { DeepPartial } from '@/types/utils';
 
 import { IDBTranslationSchemes } from './idb/schema';
 

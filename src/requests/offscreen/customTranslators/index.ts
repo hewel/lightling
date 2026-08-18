@@ -4,7 +4,8 @@ import browser from 'webextension-polyfill';
 import {
 	CustomTranslatorInfo,
 	TranslatorWorkerApi,
-} from '../../../offscreen-documents/translator';
+} from '@/offscreen-documents/translator';
+
 import { buildBackendRequest } from '../../utils/requestBuilder';
 
 type CustomTranslatorsContext = {

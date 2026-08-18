@@ -2,24 +2,24 @@ import { FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import browser from 'webextension-polyfill';
 import { cn } from '@bem-react/classname';
 
-import { DictionaryButton } from '../../../../../../components/controls/DictionaryButton/DictionaryButton';
-import { LanguagePanel } from '../../../../../../components/controls/LanguagePanel/LanguagePanel';
+import { DictionaryButton } from '@/components/controls/DictionaryButton/DictionaryButton';
+import { LanguagePanel } from '@/components/controls/LanguagePanel/LanguagePanel';
 // Components
-import { Button } from '../../../../../../components/primitives/Button/Button.bundle/desktop';
-import { Icon } from '../../../../../../components/primitives/Icon/Icon.bundle/desktop';
-import { Loader } from '../../../../../../components/primitives/Loader/Loader';
-import { isMobileBrowser } from '../../../../../../lib/browser';
-import { useTTS } from '../../../../../../lib/hooks/useTTS';
-import { useTTSLanguages } from '../../../../../../lib/hooks/useTTSLanguages';
-import { detectLanguage, getMessage } from '../../../../../../lib/language';
-import { TELEMETRY_EVENT_NAME } from '../../../../../../lib/telemetry';
-import { TranslatorFeatures } from '../../../../../../pages/popup/layout/PopupWindow';
-import { getTranslatorFeatures } from '../../../../../../requests/backend/getTranslatorFeatures';
-import { getUserLanguagePreferences } from '../../../../../../requests/backend/getUserLanguagePreferences';
-import { addTranslationHistoryEntry } from '../../../../../../requests/backend/history/addTranslationHistoryEntry';
-import { TRANSLATION_ORIGIN } from '../../../../../../requests/backend/history/constants';
-import { trackClientEvent } from '../../../../../../requests/backend/telemetry';
-import { ITranslation } from '../../../../../../types/translation/Translation';
+import { Button } from '@/components/primitives/Button/Button.bundle/desktop';
+import { Icon } from '@/components/primitives/Icon/Icon.bundle/desktop';
+import { Loader } from '@/components/primitives/Loader/Loader';
+import { isMobileBrowser } from '@/lib/browser';
+import { useTTS } from '@/lib/hooks/useTTS';
+import { useTTSLanguages } from '@/lib/hooks/useTTSLanguages';
+import { detectLanguage, getMessage } from '@/lib/language';
+import { TELEMETRY_EVENT_NAME } from '@/lib/telemetry';
+import { TranslatorFeatures } from '@/pages/popup/layout/PopupWindow';
+import { getTranslatorFeatures } from '@/requests/backend/getTranslatorFeatures';
+import { getUserLanguagePreferences } from '@/requests/backend/getUserLanguagePreferences';
+import { addTranslationHistoryEntry } from '@/requests/backend/history/addTranslationHistoryEntry';
+import { TRANSLATION_ORIGIN } from '@/requests/backend/history/constants';
+import { trackClientEvent } from '@/requests/backend/telemetry';
+import { ITranslation } from '@/types/translation/Translation';
 
 import './TextTranslator.css';
 

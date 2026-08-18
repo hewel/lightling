@@ -1,6 +1,6 @@
 import browser from 'webextension-polyfill';
 
-import { createMigrationTask } from '../../../lib/migrations/createMigrationTask';
+import { createMigrationTask } from '@/lib/migrations/createMigrationTask';
 
 import { addLanguage } from './languagePreferences/utils';
 import { getPreferences, setPreferences, SiteData } from './sitePreferences/utils';

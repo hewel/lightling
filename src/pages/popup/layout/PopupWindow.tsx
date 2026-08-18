@@ -15,17 +15,17 @@ import {
 } from 'react-elegant-ui/esm/components/TabsPanes/TabsPanes.bundle/desktop';
 import { cn } from '@bem-react/classname';
 
-import { Button } from '../../../components/primitives/Button/Button.bundle/desktop';
-import { Icon } from '../../../components/primitives/Icon/Icon.bundle/desktop';
-import { Loader } from '../../../components/primitives/Loader/Loader';
-import { TabsMenu } from '../../../components/primitives/TabsMenu/TabsMenu.bundle/desktop';
-import { getOptionsPageUrl, isMobileBrowser } from '../../../lib/browser';
-import { getMessage } from '../../../lib/language';
-import { TELEMETRY_EVENT_NAME } from '../../../lib/telemetry';
-import { telemetry } from '../../../lib/telemetry/singleton';
-import { XResizeObserver } from '../../../lib/XResizeObserver';
-import LogoElement from '../../../res/logo-base.svg';
-import { AppConfigType } from '../../../types/runtime';
+import { Button } from '@/components/primitives/Button/Button.bundle/desktop';
+import { Icon } from '@/components/primitives/Icon/Icon.bundle/desktop';
+import { Loader } from '@/components/primitives/Loader/Loader';
+import { TabsMenu } from '@/components/primitives/TabsMenu/TabsMenu.bundle/desktop';
+import { getOptionsPageUrl, isMobileBrowser } from '@/lib/browser';
+import { getMessage } from '@/lib/language';
+import { TELEMETRY_EVENT_NAME } from '@/lib/telemetry';
+import { telemetry } from '@/lib/telemetry/singleton';
+import { XResizeObserver } from '@/lib/XResizeObserver';
+import LogoElement from '@/res/logo-base.svg';
+import { AppConfigType } from '@/types/runtime';
 
 import './PopupWindow.css';
 

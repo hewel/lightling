@@ -1,13 +1,14 @@
 import browser from 'webextension-polyfill';
 
+import { addBergamotFile } from '@/requests/backend/bergamot/addBergamotFile';
+import { getBergamotFile } from '@/requests/backend/bergamot/getBergamotFile';
+
 import { TranslatorBacking } from '../../../../thirdparty/bergamot/src/frontend/TranslatorBacking';
 import {
 	LanguagesDirection,
 	TranslationModel,
 	TranslationModelFileReference,
 } from '../../../../thirdparty/bergamot/src/types';
-import { addBergamotFile } from '../../../requests/backend/bergamot/addBergamotFile';
-import { getBergamotFile } from '../../../requests/backend/bergamot/getBergamotFile';
 import { isChromium } from '../../browser';
 
 import { OffscreenWorker } from './OffscreenWorker';

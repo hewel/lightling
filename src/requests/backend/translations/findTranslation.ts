@@ -1,7 +1,8 @@
 import { Schema } from 'effect';
 
-import { NonNaNNumber } from '../../../lib/types';
-import { TranslationType } from '../../../types/translation/Translation';
+import { NonNaNNumber } from '@/lib/types';
+import { TranslationType } from '@/types/translation/Translation';
+
 import { buildBackendRequest } from '../../utils/requestBuilder';
 
 import { findEntry } from './data';

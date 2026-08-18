@@ -1,8 +1,9 @@
 import { Schema } from 'effect';
 import { DBSchema } from 'idb';
 
-import { IDBConstructor } from '../../../../../lib/idb/manager';
-import { decodeStruct, NonNaNNumber } from '../../../../../lib/types';
+import { IDBConstructor } from '@/lib/idb/manager';
+import { decodeStruct, NonNaNNumber } from '@/lib/types';
+
 import { ITranslationEntry } from '../../data';
 
 export type IDBTranslationsSchemaV2 = DBSchema & {

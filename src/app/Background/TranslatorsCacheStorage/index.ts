@@ -1,6 +1,6 @@
 import * as IDB from 'idb';
 
-import { ITranslation } from '../../../types/translation/Translation';
+import { ITranslation } from '@/types/translation/Translation';
 
 export interface TranslatorDBSchema extends IDB.DBSchema {
 	tableName: {

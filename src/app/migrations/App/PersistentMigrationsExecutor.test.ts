@@ -1,6 +1,6 @@
-import { PersistentMigrationsExecutor } from '../../../lib/migrations/MigrationsExecutor/PersistentMigrationsExecutor';
-import { testPersistentMigrationsExecutor } from '../../../lib/migrations/MigrationsExecutor/PersistentMigrationsExecutor.test';
-import { clearAllMocks } from '../../../lib/tests';
+import { PersistentMigrationsExecutor } from '@/lib/migrations/MigrationsExecutor/PersistentMigrationsExecutor';
+import { testPersistentMigrationsExecutor } from '@/lib/migrations/MigrationsExecutor/PersistentMigrationsExecutor.test';
+import { clearAllMocks } from '@/lib/tests';
 
 import { AppMigrationsStorage } from './AppMigrationsStorage';
 

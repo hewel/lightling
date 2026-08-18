@@ -1,8 +1,8 @@
-import { getContentScriptStyles } from '../../../lib/browser';
-import { ShadowDOMContainerManager } from '../../../lib/ShadowDOMContainerManager';
-import { TELEMETRY_EVENT_NAME } from '../../../lib/telemetry';
-import { trackClientEvent } from '../../../requests/backend/telemetry';
-import { translate } from '../../../requests/backend/translate';
+import { getContentScriptStyles } from '@/lib/browser';
+import { ShadowDOMContainerManager } from '@/lib/ShadowDOMContainerManager';
+import { TELEMETRY_EVENT_NAME } from '@/lib/telemetry';
+import { trackClientEvent } from '@/requests/backend/telemetry';
+import { translate } from '@/requests/backend/translate';
 
 import { TextTranslatorPopup } from './components/TextTranslatorPopup/TextTranslatorPopup';
 

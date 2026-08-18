@@ -1,6 +1,7 @@
 import { Schema } from 'effect';
 
-import { embeddedTranslators } from '../../../app/Background';
+import { embeddedTranslators } from '@/app/Background';
+
 import { buildBackendRequest } from '../../utils/requestBuilder';
 
 import { formatToCustomTranslatorId } from '.';

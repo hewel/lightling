@@ -1,7 +1,7 @@
 import { TranslatorConstructor } from 'anylang/translators';
 
-import { embeddedTranslators, TranslatorsMap } from '../../../app/Background';
-import { getCustomTranslatorClass } from '../../../lib/translators/customTranslators/utils';
+import { embeddedTranslators, TranslatorsMap } from '@/app/Background';
+import { getCustomTranslatorClass } from '@/lib/translators/customTranslators/utils';
 
 import { getTranslators } from './data';
 

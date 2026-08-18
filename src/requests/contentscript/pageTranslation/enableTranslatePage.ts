@@ -1,6 +1,7 @@
 import { Schema } from 'effect';
 
-import { LangCode, LangCodeWithAuto } from '../../../types/runtime';
+import { LangCode, LangCodeWithAuto } from '@/types/runtime';
+
 import { buildTabRequest } from '../../utils/requestBuilder';
 
 export const [enableTranslatePageFactory, enableTranslatePageReq] = buildTabRequest(

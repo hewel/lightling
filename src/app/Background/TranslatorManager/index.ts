@@ -1,10 +1,10 @@
 import { isLanguageCodeISO639v1 } from 'anylang/languages';
 import { IScheduler, Scheduler, SchedulerWithCache } from 'anylang/scheduling';
 
-import { TELEMETRY_EVENT_NAME } from '../../../lib/telemetry';
-import { telemetry } from '../../../lib/telemetry/singleton';
-import { AppConfigType } from '../../../types/runtime';
-import { RecordValues } from '../../../types/utils';
+import { TELEMETRY_EVENT_NAME } from '@/lib/telemetry';
+import { telemetry } from '@/lib/telemetry/singleton';
+import { AppConfigType } from '@/types/runtime';
+import { RecordValues } from '@/types/utils';
 
 import { TranslatorsMap } from '..';
 import { TranslatorsCacheStorage } from '../TranslatorsCacheStorage';

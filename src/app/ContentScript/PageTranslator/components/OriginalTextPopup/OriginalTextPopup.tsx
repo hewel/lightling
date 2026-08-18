@@ -1,7 +1,7 @@
 import { FC, ReactNode, RefObject } from 'react';
 import { cn } from '@bem-react/classname';
 
-import { Popup } from '../../../../../components/primitives/Popup/Popup';
+import { Popup } from '@/components/primitives/Popup/Popup';
 
 import './OriginalTextPopup.css';
 

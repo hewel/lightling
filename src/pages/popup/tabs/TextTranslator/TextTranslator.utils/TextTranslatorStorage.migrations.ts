@@ -1,11 +1,8 @@
 import { Schema } from 'effect';
 import browser from 'webextension-polyfill';
 
-import {
-	createMigrationTask,
-	Migration,
-} from '../../../../../lib/migrations/createMigrationTask';
-import { decodeStruct } from '../../../../../lib/types';
+import { createMigrationTask, Migration } from '@/lib/migrations/createMigrationTask';
+import { decodeStruct } from '@/lib/types';
 
 const dataStructureVersions = {
 	0: Schema.Union([

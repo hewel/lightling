@@ -1,6 +1,6 @@
 import browser from 'webextension-polyfill';
 
-import { clearAllMocks } from '../../../../../../lib/tests';
+import { clearAllMocks } from '@/lib/tests';
 
 import { TextTranslatorStorage } from '../TextTranslatorStorage';
 import { TextTranslatorStorageMigration } from '../TextTranslatorStorage.migrations';

@@ -1,4 +1,4 @@
-import { RecordValues } from '../../../../../types/utils';
+import { RecordValues } from '@/types/utils';
 
 import { languagePreferenceOptions, sitePreferenceOptions } from '../PageTranslator';
 import { SitePrefs } from '../PageTranslator@tab';

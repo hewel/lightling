@@ -1,7 +1,8 @@
 import { FC } from 'react';
 
-import { getMessage } from '../../../lib/language';
-import { ITranslation } from '../../../types/translation/Translation';
+import { getMessage } from '@/lib/language';
+import { ITranslation } from '@/types/translation/Translation';
+
 import { Button } from '../../primitives/Button/Button.bundle/universal';
 import { Icon } from '../../primitives/Icon/Icon.bundle/desktop';
 

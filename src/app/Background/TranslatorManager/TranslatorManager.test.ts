@@ -1,4 +1,4 @@
-import { clearAllMocks } from '../../../lib/tests';
+import { clearAllMocks } from '@/lib/tests';
 
 import { TranslatorManager } from '.';
 

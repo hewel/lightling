@@ -12,26 +12,26 @@ import {
 } from 'react';
 import { cn } from '@bem-react/classname';
 
-import { LayoutFlow } from '../../../components/layouts/LayoutFlow/LayoutFlow';
-import { Page } from '../../../components/layouts/Page/Page';
-import { Button } from '../../../components/primitives/Button/Button.bundle/universal';
-import { ToastMessages } from '../../../components/primitives/ToastMessages/ToastMessages';
-import { useToastMessages } from '../../../components/primitives/ToastMessages/useToastMessages';
-import { isMobileBrowser } from '../../../lib/browser';
-import { openFileDialog, readAsText, saveFile } from '../../../lib/files';
-import { getMessage } from '../../../lib/language';
-import { TELEMETRY_EVENT_NAME } from '../../../lib/telemetry';
-import { telemetry } from '../../../lib/telemetry/singleton';
+import { LayoutFlow } from '@/components/layouts/LayoutFlow/LayoutFlow';
+import { Page } from '@/components/layouts/Page/Page';
+import { Button } from '@/components/primitives/Button/Button.bundle/universal';
+import { ToastMessages } from '@/components/primitives/ToastMessages/ToastMessages';
+import { useToastMessages } from '@/components/primitives/ToastMessages/useToastMessages';
+import { isMobileBrowser } from '@/lib/browser';
+import { openFileDialog, readAsText, saveFile } from '@/lib/files';
+import { getMessage } from '@/lib/language';
+import { TELEMETRY_EVENT_NAME } from '@/lib/telemetry';
+import { telemetry } from '@/lib/telemetry/singleton';
 // Requests
-import { clearCache as clearCacheReq } from '../../../requests/backend/clearCache';
-import { getConfig } from '../../../requests/backend/getConfig';
-import { ping } from '../../../requests/backend/ping';
-import { resetConfig as resetConfigReq } from '../../../requests/backend/resetConfig';
-import { setConfig as setConfigReq } from '../../../requests/backend/setConfig';
-import { getAvailableTranslators } from '../../../requests/backend/translators/getAvailableTranslators';
-import { getSpeakers } from '../../../requests/backend/tts/getSpeakers';
-import { updateConfig as updateConfigReq } from '../../../requests/backend/updateConfig';
-import { AppConfigType } from '../../../types/runtime';
+import { clearCache as clearCacheReq } from '@/requests/backend/clearCache';
+import { getConfig } from '@/requests/backend/getConfig';
+import { ping } from '@/requests/backend/ping';
+import { resetConfig as resetConfigReq } from '@/requests/backend/resetConfig';
+import { setConfig as setConfigReq } from '@/requests/backend/setConfig';
+import { getAvailableTranslators } from '@/requests/backend/translators/getAvailableTranslators';
+import { getSpeakers } from '@/requests/backend/tts/getSpeakers';
+import { updateConfig as updateConfigReq } from '@/requests/backend/updateConfig';
+import { AppConfigType } from '@/types/runtime';
 
 import { TranslatorsManager } from './OptionsPage.components/TranslatorsManager/TranslatorsManager';
 import { TTSList } from './OptionsPage.components/TTSList/TTSList';

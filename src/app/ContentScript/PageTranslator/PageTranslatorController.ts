@@ -1,7 +1,7 @@
 import { Event } from 'effector';
 
-import { TELEMETRY_EVENT_NAME } from '../../../lib/telemetry';
-import { trackClientEvent } from '../../../requests/backend/telemetry';
+import { TELEMETRY_EVENT_NAME } from '@/lib/telemetry';
+import { trackClientEvent } from '@/requests/backend/telemetry';
 
 import { PageTranslationOptions } from '../PageTranslationContext';
 import { PageTranslatorStats } from './PageTranslator';

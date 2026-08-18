@@ -4,8 +4,8 @@ import browser from 'webextension-polyfill';
 import {
 	MigrationsMap,
 	MigrationsStorage,
-} from '../../../lib/migrations/MigrationsExecutor/MigrationsStorage';
-import { decodeStruct, NonNaNNumber } from '../../../lib/types';
+} from '@/lib/migrations/MigrationsExecutor/MigrationsStorage';
+import { decodeStruct, NonNaNNumber } from '@/lib/types';
 
 import { migrationsForMigrationsStorage } from './AppMigrationsStorage.migrations';
 

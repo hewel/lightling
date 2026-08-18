@@ -2,7 +2,7 @@ import { TTSProviderProps } from 'anylang/tts';
 import { readFileSync } from 'fs';
 import path from 'path';
 
-import { clearAllMocks } from '../../../../../lib/tests';
+import { clearAllMocks } from '@/lib/tests';
 
 import { TTSManager } from '..';
 

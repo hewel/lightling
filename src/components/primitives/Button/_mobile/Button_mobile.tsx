@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { withClassnameHOC, withHOCConstructor } from 'react-elegant-ui/esm/lib/compose';
 
-import { isMobileBrowser } from '../../../../lib/browser';
+import { isMobileBrowser } from '@/lib/browser';
 
 import { cnButton, IButtonProps } from '../Button';
 

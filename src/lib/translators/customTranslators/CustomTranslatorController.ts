@@ -1,7 +1,7 @@
 import { BaseTranslator } from 'anylang/translators';
 
-import { CustomTranslatorInfo } from '../../../offscreen-documents/translator';
-import { customTranslatorsApi } from '../../../requests/offscreen/customTranslators';
+import { CustomTranslatorInfo } from '@/offscreen-documents/translator';
+import { customTranslatorsApi } from '@/requests/offscreen/customTranslators';
 
 export class CustomTranslatorController extends BaseTranslator {
 	private readonly config;

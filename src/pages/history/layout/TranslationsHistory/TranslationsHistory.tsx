@@ -3,25 +3,25 @@ import { Checkbox } from 'react-elegant-ui/esm/components/Checkbox/Checkbox.bund
 import { Spinner } from 'react-elegant-ui/esm/components/Spinner/Spinner.bundle/desktop';
 import { cn } from '@bem-react/classname';
 
-import { DictionaryButton } from '../../../../components/controls/DictionaryButton/DictionaryButton';
-import { LayoutFlow } from '../../../../components/layouts/LayoutFlow/LayoutFlow';
-import { TranslationCard } from '../../../../components/layouts/TranslationCard/TranslationCard';
-import { Button } from '../../../../components/primitives/Button/Button.bundle/universal';
-import { Icon } from '../../../../components/primitives/Icon/Icon.bundle/desktop';
-import { Notification } from '../../../../components/primitives/Notification/Notification.bundle/universal';
-import { Textinput } from '../../../../components/primitives/Textinput/Textinput.bundle/desktop';
-import { getOptionsPageUrl } from '../../../../lib/browser';
-import { useConcurrentTTS } from '../../../../lib/hooks/useConcurrentTTS';
-import { useConfirm } from '../../../../lib/hooks/useConfirm';
-import { useDebouncedInput } from '../../../../lib/hooks/useDebouncedInput';
-import { useKeyboardModifiers } from '../../../../lib/hooks/useKeyboardModifiers';
-import { buildLink, getLocalizedNode, getMessage } from '../../../../lib/language';
-import { clearTranslationHistory } from '../../../../requests/backend/history/clearTranslationHistory';
+import { DictionaryButton } from '@/components/controls/DictionaryButton/DictionaryButton';
+import { LayoutFlow } from '@/components/layouts/LayoutFlow/LayoutFlow';
+import { TranslationCard } from '@/components/layouts/TranslationCard/TranslationCard';
+import { Button } from '@/components/primitives/Button/Button.bundle/universal';
+import { Icon } from '@/components/primitives/Icon/Icon.bundle/desktop';
+import { Notification } from '@/components/primitives/Notification/Notification.bundle/universal';
+import { Textinput } from '@/components/primitives/Textinput/Textinput.bundle/desktop';
+import { getOptionsPageUrl } from '@/lib/browser';
+import { useConcurrentTTS } from '@/lib/hooks/useConcurrentTTS';
+import { useConfirm } from '@/lib/hooks/useConfirm';
+import { useDebouncedInput } from '@/lib/hooks/useDebouncedInput';
+import { useKeyboardModifiers } from '@/lib/hooks/useKeyboardModifiers';
+import { buildLink, getLocalizedNode, getMessage } from '@/lib/language';
+import { clearTranslationHistory } from '@/requests/backend/history/clearTranslationHistory';
 import {
 	ITranslationHistoryEntryWithKey,
 	TranslationHistoryFetcherOptions,
-} from '../../../../requests/backend/history/data';
-import { deleteTranslationHistoryEntry } from '../../../../requests/backend/history/deleteTranslationHistoryEntry';
+} from '@/requests/backend/history/data';
+import { deleteTranslationHistoryEntry } from '@/requests/backend/history/deleteTranslationHistoryEntry';
 
 import './TranslationsHistory.css';
 

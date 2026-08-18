@@ -2,18 +2,18 @@ import { isEqual } from 'lodash';
 import { useCallback, useEffect, useState } from 'react';
 import { useImmutableCallback } from 'react-elegant-ui/esm/hooks/useImmutableCallback';
 
-import { isExtensionContext } from '../../../lib/browser';
-import { TELEMETRY_EVENT_NAME } from '../../../lib/telemetry';
-import { trackClientEvent } from '../../../requests/backend/telemetry';
+import { isExtensionContext } from '@/lib/browser';
+import { TELEMETRY_EVENT_NAME } from '@/lib/telemetry';
+import { trackClientEvent } from '@/requests/backend/telemetry';
 import {
 	onClearDictionary,
 	onDictionaryEntryAdd,
 	onDictionaryEntryDelete,
-} from '../../../requests/backend/translations';
-import { addTranslation } from '../../../requests/backend/translations/addTranslation';
-import { deleteTranslation } from '../../../requests/backend/translations/deleteTranslation';
-import { findTranslation } from '../../../requests/backend/translations/findTranslation';
-import { ITranslation } from '../../../types/translation/Translation';
+} from '@/requests/backend/translations';
+import { addTranslation } from '@/requests/backend/translations/addTranslation';
+import { deleteTranslation } from '@/requests/backend/translations/deleteTranslation';
+import { findTranslation } from '@/requests/backend/translations/findTranslation';
+import { ITranslation } from '@/types/translation/Translation';
 
 export const useDictionary = (translation: ITranslation | null) => {
 	const { from, to, originalText, translatedText } = translation || {};

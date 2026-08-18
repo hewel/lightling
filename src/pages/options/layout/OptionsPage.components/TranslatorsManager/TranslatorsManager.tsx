@@ -1,18 +1,19 @@
 import { FC, useCallback, useContext, useEffect, useState } from 'react';
 import { cn } from '@bem-react/classname';
 
-import { LayoutFlow } from '../../../../../components/layouts/LayoutFlow/LayoutFlow';
-import { ModalLayout } from '../../../../../components/layouts/ModalLayout/ModalLayout';
-import { Button } from '../../../../../components/primitives/Button/Button.bundle/universal';
-import { Icon } from '../../../../../components/primitives/Icon/Icon.bundle/desktop';
-import { Loader } from '../../../../../components/primitives/Loader/Loader';
-import { Modal } from '../../../../../components/primitives/Modal/Modal.bundle/desktop';
-import { getMessage } from '../../../../../lib/language';
-import { CustomTranslator } from '../../../../../requests/backend/translators';
-import { addTranslator } from '../../../../../requests/backend/translators/addTranslator';
-import { deleteTranslator } from '../../../../../requests/backend/translators/deleteTranslator';
-import { getTranslators } from '../../../../../requests/backend/translators/getTranslators';
-import { updateTranslator } from '../../../../../requests/backend/translators/updateTranslator';
+import { LayoutFlow } from '@/components/layouts/LayoutFlow/LayoutFlow';
+import { ModalLayout } from '@/components/layouts/ModalLayout/ModalLayout';
+import { Button } from '@/components/primitives/Button/Button.bundle/universal';
+import { Icon } from '@/components/primitives/Icon/Icon.bundle/desktop';
+import { Loader } from '@/components/primitives/Loader/Loader';
+import { Modal } from '@/components/primitives/Modal/Modal.bundle/desktop';
+import { getMessage } from '@/lib/language';
+import { CustomTranslator } from '@/requests/backend/translators';
+import { addTranslator } from '@/requests/backend/translators/addTranslator';
+import { deleteTranslator } from '@/requests/backend/translators/deleteTranslator';
+import { getTranslators } from '@/requests/backend/translators/getTranslators';
+import { updateTranslator } from '@/requests/backend/translators/updateTranslator';
+
 import { OptionsModalsContext } from '../../OptionsPage';
 
 import { Editor, EditorEntry } from '../Editor/Editor';

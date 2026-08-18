@@ -1,6 +1,6 @@
 import { Store } from 'effector';
 
-import { AppConfigType } from '../../../types/runtime';
+import { AppConfigType } from '@/types/runtime';
 
 import { PageTranslationOptions } from '../PageTranslationContext';
 import { PageTranslator } from './PageTranslator';

@@ -1,6 +1,6 @@
 import * as IDB from 'idb';
 
-import { clearAllMocks } from '../../../lib/tests';
+import { clearAllMocks } from '@/lib/tests';
 
 import * as translationsStore from './data';
 import { translationsStoreName } from './data';

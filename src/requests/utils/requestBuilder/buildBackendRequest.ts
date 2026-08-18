@@ -1,4 +1,5 @@
-import { type SyncSchema, tryDecode } from '../../../lib/types';
+import { type SyncSchema, tryDecode } from '@/lib/types';
+
 import { RequestHandlerFactory, RequestHandlerFactoryProps } from '../../types';
 
 import { addRequestHandler, sendBackgroundRequest } from '..';

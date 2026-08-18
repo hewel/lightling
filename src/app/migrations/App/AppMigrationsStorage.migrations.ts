@@ -1,8 +1,8 @@
 import { Schema } from 'effect';
 import browser from 'webextension-polyfill';
 
-import { createMigrationTask } from '../../../lib/migrations/createMigrationTask';
-import { decodeStruct, NonNaNNumber } from '../../../lib/types';
+import { createMigrationTask } from '@/lib/migrations/createMigrationTask';
+import { decodeStruct, NonNaNNumber } from '@/lib/types';
 
 export const migrationsForMigrationsStorage = createMigrationTask([
 	{

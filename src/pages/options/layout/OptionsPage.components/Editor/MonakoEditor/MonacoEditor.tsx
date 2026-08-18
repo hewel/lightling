@@ -3,7 +3,7 @@ import { editor, languages } from 'monaco-editor-core';
 import { FC, RefObject, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useRefHost } from 'react-elegant-ui/hooks/useRefHost';
 
-import { isMobileBrowser } from '../../../../../../lib/browser';
+import { isMobileBrowser } from '@/lib/browser';
 
 import { cnEditor } from '../Editor';
 import { language as tslanguage } from './languages/typescript';

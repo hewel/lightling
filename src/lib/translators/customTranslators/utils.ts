@@ -1,4 +1,4 @@
-import { customTranslatorsApi } from '../../../requests/offscreen/customTranslators';
+import { customTranslatorsApi } from '@/requests/offscreen/customTranslators';
 
 import { CustomTranslatorController } from './CustomTranslatorController';
 

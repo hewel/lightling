@@ -1,8 +1,8 @@
-import { offscreenWorkerApi } from '../../../requests/offscreen/offscreenWorker';
+import { offscreenWorkerApi } from '@/requests/offscreen/offscreenWorker';
 import {
 	OffscreenWorkerContext,
 	offscreenWorkerEventFactory,
-} from '../../../requests/offscreen/offscreenWorker/offscreenWorkerEvent';
+} from '@/requests/offscreen/offscreenWorker/offscreenWorkerEvent';
 
 export class OffscreenWorker implements Worker {
 	public onmessage: Worker['onmessage'] = null;

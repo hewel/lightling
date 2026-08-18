@@ -1,7 +1,7 @@
 import { Schema } from 'effect';
 import browser from 'webextension-polyfill';
 
-import { decodeStruct } from '../../../lib/types';
+import { decodeStruct } from '@/lib/types';
 
 const storageKey = 'recentUsedLanguages';
 
