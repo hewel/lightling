@@ -1,5 +1,7 @@
 import { FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import browser from 'webextension-polyfill';
+import { Collapsible } from '@astryxdesign/core/Collapsible';
+import { Spinner } from '@astryxdesign/core/Spinner';
 import { cn } from '@bem-react/classname';
 
 import { DictionaryButton } from '@/components/controls/DictionaryButton/DictionaryButton';
@@ -7,7 +9,6 @@ import { LanguagePanel } from '@/components/controls/LanguagePanel/LanguagePanel
 // Components
 import { Button } from '@/components/primitives/Button/Button.bundle/desktop';
 import { Icon } from '@/components/primitives/Icon/Icon.bundle/desktop';
-import { Loader } from '@/components/primitives/Loader/Loader';
 import { isMobileBrowser } from '@/lib/browser';
 import { useTTS } from '@/lib/hooks/useTTS';
 import { useTTSLanguages } from '@/lib/hooks/useTTSLanguages';
@@ -354,11 +355,7 @@ export const TextTranslator: FC<TextTranslatorComponentProps> = ({
 	if (translatorFeatures !== undefined && (translatedText !== null || error !== null)) {
 		return (
 			<div className={cnTextTranslator()}>
-				<div
-					className={cnTextTranslator('Head', { mobile: isMobile }, [
-						cnTextTranslator('Clearfix'),
-					])}
-				>
+				<div className={cnTextTranslator('Head', { mobile: isMobile })}>
 					{isMobile && closeButton}
 
 					<div
@@ -428,19 +425,20 @@ export const TextTranslator: FC<TextTranslatorComponentProps> = ({
 									</Button>
 								</div>
 								<div className={cnTextTranslator('Body')}>
-									<details
-										onToggle={updatePopup}
-										className={cnTextTranslator('Details')}
+									<Collapsible
+										className={cnTextTranslator(
+											'OriginalTextDisclosure',
+										)}
+										trigger={getMessage(
+											'inlineTranslator_showOriginalText',
+										)}
+										defaultIsOpen={false}
+										onOpenChange={updatePopup}
 									>
-										<summary>
-											{getMessage(
-												'inlineTranslator_showOriginalText',
-											)}
-										</summary>
 										<p className={cnTextTranslator('OriginalText')}>
 											{originalText}
 										</p>
-									</details>
+									</Collapsible>
 								</div>
 							</div>
 						)}
@@ -460,6 +458,6 @@ export const TextTranslator: FC<TextTranslatorComponentProps> = ({
 			</div>
 		);
 	} else {
-		return <Loader className={cnTextTranslator('Loader')} />;
+		return <Spinner />;
 	}
 };

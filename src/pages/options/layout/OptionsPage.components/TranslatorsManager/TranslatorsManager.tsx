@@ -1,11 +1,11 @@
 import { FC, useCallback, useContext, useEffect, useState } from 'react';
+import { Spinner } from '@astryxdesign/core/Spinner';
+import { HStack, VStack } from '@astryxdesign/core/Stack';
 import { cn } from '@bem-react/classname';
 
-import { LayoutFlow } from '@/components/layouts/LayoutFlow/LayoutFlow';
 import { ModalLayout } from '@/components/layouts/ModalLayout/ModalLayout';
 import { Button } from '@/components/primitives/Button/Button.bundle/universal';
 import { Icon } from '@/components/primitives/Icon/Icon.bundle/desktop';
-import { Loader } from '@/components/primitives/Loader/Loader';
 import { Modal } from '@/components/primitives/Modal/Modal.bundle/desktop';
 import { getMessage } from '@/lib/language';
 import { CustomTranslator } from '@/requests/backend/translators';
@@ -119,7 +119,7 @@ export const TranslatorsManager: FC<{
 	return (
 		<Modal visible={visible} onClose={onClose} scope={scope} preventBodyScroll>
 			{isLoading ? (
-				<Loader />
+				<Spinner />
 			) : (
 				<div className={cnTranslatorsManager({})}>
 					<ModalLayout
@@ -133,7 +133,7 @@ export const TranslatorsManager: FC<{
 							</Button>,
 						]}
 					>
-						<LayoutFlow direction="vertical" indent="m">
+						<VStack gap={2}>
 							{translators.map((translatorInfo) => {
 								const { id, name } = translatorInfo;
 
@@ -148,13 +148,7 @@ export const TranslatorsManager: FC<{
 											{name}
 										</span>
 
-										<LayoutFlow
-											direction="horizontal"
-											indent="m"
-											className={cnTranslatorsManager(
-												'EntryControls',
-											)}
-										>
+										<HStack gap={2}>
 											<Button
 												onPress={() => {
 													editTranslator(translatorInfo);
@@ -176,11 +170,11 @@ export const TranslatorsManager: FC<{
 											>
 												<Icon glyph="delete" scalable={false} />
 											</Button>
-										</LayoutFlow>
+										</HStack>
 									</div>
 								);
 							})}
-						</LayoutFlow>
+						</VStack>
 
 						{translators.length !== 0
 							? undefined

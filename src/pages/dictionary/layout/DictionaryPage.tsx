@@ -1,17 +1,16 @@
 import { getLanguageCodesISO639 } from 'anylang/languages';
 import Papa from 'papaparse';
 import { FC, useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import { Selector } from '@astryxdesign/core/Selector';
+import { HStack, VStack } from '@astryxdesign/core/Stack';
+import { useToast } from '@astryxdesign/core/Toast';
 import { cn } from '@bem-react/classname';
 
-import { LayoutFlow } from '@/components/layouts/LayoutFlow/LayoutFlow';
 import { Page } from '@/components/layouts/Page/Page';
 import { TranslationCard } from '@/components/layouts/TranslationCard/TranslationCard';
 import { Button } from '@/components/primitives/Button/Button.bundle/desktop';
 import { Icon } from '@/components/primitives/Icon/Icon.bundle/desktop';
-import { Select } from '@/components/primitives/Select/Select.bundle/desktop';
 import { Textinput } from '@/components/primitives/Textinput/Textinput.bundle/desktop';
-import { ToastMessages } from '@/components/primitives/ToastMessages/ToastMessages';
-import { useToastMessages } from '@/components/primitives/ToastMessages/useToastMessages';
 import { isMobileBrowser } from '@/lib/browser';
 import { saveFile } from '@/lib/files';
 import { useConcurrentTTS } from '@/lib/hooks/useConcurrentTTS';
@@ -57,9 +56,7 @@ export const DictionaryPage: FC<IDictionaryPageProps> = ({ confirmDelete = true 
 		telemetry.track(TELEMETRY_EVENT_NAME.SCREEN_SHOWN, { screen: 'Dictionary' });
 	}, []);
 
-	const { messages, addMessage, deleteMessage, haltMessages } = useToastMessages({
-		hideDelay: 5000,
-	});
+	const showToast = useToast();
 
 	const [entries, setEntries] = useState<ITranslationEntryWithKey[] | null>(null);
 
@@ -143,12 +140,12 @@ export const DictionaryPage: FC<IDictionaryPageProps> = ({ confirmDelete = true 
 			.then(() => {
 				setEntries(null);
 				updateData();
-				addMessage(getMessage('dictionary_message_deleteAll_success'), 'info');
+				showToast({ body: getMessage('dictionary_message_deleteAll_success') });
 			})
 			.catch(() => {
-				addMessage(getMessage('message_unknownError'), 'error');
+				showToast({ body: getMessage('message_unknownError'), type: 'error' });
 			});
-	}, [addMessage, updateData]);
+	}, [showToast, updateData]);
 
 	//
 	// TTS
@@ -270,11 +267,11 @@ export const DictionaryPage: FC<IDictionaryPageProps> = ({ confirmDelete = true 
 
 	const langsListFrom = useMemo(
 		() => [
-			{ id: 'any', content: getMessage('lang_select') },
-			{ id: 'auto', content: getMessage('lang_detect') },
+			{ value: 'any', label: getMessage('lang_select') },
+			{ value: 'auto', label: getMessage('lang_detect') },
 			...langCodes.map((langCode) => ({
-				id: langCode,
-				content: getLanguageNameByCode(langCode),
+				value: langCode,
+				label: getLanguageNameByCode(langCode),
 			})),
 		],
 		[],
@@ -282,10 +279,10 @@ export const DictionaryPage: FC<IDictionaryPageProps> = ({ confirmDelete = true 
 
 	const langsListTo = useMemo(
 		() => [
-			{ id: 'any', content: getMessage('lang_select') },
+			{ value: 'any', label: getMessage('lang_select') },
 			...langCodes.map((langCode) => ({
-				id: langCode,
-				content: getLanguageNameByCode(langCode),
+				value: langCode,
+				label: getLanguageNameByCode(langCode),
 			})),
 		],
 		[],
@@ -294,12 +291,12 @@ export const DictionaryPage: FC<IDictionaryPageProps> = ({ confirmDelete = true 
 	return (
 		<Page loading={entries === null}>
 			<div className={cnDictionaryPage({ mobile: isMobile })}>
-				<LayoutFlow indent="2xl">
+				<VStack gap={5}>
 					<div className={cnDictionaryPage('Description')}>
 						{getMessage('dictionary_description')}
 					</div>
 
-					<LayoutFlow indent="l" className={cnDictionaryPage('SearchPanel')}>
+					<VStack gap={3}>
 						<Textinput
 							placeholder={getMessage('dictionary_searchPlaceholder')}
 							value={search}
@@ -318,29 +315,39 @@ export const DictionaryPage: FC<IDictionaryPageProps> = ({ confirmDelete = true 
 								{
 									title: getMessage('dictionary_filter_from'),
 									content: (
-										<Select
+										<Selector
+											label={getMessage('dictionary_filter_from')}
+											isLabelHidden
 											options={langsListFrom}
-											value={from}
-											setValue={setFrom}
+											value={
+												typeof from === 'string'
+													? from
+													: undefined
+											}
+											onChange={setFrom}
 										/>
 									),
 								},
 								{
 									title: getMessage('dictionary_filter_to'),
 									content: (
-										<Select
+										<Selector
+											label={getMessage('dictionary_filter_to')}
+											isLabelHidden
 											options={langsListTo}
-											value={to}
-											setValue={setTo}
+											value={
+												typeof to === 'string' ? to : undefined
+											}
+											onChange={setTo}
 										/>
 									),
 								},
 							]}
 						/>
-					</LayoutFlow>
+					</VStack>
 
-					<LayoutFlow indent="l" className={cnDictionaryPage('MainContainer')}>
-						<LayoutFlow indent="m" direction="horizontal">
+					<VStack gap={3}>
+						<HStack gap={2}>
 							{!isMobile && (
 								<Button view="default" onPress={exportDictionary}>
 									{getMessage('dictionary_button_export')}
@@ -349,20 +356,14 @@ export const DictionaryPage: FC<IDictionaryPageProps> = ({ confirmDelete = true 
 							<Button view="default" onPress={removeAll}>
 								{getMessage('dictionary_button_removeAll')}
 							</Button>
-						</LayoutFlow>
+						</HStack>
 
 						<div className={cnDictionaryPage('Entries')}>
 							{renderedEntries}
 						</div>
-					</LayoutFlow>
-				</LayoutFlow>
+					</VStack>
+				</VStack>
 			</div>
-
-			<ToastMessages
-				messages={messages}
-				haltMessages={haltMessages}
-				deleteMessage={deleteMessage}
-			/>
 		</Page>
 	);
 };

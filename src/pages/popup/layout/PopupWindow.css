@@ -84,14 +84,3 @@ body {
 	font-size: var(--typography-layout-size-l-font-size);
 	text-align: center;
 }
-
-/* Loader */
-.PopupWindow-Loader {
-	min-width: 100%;
-	min-height: 200px;
-}
-
-.PopupWindow-Loader .Loader-Image {
-	width: 5rem;
-	height: 5rem;
-}

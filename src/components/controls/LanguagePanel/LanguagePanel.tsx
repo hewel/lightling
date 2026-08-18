@@ -1,17 +1,13 @@
 import { FC, useCallback, useEffect, useMemo, useState } from 'react';
-import { cn } from '@bem-react/classname';
+import { IconButton } from '@astryxdesign/core/IconButton';
+import { Selector } from '@astryxdesign/core/Selector';
+import { HStack, VStack } from '@astryxdesign/core/Stack';
 
 import { getLanguageNameByCode, getMessage } from '@/lib/language';
 import { addRecentUsedLanguage } from '@/requests/backend/recentUsedLanguages/addRecentUsedLanguage';
 import { getRecentUsedLanguages } from '@/requests/backend/recentUsedLanguages/getRecentUsedLanguages';
 
-import { Button } from '../../primitives/Button/Button.bundle/desktop';
 import { Icon } from '../../primitives/Icon/Icon.bundle/desktop';
-import { Select } from '../../primitives/Select/Select.bundle/desktop';
-
-import './LanguagePanel.css';
-
-export const cnLanguagePanel = cn('LanguagePanel');
 
 export interface LanguagePanelProps {
 	languages: string[];
@@ -72,13 +68,13 @@ export const LanguagePanel: FC<LanguagePanelProps> = ({
 		() =>
 			languages
 				.map((value) => ({
-					id: value,
-					content: getLanguageNameByCode(value),
+					value,
+					label: getLanguageNameByCode(value),
 				}))
 				.sort((language1, language2) => {
 					// The lowest the most used
-					const lang1UsageRate = recentLanguages.indexOf(language1.id);
-					const lang2UsageRate = recentLanguages.indexOf(language2.id);
+					const lang1UsageRate = recentLanguages.indexOf(language1.value);
+					const lang2UsageRate = recentLanguages.indexOf(language2.value);
 
 					// Move left the language with lowest index, but not -1
 					if (lang1UsageRate !== -1 || lang2UsageRate !== -1) {
@@ -89,9 +85,9 @@ export const LanguagePanel: FC<LanguagePanelProps> = ({
 					}
 
 					// Sort lexicographically
-					return language1.content > language2.content
+					return language1.label > language2.label
 						? 1
-						: language1.content < language2.content
+						: language1.label < language2.label
 							? -1
 							: 0;
 				}),
@@ -101,53 +97,63 @@ export const LanguagePanel: FC<LanguagePanelProps> = ({
 	const optionsFrom = useMemo(
 		() =>
 			auto
-				? [{ id: 'auto', content: getLanguageNameByCode('auto') }, ...options]
+				? [{ value: 'auto', label: getLanguageNameByCode('auto') }, ...options]
 				: options,
 		[auto, options],
 	);
 
+	const onFromChange = useCallback(
+		(value: string) => {
+			if (setFrom === undefined) return;
+
+			setFrom(value);
+			upLanguage(value);
+		},
+		[setFrom, upLanguage],
+	);
+
+	const onToChange = useCallback(
+		(value: string) => {
+			if (setTo === undefined) return;
+
+			setTo(value);
+			upLanguage(value);
+		},
+		[setTo, upLanguage],
+	);
+
+	const Stack = mobile ? VStack : HStack;
+
 	return (
-		<span className={cnLanguagePanel({ view: mobile ? 'wide' : undefined })}>
-			<Select
+		<Stack gap={2} width="100%">
+			<Selector
+				label="Source language"
+				isLabelHidden
 				options={optionsFrom}
 				value={fromValue}
-				setValue={useCallback(
-					(value?: string | string[]) => {
-						if (typeof value !== 'string' || setFrom === undefined) return;
-
-						setFrom(value);
-						upLanguage(value);
-					},
-					[upLanguage, setFrom],
-				)}
-				className={cnLanguagePanel('Select')}
+				onChange={onFromChange}
+				width="100%"
 			/>
-			<Button
-				view="default"
-				onPress={swapLanguages}
-				disabled={fromValue === 'auto' || fromValue === toValue || disableSwap}
-				title={getMessage('lang_swap')}
-				content="icon"
-				preventFocusOnPress={preventFocusOnPress}
-				className={cnLanguagePanel('Button')}
-				size={mobile ? 'l' : 'm'}
-			>
-				<Icon glyph="swap-horiz" scalable={false} />
-			</Button>
-			<Select
+			<IconButton
+				label={getMessage('lang_swap')}
+				tooltip={getMessage('lang_swap')}
+				icon={<Icon glyph="swap-horiz" scalable={false} />}
+				variant="ghost"
+				size="sm"
+				onClick={swapLanguages}
+				onMouseDown={
+					preventFocusOnPress ? (event) => event.preventDefault() : undefined
+				}
+				isDisabled={fromValue === 'auto' || fromValue === toValue || disableSwap}
+			/>
+			<Selector
+				label="Target language"
+				isLabelHidden
 				options={options}
 				value={toValue}
-				setValue={useCallback(
-					(value?: string | string[]) => {
-						if (typeof value !== 'string' || setTo === undefined) return;
-
-						setTo(value);
-						upLanguage(value);
-					},
-					[upLanguage, setTo],
-				)}
-				className={cnLanguagePanel('Select')}
+				onChange={onToChange}
+				width="100%"
 			/>
-		</span>
+		</Stack>
 	);
 };

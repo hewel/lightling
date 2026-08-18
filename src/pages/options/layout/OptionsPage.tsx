@@ -10,13 +10,12 @@ import {
 	useRef,
 	useState,
 } from 'react';
+import { HStack, VStack } from '@astryxdesign/core/Stack';
+import { useToast } from '@astryxdesign/core/Toast';
 import { cn } from '@bem-react/classname';
 
-import { LayoutFlow } from '@/components/layouts/LayoutFlow/LayoutFlow';
 import { Page } from '@/components/layouts/Page/Page';
 import { Button } from '@/components/primitives/Button/Button.bundle/universal';
-import { ToastMessages } from '@/components/primitives/ToastMessages/ToastMessages';
-import { useToastMessages } from '@/components/primitives/ToastMessages/useToastMessages';
 import { isMobileBrowser } from '@/lib/browser';
 import { openFileDialog, readAsText, saveFile } from '@/lib/files';
 import { getMessage } from '@/lib/language';
@@ -53,7 +52,7 @@ interface OptionsPageProps {
 	messageHideDelay?: number;
 }
 
-export const OptionsPage: FC<OptionsPageProps> = ({ messageHideDelay }) => {
+export const OptionsPage: FC<OptionsPageProps> = () => {
 	useLayoutEffect(() => {
 		telemetry.track(TELEMETRY_EVENT_NAME.SCREEN_SHOWN, { screen: 'Preferences' });
 	}, []);
@@ -96,25 +95,23 @@ export const OptionsPage: FC<OptionsPageProps> = ({ messageHideDelay }) => {
 	// Messages broker
 	//
 
-	const { messages, addMessage, deleteMessage, haltMessages } = useToastMessages({
-		hideDelay: messageHideDelay,
-	});
+	const showToast = useToast();
 
 	const handleError = useCallback(
 		(error: any) => {
 			if (typeof error === 'string') {
-				addMessage(error, 'error');
+				showToast({ body: error, type: 'error' });
 			} else if (error instanceof Error) {
-				addMessage(error.message, 'error');
+				showToast({ body: error.message, type: 'error' });
 			} else {
 				const unknownMessage = getMessage('message_unknownError');
-				addMessage(unknownMessage, 'error');
+				showToast({ body: unknownMessage, type: 'error' });
 
 				console.error(error);
 				console.error('Unknown error object above ^');
 			}
 		},
-		[addMessage],
+		[showToast],
 	);
 
 	//
@@ -137,20 +134,19 @@ export const OptionsPage: FC<OptionsPageProps> = ({ messageHideDelay }) => {
 					setConfigReq(configData)
 						.then(updateConfig)
 						.then(() => {
-							addMessage(
-								getMessage('settings_message_importConfig_success'),
-								'info',
-							);
+							showToast({
+								body: getMessage('settings_message_importConfig_success'),
+							});
 						})
 						.catch(handleError);
 				} catch (_error) {
-					addMessage(
-						getMessage('settings_message_importConfig_invalidFile'),
-						'error',
-					);
+					showToast({
+						body: getMessage('settings_message_importConfig_invalidFile'),
+						type: 'error',
+					});
 				}
 			});
-	}, [addMessage, handleError, updateConfig]);
+	}, [handleError, showToast, updateConfig]);
 
 	const exportConfig = useCallback(() => {
 		const dump = JSON.stringify(config);
@@ -166,10 +162,10 @@ export const OptionsPage: FC<OptionsPageProps> = ({ messageHideDelay }) => {
 		resetConfigReq()
 			.then(updateConfig)
 			.then(() => {
-				addMessage(getMessage('settings_message_resetConfig_success'), 'info');
+				showToast({ body: getMessage('settings_message_resetConfig_success') });
 			})
 			.catch(handleError);
-	}, [addMessage, handleError, updateConfig]);
+	}, [handleError, showToast, updateConfig]);
 
 	//
 	// Changes control
@@ -197,10 +193,10 @@ export const OptionsPage: FC<OptionsPageProps> = ({ messageHideDelay }) => {
 				setModifiedConfig(null);
 				setErrors(null);
 
-				addMessage(getMessage('settings_message_saveChanges_success'), 'info');
+				showToast({ body: getMessage('settings_message_saveChanges_success') });
 			})
 			.catch(handleError);
-	}, [addMessage, handleError, modifiedConfig]);
+	}, [handleError, modifiedConfig, showToast]);
 
 	//
 	// Config actions
@@ -210,13 +206,13 @@ export const OptionsPage: FC<OptionsPageProps> = ({ messageHideDelay }) => {
 		setClearCacheProcess(true);
 		clearCacheReq()
 			.then(() => {
-				addMessage(getMessage('settings_message_clearCache_success'), 'info');
+				showToast({ body: getMessage('settings_message_clearCache_success') });
 			})
 			.catch(handleError)
 			.finally(() => {
 				setClearCacheProcess(false);
 			});
-	}, [addMessage, handleError]);
+	}, [handleError, showToast]);
 
 	//
 	// Utils
@@ -302,6 +298,7 @@ export const OptionsPage: FC<OptionsPageProps> = ({ messageHideDelay }) => {
 	}
 
 	const editMode = modifiedConfig !== null;
+	const ActionsStack = isMobile ? VStack : HStack;
 	return (
 		<Page>
 			<div className={cnOptionsPage()}>
@@ -312,10 +309,7 @@ export const OptionsPage: FC<OptionsPageProps> = ({ messageHideDelay }) => {
 								cnOptionsPage('IndentMixin', { horizontal: true }),
 							])}
 						>
-							<LayoutFlow
-								direction={isMobile ? 'vertical' : 'horizontal'}
-								indent="l"
-							>
+							<ActionsStack gap={3}>
 								<Button
 									view="action"
 									onPress={resetConfig}
@@ -337,7 +331,7 @@ export const OptionsPage: FC<OptionsPageProps> = ({ messageHideDelay }) => {
 										{getMessage('settings_button_export')}
 									</Button>
 								)}
-							</LayoutFlow>
+							</ActionsStack>
 						</div>
 
 						<div className={cnOptionsPage('OptionsTree')}>
@@ -350,12 +344,6 @@ export const OptionsPage: FC<OptionsPageProps> = ({ messageHideDelay }) => {
 							/>
 						</div>
 					</PageSection>
-
-					<ToastMessages
-						messages={messages}
-						haltMessages={haltMessages}
-						deleteMessage={deleteMessage}
-					/>
 				</div>
 
 				{editMode ? (

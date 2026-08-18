@@ -28,7 +28,3 @@
 	text-overflow: ellipsis;
 	overflow: hidden;
 }
-
-.TTSList-EntryControls {
-	min-width: max-content;
-}

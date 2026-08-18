@@ -8,12 +8,12 @@ import {
 	useRef,
 	useState,
 } from 'react';
+import { Spinner } from '@astryxdesign/core/Spinner';
+import { Tab, TabList } from '@astryxdesign/core/TabList';
 import { cn } from '@bem-react/classname';
 
 import { Button } from '@/components/primitives/Button/Button.bundle/desktop';
 import { Icon } from '@/components/primitives/Icon/Icon.bundle/desktop';
-import { Loader } from '@/components/primitives/Loader/Loader';
-import { Tab, TabList } from '@/components/primitives/TabsMenu/TabsMenu.bundle/desktop';
 import { getOptionsPageUrl, isMobileBrowser } from '@/lib/browser';
 import { getMessage } from '@/lib/language';
 import { TELEMETRY_EVENT_NAME } from '@/lib/telemetry';
@@ -307,7 +307,7 @@ export const PopupWindow: FC<PopupWindowProps> = ({
 			</>
 		);
 	} else {
-		content = <Loader className={cnPopupWindow('Loader')} />;
+		content = <Spinner />;
 	}
 
 	const contentStyle = useMemo(

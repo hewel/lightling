@@ -1,14 +1,14 @@
 import { FC, useCallback, useEffect, useRef, useState } from 'react';
+import { Banner } from '@astryxdesign/core/Banner';
 import { CheckboxInput } from '@astryxdesign/core/CheckboxInput';
 import { Spinner } from '@astryxdesign/core/Spinner';
+import { HStack, VStack } from '@astryxdesign/core/Stack';
 import { cn } from '@bem-react/classname';
 
 import { DictionaryButton } from '@/components/controls/DictionaryButton/DictionaryButton';
-import { LayoutFlow } from '@/components/layouts/LayoutFlow/LayoutFlow';
 import { TranslationCard } from '@/components/layouts/TranslationCard/TranslationCard';
 import { Button } from '@/components/primitives/Button/Button.bundle/universal';
 import { Icon } from '@/components/primitives/Icon/Icon.bundle/desktop';
-import { Notification } from '@/components/primitives/Notification/Notification.bundle/universal';
 import { Textinput } from '@/components/primitives/Textinput/Textinput.bundle/desktop';
 import { getOptionsPageUrl } from '@/lib/browser';
 import { useConcurrentTTS } from '@/lib/hooks/useConcurrentTTS';
@@ -284,16 +284,17 @@ export const TranslationsHistory: FC<TranslationsHistoryProps> = ({
 
 	return (
 		<div className={cnTranslationsHistory()}>
-			<LayoutFlow indent="xl">
+			<VStack gap={4}>
 				{!isHistoryEnabled && (
-					<Notification type="default">
-						{getLocalizedNode({
+					<Banner
+						status="info"
+						title={getLocalizedNode({
 							messageName: 'history_notification_disabled',
 							slots: {
 								preferences: buildLink(getOptionsPageUrl()),
 							},
 						})}
-					</Notification>
+					/>
 				)}
 				<Textinput
 					hasClear
@@ -308,7 +309,7 @@ export const TranslationsHistory: FC<TranslationsHistoryProps> = ({
 					}}
 				/>
 
-				<LayoutFlow direction="horizontal" indent="l">
+				<HStack gap={3}>
 					<CheckboxInput
 						label={getMessage('history_controls_selectAll')}
 						isLabelHidden
@@ -336,7 +337,7 @@ export const TranslationsHistory: FC<TranslationsHistoryProps> = ({
 					>
 						{getMessage('history_controls_clearHistory')}
 					</Button>
-				</LayoutFlow>
+				</HStack>
 
 				{noEntriesMessage && (
 					<div className={cnTranslationsHistory('EmptyResults')}>
@@ -408,7 +409,7 @@ export const TranslationsHistory: FC<TranslationsHistoryProps> = ({
 						</div>
 					)}
 				</div>
-			</LayoutFlow>
+			</VStack>
 		</div>
 	);
 };

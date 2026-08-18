@@ -1,5 +1,8 @@
 import { FC, ReactNode } from 'react';
-import { cn } from '@bem-react/classname';
+import { Badge } from '@astryxdesign/core/Badge';
+import { Card } from '@astryxdesign/core/Card';
+import { HStack, VStack } from '@astryxdesign/core/Stack';
+import { Text } from '@astryxdesign/core/Text';
 
 import { isMobileBrowser } from '@/lib/browser';
 import { getLanguageNameByCode } from '@/lib/language';
@@ -7,10 +10,6 @@ import { ITranslation } from '@/types/translation/Translation';
 
 import { Button } from '../../primitives/Button/Button.bundle/desktop';
 import { Icon } from '../../primitives/Icon/Icon.bundle/desktop';
-
-import './TranslationCard.css';
-
-export const cnTranslationCard = cn('TranslationCard');
 
 export type TranslationCardProps = {
 	translation: ITranslation;
@@ -31,64 +30,71 @@ export const TranslationCard: FC<TranslationCardProps> = ({
 	controlPanelSlot,
 	headStartSlot,
 }) => {
-	// TODO: make option to choose translation layout direction
-	const layout = isMobileBrowser() ? 'vertical' : 'horizontal';
+	const ContentStack = isMobileBrowser() ? VStack : HStack;
 
 	return (
-		<div className={cnTranslationCard({ layout })}>
-			<div className={cnTranslationCard('Head')}>
-				<div className={cnTranslationCard('Meta')}>
-					{headStartSlot}
-					{timestamp && (
-						<span className={cnTranslationCard('Date')}>
-							{new Date(timestamp).toLocaleDateString()}
-						</span>
-					)}
-				</div>
-				<div className={cnTranslationCard('Control')}>{controlPanelSlot}</div>
-			</div>
-			<div className={cnTranslationCard('Content')}>
-				<div className={cnTranslationCard('TextContainer')}>
-					<div className={cnTranslationCard('TextAction')}>
-						<Button
-							onPress={() => {
-								onPressTTS('original');
-							}}
-							view="clear"
-							size="s"
-						>
-							<Icon glyph="volume-up" scalable={false} />
-						</Button>
+		<Card width="100%">
+			<VStack gap={3}>
+				<HStack justify="between" align="center">
+					<HStack gap={2} align="center">
+						{headStartSlot}
+						{timestamp !== undefined ? (
+							<Text type="supporting" color="secondary" hasTabularNumbers>
+								{new Date(timestamp).toLocaleDateString()}
+							</Text>
+						) : null}
+					</HStack>
+					<HStack gap={2}>{controlPanelSlot}</HStack>
+				</HStack>
 
-						<span className={cnTranslationCard('Lang')}>
-							{getLanguageNameByCode(translation.from)}
-						</span>
-					</div>
-					<div className={cnTranslationCard('Text')}>
-						{translation.originalText}
-					</div>
-				</div>
-				<div className={cnTranslationCard('TextContainer')}>
-					<div className={cnTranslationCard('TextAction')}>
-						<Button
-							onPress={() => {
-								onPressTTS('translation');
-							}}
-							view="clear"
-							size="s"
-						>
-							<Icon glyph="volume-up" scalable={false} />
-						</Button>
+				<ContentStack gap={3}>
+					<VStack gap={2} width="100%">
+						<HStack gap={2} align="center">
+							<Button
+								onPress={() => {
+									onPressTTS('original');
+								}}
+								view="clear"
+								size="s"
+							>
+								<Icon glyph="volume-up" scalable={false} />
+							</Button>
+							<Badge
+								label={getLanguageNameByCode(translation.from)}
+								variant="neutral"
+							/>
+						</HStack>
+						<VStack isScrollable>
+							<Text as="div" type="body" textWrap="pretty">
+								{translation.originalText}
+							</Text>
+						</VStack>
+					</VStack>
 
-						<span className={cnTranslationCard('Lang')}>
-							{getLanguageNameByCode(translation.to)}
-						</span>
-					</div>
-					<div className={cnTranslationCard('Text')}>
-						{translation.translatedText}
-					</div>
-				</div>
-			</div>
-		</div>
+					<VStack gap={2} width="100%">
+						<HStack gap={2} align="center">
+							<Button
+								onPress={() => {
+									onPressTTS('translation');
+								}}
+								view="clear"
+								size="s"
+							>
+								<Icon glyph="volume-up" scalable={false} />
+							</Button>
+							<Badge
+								label={getLanguageNameByCode(translation.to)}
+								variant="neutral"
+							/>
+						</HStack>
+						<VStack isScrollable>
+							<Text as="div" type="body" textWrap="pretty">
+								{translation.translatedText}
+							</Text>
+						</VStack>
+					</VStack>
+				</ContentStack>
+			</VStack>
+		</Card>
 	);
 };

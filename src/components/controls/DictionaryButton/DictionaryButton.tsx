@@ -1,9 +1,9 @@
 import { FC } from 'react';
+import { IconButton } from '@astryxdesign/core/IconButton';
 
 import { getMessage } from '@/lib/language';
 import { ITranslation } from '@/types/translation/Translation';
 
-import { Button } from '../../primitives/Button/Button.bundle/universal';
 import { Icon } from '../../primitives/Icon/Icon.bundle/desktop';
 
 import { useDictionary } from './useDictionary';
@@ -13,21 +13,24 @@ export const DictionaryButton: FC<{ translation: ITranslation | null }> = ({
 }) => {
 	const dictionary = useDictionary(translation);
 
+	const label = getMessage(
+		dictionary.has ? 'dictionaryButton_delete' : 'dictionaryButton_add',
+	);
+
 	return (
-		<Button
-			view="clear"
-			size="s"
-			content="icon"
-			onPress={dictionary.toggle}
-			title={getMessage(
-				dictionary.has ? 'dictionaryButton_delete' : 'dictionaryButton_add',
-			)}
-			disabled={translation === null}
-		>
-			<Icon
-				glyph={dictionary.has ? 'bookmark' : 'bookmark-border'}
-				scalable={false}
-			/>
-		</Button>
+		<IconButton
+			label={label}
+			tooltip={label}
+			icon={
+				<Icon
+					glyph={dictionary.has ? 'bookmark' : 'bookmark-border'}
+					scalable={false}
+				/>
+			}
+			variant="ghost"
+			size="sm"
+			onClick={dictionary.toggle}
+			isDisabled={translation === null}
+		/>
 	);
 };

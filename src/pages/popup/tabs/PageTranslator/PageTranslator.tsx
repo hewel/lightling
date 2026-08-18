@@ -1,11 +1,11 @@
 import { FC, useCallback, useMemo } from 'react';
+import { Collapsible } from '@astryxdesign/core/Collapsible';
+import { Selector } from '@astryxdesign/core/Selector';
 import { cn } from '@bem-react/classname';
 
 import { PageTranslatorStats } from '@/app/ContentScript/PageTranslator/PageTranslator';
 import { LanguagePanel } from '@/components/controls/LanguagePanel/LanguagePanel';
 import { Button } from '@/components/primitives/Button/Button.bundle/desktop';
-import { Select } from '@/components/primitives/Select/Select.bundle/desktop';
-import { Spoiler } from '@/components/primitives/Spoiler/Spoiler.bundle/desktop';
 import { getLanguageNameByCode, getMessage } from '@/lib/language';
 import { MutableValue } from '@/types/utils';
 
@@ -120,8 +120,8 @@ export const PageTranslator: FC<PageTranslatorProps> = ({
 				languagePreferenceOptions.DISABLE,
 				languagePreferenceOptions.DISABLE_FOR_ALL,
 			].map((key) => ({
-				id: key,
-				content: getMessage(
+				value: key,
+				label: getMessage(
 					'pageTranslator_commonPreferences_autoTranslate_' + key,
 				),
 			})),
@@ -138,10 +138,8 @@ export const PageTranslator: FC<PageTranslatorProps> = ({
 				sitePreferenceOptions.ALWAYS_FOR_THIS_LANGUAGE,
 				sitePreferenceOptions.NEVER_FOR_THIS_LANGUAGE,
 			].map((key) => ({
-				id: key,
-				content: getMessage(
-					'pageTranslator_sitePreferences_autoTranslate_' + key,
-				),
+				value: key,
+				label: getMessage('pageTranslator_sitePreferences_autoTranslate_' + key),
 			})),
 		[],
 	);
@@ -187,10 +185,10 @@ export const PageTranslator: FC<PageTranslatorProps> = ({
 			</div>
 
 			{/* Options */}
-			<Spoiler
-				title={getMessage('pageTranslator_showTranslationPreferences')}
-				open={isShowOptions}
-				onToggle={setIsShowOptions}
+			<Collapsible
+				trigger={getMessage('pageTranslator_showTranslationPreferences')}
+				isOpen={isShowOptions}
+				onOpenChange={setIsShowOptions}
 			>
 				<div
 					className={cnPageTranslator('OptionContainer', { mobile: isMobile }, [
@@ -207,10 +205,14 @@ export const PageTranslator: FC<PageTranslatorProps> = ({
 								{getMessage('pageTranslator_option_autoTranslate')}
 							</span>
 							<span className={cnPageTranslator('OptionValue')}>
-								<Select
+								<Selector
+									label={getMessage(
+										'pageTranslator_commonPreferences_title',
+									)}
+									isLabelHidden
 									options={translateLanguageOptions}
 									value={languagePreferences}
-									setValue={setTranslateLangAdaptor}
+									onChange={setTranslateLangAdaptor}
 								/>
 							</span>
 						</div>
@@ -226,16 +228,20 @@ export const PageTranslator: FC<PageTranslatorProps> = ({
 								{getMessage('pageTranslator_option_autoTranslate')}
 							</span>
 							<span className={cnPageTranslator('OptionValue')}>
-								<Select
+								<Selector
+									label={getMessage(
+										'pageTranslator_sitePreferences_title',
+									)}
+									isLabelHidden
 									options={translateSiteOptions}
 									value={sitePreferences}
-									setValue={setTranslateStateAdaptor}
+									onChange={setTranslateStateAdaptor}
 								/>
 							</span>
 						</div>
 					</div>
 				</div>
-			</Spoiler>
+			</Collapsible>
 
 			{showCounters ? (
 				<>

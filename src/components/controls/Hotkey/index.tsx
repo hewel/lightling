@@ -1,8 +1,8 @@
 import { FC, useEffect, useState } from 'react';
+import { HStack } from '@astryxdesign/core/Stack';
 
 import { getMessage } from '@/lib/language';
 
-import { LayoutFlow } from '../../layouts/LayoutFlow/LayoutFlow';
 import { Button } from '../../primitives/Button/Button.bundle/universal';
 import { Textinput } from '../../primitives/Textinput/Textinput.bundle/desktop';
 
@@ -85,7 +85,7 @@ export const Hotkey: FC<HotkeyProps> = ({ value, onChange }) => {
 	}, [isFocus, onChange]);
 
 	return (
-		<LayoutFlow direction="horizontal" indent="m">
+		<HStack gap={2}>
 			<Textinput
 				onFocus={() => {
 					setIsFocus(true);
@@ -107,6 +107,6 @@ export const Hotkey: FC<HotkeyProps> = ({ value, onChange }) => {
 			>
 				{getMessage('component_hotkey_resetButton')}
 			</Button>
-		</LayoutFlow>
+		</HStack>
 	);
 };

@@ -21,7 +21,3 @@
 	text-overflow: ellipsis;
 	overflow: hidden;
 }
-
-.TranslatorsManager-EntryControls {
-	min-width: max-content;
-}

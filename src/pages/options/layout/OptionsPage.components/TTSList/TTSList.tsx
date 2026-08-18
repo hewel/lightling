@@ -1,12 +1,12 @@
 import { FC, useCallback, useContext, useEffect, useState } from 'react';
+import { Spinner } from '@astryxdesign/core/Spinner';
+import { HStack, VStack } from '@astryxdesign/core/Stack';
 import { cn } from '@bem-react/classname';
 
 import { CustomTTS } from '@/app/Background/TTS/TTSManager';
-import { LayoutFlow } from '@/components/layouts/LayoutFlow/LayoutFlow';
 import { ModalLayout } from '@/components/layouts/ModalLayout/ModalLayout';
 import { Button } from '@/components/primitives/Button/Button.bundle/universal';
 import { Icon } from '@/components/primitives/Icon/Icon.bundle/desktop';
-import { Loader } from '@/components/primitives/Loader/Loader';
 import { Modal } from '@/components/primitives/Modal/Modal.bundle/desktop';
 import { getMessage } from '@/lib/language';
 import { addCustomSpeaker } from '@/requests/backend/tts/addCustomSpeaker';
@@ -112,7 +112,7 @@ export const TTSList: FC<{
 	return (
 		<Modal visible={visible} onClose={onClose} scope={scope} preventBodyScroll>
 			{isLoading ? (
-				<Loader />
+				<Spinner />
 			) : (
 				<div className={cnTTSList({})}>
 					<ModalLayout
@@ -126,7 +126,7 @@ export const TTSList: FC<{
 							</Button>,
 						]}
 					>
-						<LayoutFlow direction="vertical" indent="m">
+						<VStack gap={2}>
 							{customSpeakers.map((speaker) => {
 								const { id, name } = speaker;
 
@@ -136,11 +136,7 @@ export const TTSList: FC<{
 											{name}
 										</span>
 
-										<LayoutFlow
-											direction="horizontal"
-											indent="m"
-											className={cnTTSList('EntryControls')}
-										>
+										<HStack gap={2}>
 											<Button
 												onPress={() => {
 													editSpeaker(speaker);
@@ -162,11 +158,11 @@ export const TTSList: FC<{
 											>
 												<Icon glyph="delete" scalable={false} />
 											</Button>
-										</LayoutFlow>
+										</HStack>
 									</div>
 								);
 							})}
-						</LayoutFlow>
+						</VStack>
 
 						{customSpeakers.length !== 0
 							? undefined

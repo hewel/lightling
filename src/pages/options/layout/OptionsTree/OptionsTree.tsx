@@ -1,10 +1,10 @@
 import { get, isEqual } from 'lodash';
 import { FC, ReactNode, useCallback } from 'react';
 import { CheckboxInput } from '@astryxdesign/core/CheckboxInput';
+import { Selector } from '@astryxdesign/core/Selector';
 
 import { Hotkey } from '@/components/controls/Hotkey';
 import { Button } from '@/components/primitives/Button/Button.bundle/desktop';
-import { Select } from '@/components/primitives/Select/Select.bundle/desktop';
 import { Textarea } from '@/components/primitives/Textarea/Textarea.bundle/desktop';
 import { Textinput } from '@/components/primitives/Textinput/Textinput.bundle/desktop';
 import { AppConfigType } from '@/types/runtime';
@@ -252,14 +252,21 @@ export const OptionsTree: FC<OptionsTreeProps> = ({
 				}
 				case 'SelectList': {
 					const selectValue =
-						typeof value === 'string' || Array.isArray(value)
+						typeof value === 'string'
 							? value
-							: undefined;
+							: Array.isArray(value)
+								? value[0]
+								: undefined;
 					return (
-						<Select
-							options={option.options}
+						<Selector
+							label={title ?? path ?? 'Option value'}
+							isLabelHidden
+							options={option.options.map(({ id, content }) => ({
+								value: id,
+								label: content,
+							}))}
 							value={selectValue}
-							setValue={(newValue?: string | string[]) => {
+							onChange={(newValue) => {
 								setOptionValueProxy(path, newValue);
 							}}
 						/>
