@@ -1,5 +1,4 @@
 import {
-	ComponentType,
 	createContext,
 	FC,
 	ReactNode,
@@ -9,16 +8,12 @@ import {
 	useRef,
 	useState,
 } from 'react';
-import {
-	PaneItem,
-	TabsPanes,
-} from 'react-elegant-ui/esm/components/TabsPanes/TabsPanes.bundle/desktop';
 import { cn } from '@bem-react/classname';
 
 import { Button } from '@/components/primitives/Button/Button.bundle/desktop';
 import { Icon } from '@/components/primitives/Icon/Icon.bundle/desktop';
 import { Loader } from '@/components/primitives/Loader/Loader';
-import { TabsMenu } from '@/components/primitives/TabsMenu/TabsMenu.bundle/desktop';
+import { Tab, TabList } from '@/components/primitives/TabsMenu/TabsMenu.bundle/desktop';
 import { getOptionsPageUrl, isMobileBrowser } from '@/lib/browser';
 import { getMessage } from '@/lib/language';
 import { TELEMETRY_EVENT_NAME } from '@/lib/telemetry';
@@ -43,15 +38,25 @@ export interface TabData {
 	isMobile: boolean;
 }
 
-export type InitFn<T> = (props: TabData) => Promise<T>;
+export type InitFn<T extends object> = (props: TabData) => Promise<T>;
 
-export type TabComponent<I extends unknown | InitFn<any> = unknown> = ComponentType<
-	TabData & { initData: I extends InitFn<infer X> ? X : unknown }
-> & { init: I };
+type PopupTabInitData = object;
+type TabInitFunction = InitFn<PopupTabInitData>;
+type TabInitData<I extends TabInitFunction> = I extends InitFn<infer Data> ? Data : never;
+type TabRenderer<I extends TabInitFunction> = {
+	bivarianceHack(props: TabData & { initData: TabInitData<I> }): ReactNode;
+}['bivarianceHack'];
+
+export type TabComponent<I extends TabInitFunction> = TabRenderer<I> & { init: I };
 
 export interface IPopupWindowTab {
 	id: string;
-	component: TabComponent<InitFn<any>>;
+	component: TabComponent<TabInitFunction>;
+}
+
+interface PaneItem {
+	id: string;
+	content: ReactNode;
 }
 
 export interface PopupWindowProps {
@@ -239,9 +244,7 @@ export const PopupWindow: FC<PopupWindowProps> = ({
 					};
 
 					// Call and await init function
-					const initFn = Pane.init;
-					const initData =
-						initFn !== undefined ? await initFn(paneProps) : undefined;
+					const initData = await Pane.init(paneProps);
 
 					return {
 						id,
@@ -270,23 +273,35 @@ export const PopupWindow: FC<PopupWindowProps> = ({
 		content = (
 			<>
 				<div className={cnPopupWindow('Tabs')}>
-					<TabsMenu
+					<TabList
 						className={cnPopupWindow('TabsMenu')}
-						layout="horizontal"
-						size="m"
-						view="motion"
-						tabs={tabs.map(({ id }) => ({
-							id,
-							content: getMessage(`popup_tab_${id}`),
-						}))}
-						activeTab={activeTabId}
-						setActiveTab={setActiveTab}
-					/>
+						layout="fill"
+						hasDivider
+						value={activeTabId}
+						onChange={(id) => setActiveTab?.(id)}
+						aria-label={getMessage('ext_name')}
+					>
+						{tabs.map(({ id }) => (
+							<Tab
+								key={id}
+								value={id}
+								label={getMessage(`popup_tab_${id}`)}
+							/>
+						))}
+					</TabList>
 				</div>
 
 				<div className={cnPopupWindow('Content')}>
 					<PopupWindowContext.Provider value={{ activeTab: activeTabId }}>
-						<TabsPanes panes={panes} activePane={activeTabId} renderAll />
+						{panes.map(({ id, content }) => (
+							<section
+								key={id}
+								aria-label={getMessage(`popup_tab_${id}`)}
+								hidden={id !== activeTabId}
+							>
+								{content}
+							</section>
+						))}
 					</PopupWindowContext.Provider>
 				</div>
 			</>

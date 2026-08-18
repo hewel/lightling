@@ -30,17 +30,13 @@
 }
 
 /* Inputs */
-.OptionsPage .Textarea {
-	width: min(100%, 600px);
+.OptionsPage .TextareaAdapter {
+	width: min(100%, calc(var(--spacing-10) * 15));
 }
 
-.OptionsPage .Textarea-Wrap {
+.OptionsPage .TextareaAdapter-Field textarea {
 	min-height: 5rem;
 	max-height: 20rem;
-}
-
-.OptionsPage .Textarea-Control {
-	position: absolute;
 }
 
 /* IndentMixin */

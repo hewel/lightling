@@ -1,3 +1,2 @@
-import '../Tab/TabsMenu-Tab.css';
-
-export * from 'react-elegant-ui/esm/components/TabsMenu/TabsMenu.bundle/desktop';
+export { Tab, TabList } from '@astryxdesign/core/TabList';
+export type { TabListProps, TabProps } from '@astryxdesign/core/TabList';

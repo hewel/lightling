@@ -1,4 +1,4 @@
-import { readFile, stat } from 'node:fs/promises';
+import { readdir, readFile, stat } from 'node:fs/promises';
 import { dirname, isAbsolute, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -9,6 +9,10 @@ const packagePath = resolve(projectDirectory, 'package.json');
 const chromiumUpdateUrl =
 	'https://translate-tools.github.io/linguist/chromium_updates.xml';
 const firefoxStandaloneId = '{e3fc2d33-09fc-4fe8-9331-d0a464698035}';
+const astryxThemeLayer = /@layer\s+astryx-theme\b/;
+const astryxNeutralSelector = /\[data-astryx-theme\s*=\s*(?:neutral|["']neutral["'])\]/;
+const astryxNeutralDestructiveButtonSelector =
+	/\[data-astryx-theme\s*=\s*(?:neutral|["']neutral["'])\]\s+\.astryx-button\.destructive\b/;
 
 const chromiumPermissions = ['storage', 'tabs', 'contextMenus', 'scripting', 'offscreen'];
 const firefoxPermissions = ['storage', 'tabs', 'contextMenus', 'scripting', '<all_urls>'];
@@ -413,6 +417,69 @@ async function validateReferencedFiles(problems, outputDirectory, references) {
 	}
 }
 
+async function findCssFiles(directory) {
+	const paths = [];
+	const entries = await readdir(directory, { withFileTypes: true });
+
+	for (const entry of entries) {
+		const path = resolve(directory, entry.name);
+
+		if (entry.isDirectory()) {
+			paths.push(...(await findCssFiles(path)));
+		} else if (entry.isFile() && entry.name.endsWith('.css')) {
+			paths.push(path);
+		}
+	}
+
+	return paths;
+}
+
+export async function findAstryxThemeArtifactProblems(outputDirectory) {
+	let cssPaths;
+
+	try {
+		cssPaths = await findCssFiles(outputDirectory);
+	} catch (error) {
+		return [`could not inspect emitted CSS: ${error.message}`];
+	}
+
+	if (cssPaths.length === 0) {
+		return ['build must emit at least one CSS bundle'];
+	}
+
+	const problems = [];
+
+	for (const cssPath of cssPaths) {
+		let css;
+
+		try {
+			css = await readFile(cssPath, 'utf8');
+		} catch (error) {
+			problems.push(
+				`could not read emitted CSS ${JSON.stringify(relative(outputDirectory, cssPath))}: ${error.message}`,
+			);
+			continue;
+		}
+
+		const relativeCssPath = relative(outputDirectory, cssPath);
+		if (!astryxThemeLayer.test(css)) {
+			problems.push(`${relativeCssPath} is missing the Astryx neutral theme layer`);
+		}
+		if (!astryxNeutralSelector.test(css)) {
+			problems.push(
+				`${relativeCssPath} is missing the Astryx neutral theme selector`,
+			);
+		}
+		if (!astryxNeutralDestructiveButtonSelector.test(css)) {
+			problems.push(
+				`${relativeCssPath} is missing the Astryx neutral component overrides`,
+			);
+		}
+	}
+
+	return problems;
+}
+
 async function validateVariant(variant, packageVersion) {
 	const problems = [];
 	const references = sharedRuntimeAssets.map((path) => ({
@@ -436,6 +503,8 @@ async function validateVariant(variant, packageVersion) {
 
 		return [`could not inspect ${relativeOutputDirectory}: ${error.message}`];
 	}
+
+	problems.push(...(await findAstryxThemeArtifactProblems(outputDirectory)));
 
 	let manifest;
 	try {

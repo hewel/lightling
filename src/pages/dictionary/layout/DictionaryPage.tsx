@@ -1,7 +1,6 @@
 import { getLanguageCodesISO639 } from 'anylang/languages';
 import Papa from 'papaparse';
 import { FC, useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
-import { useImmutableCallback } from 'react-elegant-ui/esm/hooks/useImmutableCallback';
 import { cn } from '@bem-react/classname';
 
 import { LayoutFlow } from '@/components/layouts/LayoutFlow/LayoutFlow';
@@ -16,6 +15,7 @@ import { useToastMessages } from '@/components/primitives/ToastMessages/useToast
 import { isMobileBrowser } from '@/lib/browser';
 import { saveFile } from '@/lib/files';
 import { useConcurrentTTS } from '@/lib/hooks/useConcurrentTTS';
+import { useImmutableCallback } from '@/lib/hooks/useImmutableCallback';
 import { getLanguageNameByCode, getMessage } from '@/lib/language';
 import { TELEMETRY_EVENT_NAME } from '@/lib/telemetry';
 import { telemetry } from '@/lib/telemetry/singleton';

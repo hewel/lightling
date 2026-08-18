@@ -1,6 +1,6 @@
 import { get, isEqual } from 'lodash';
 import { FC, ReactNode, useCallback } from 'react';
-import { Checkbox } from 'react-elegant-ui/esm/components/Checkbox/Checkbox.bundle/desktop';
+import { CheckboxInput } from '@astryxdesign/core/CheckboxInput';
 
 import { Hotkey } from '@/components/controls/Hotkey';
 import { Button } from '@/components/primitives/Button/Button.bundle/desktop';
@@ -53,6 +53,9 @@ export interface OptionHotkey {
 	type: 'Hotkey';
 }
 
+type HeadingLevel = 1 | 2 | 3 | 4 | 5 | 6;
+type OptionValue = boolean | null | number | string | string[] | undefined;
+
 export interface OptionItem {
 	title?: string;
 	description?: ReactNode;
@@ -72,17 +75,26 @@ export interface OptionItem {
 
 export interface OptionsGroup {
 	title: string;
-	titleSize?: 1 | 2 | 3 | 4 | 5 | 6;
+	titleSize?: HeadingLevel;
 	groupContent: (OptionsGroup | OptionItem | undefined)[];
 }
 
 interface OptionsTreeProps {
 	tree: OptionsGroup[];
 	config: AppConfigType;
-	modifiedConfig: null | Record<string, any>;
+	modifiedConfig: null | Record<string, OptionValue>;
 	errors?: Record<string, string>;
-	setOptionValue: (name: string, value: any) => void;
+	setOptionValue: (name: string, value: OptionValue) => void;
 }
+
+const normalizeHeadingLevel = (level: number): HeadingLevel => {
+	if (level <= 1) return 1;
+	if (level === 2) return 2;
+	if (level === 3) return 3;
+	if (level === 4) return 4;
+	if (level === 5) return 5;
+	return 6;
+};
 
 export const OptionsTree: FC<OptionsTreeProps> = ({
 	tree,
@@ -92,7 +104,7 @@ export const OptionsTree: FC<OptionsTreeProps> = ({
 	setOptionValue,
 }) => {
 	const setOptionValueProxy = useCallback(
-		(name: string | undefined, value: any) => {
+		(name: string | undefined, value: OptionValue) => {
 			if (name === undefined) return;
 			setOptionValue(name, value);
 		},
@@ -100,25 +112,33 @@ export const OptionsTree: FC<OptionsTreeProps> = ({
 	);
 
 	const renderOption = useCallback(
-		({ path, optionContent: option }: OptionItem, value: any, error?: string) => {
+		(
+			{ title, path, optionContent: option }: OptionItem,
+			value: OptionValue,
+			error?: string,
+		) => {
 			switch (option.type) {
 				case 'Checkbox': {
 					const reverse = option.reverse ?? false;
 					const checked = value === undefined ? undefined : reverse != !!value;
+					const label = option.text || title || path || 'Option';
 					return (
-						<Checkbox
-							checked={checked}
-							setChecked={(checked) => {
+						<CheckboxInput
+							label={label}
+							isLabelHidden={!option.text}
+							value={checked ?? false}
+							onChange={(checked) => {
 								setOptionValueProxy(path, reverse != checked);
 							}}
-							label={option.text}
 						/>
 					);
 				}
 				case 'Hotkey': {
+					const hotkeyValue =
+						typeof value === 'string' || value === null ? value : null;
 					return (
 						<Hotkey
-							value={value}
+							value={hotkeyValue}
 							onChange={(value) => {
 								setOptionValueProxy(path, value);
 							}}
@@ -143,10 +163,15 @@ export const OptionsTree: FC<OptionsTreeProps> = ({
 								const checked =
 									(checkbox.reverse ?? false) !== isExistValue;
 								return (
-									<Checkbox
+									<CheckboxInput
 										key={index}
-										checked={checked}
-										setChecked={(checked) => {
+										label={
+											checkbox.text ||
+											`${title ?? path ?? 'Option'} ${index + 1}`
+										}
+										isLabelHidden={!checkbox.text}
+										value={checked}
+										onChange={(checked) => {
 											setOptionValueProxy(
 												path,
 												value
@@ -159,7 +184,6 @@ export const OptionsTree: FC<OptionsTreeProps> = ({
 													),
 											);
 										}}
-										label={checkbox.text}
 									/>
 								);
 							})}
@@ -180,7 +204,13 @@ export const OptionsTree: FC<OptionsTreeProps> = ({
 					return (
 						<Textarea
 							autoResize
-							state={error !== undefined ? 'error' : undefined}
+							label={title ?? path ?? 'Option value'}
+							isLabelHidden
+							status={
+								error !== undefined
+									? { type: 'error', message: error }
+									: undefined
+							}
 							value={Array.isArray(value) ? value.join('\n') : undefined}
 							spellCheck={false}
 							onInputText={(value) => {
@@ -194,11 +224,21 @@ export const OptionsTree: FC<OptionsTreeProps> = ({
 							}}
 						/>
 					);
-				case 'InputNumber':
+				case 'InputNumber': {
+					const inputValue =
+						typeof value === 'string' || typeof value === 'number'
+							? value
+							: undefined;
 					return (
 						<Textinput
-							state={error !== undefined ? 'error' : undefined}
-							value={value}
+							label={title ?? path ?? 'Option value'}
+							isLabelHidden
+							status={
+								error !== undefined
+									? { type: 'error', message: error }
+									: undefined
+							}
+							value={inputValue}
 							spellCheck={false}
 							onInputText={(value) => {
 								const parsedNumber = +value;
@@ -209,16 +249,22 @@ export const OptionsTree: FC<OptionsTreeProps> = ({
 							}}
 						/>
 					);
-				case 'SelectList':
+				}
+				case 'SelectList': {
+					const selectValue =
+						typeof value === 'string' || Array.isArray(value)
+							? value
+							: undefined;
 					return (
 						<Select
 							options={option.options}
-							value={value}
+							value={selectValue}
 							setValue={(newValue?: string | string[]) => {
 								setOptionValueProxy(path, newValue);
 							}}
 						/>
 					);
+				}
 			}
 		},
 		[setOptionValueProxy],
@@ -226,7 +272,8 @@ export const OptionsTree: FC<OptionsTreeProps> = ({
 
 	const renderTree = useCallback(
 		(tree: OptionsGroup['groupContent'], globalLevel = 1) => {
-			const modifiedConfigStorage = modifiedConfig === null ? {} : modifiedConfig;
+			const modifiedConfigStorage: Readonly<Record<string, OptionValue>> =
+				modifiedConfig ?? {};
 
 			return tree.map((item, index) => {
 				if (item === undefined) return undefined;
@@ -234,7 +281,7 @@ export const OptionsTree: FC<OptionsTreeProps> = ({
 				if ('optionContent' in item) {
 					const { title, description, path } = item;
 
-					let configValue = undefined;
+					let configValue: OptionValue;
 					let changed = false;
 
 					if (path !== undefined) {
@@ -259,15 +306,8 @@ export const OptionsTree: FC<OptionsTreeProps> = ({
 						</OptionSection>
 					);
 				} else {
-					const localLevel = (
-						item.titleSize !== undefined
-							? item.titleSize
-							: globalLevel > 6
-								? 6
-								: globalLevel < 1
-									? 1
-									: globalLevel
-					) as 1 | 2 | 3 | 4 | 5 | 6;
+					const localLevel =
+						item.titleSize ?? normalizeHeadingLevel(globalLevel);
 
 					return (
 						<PageSection

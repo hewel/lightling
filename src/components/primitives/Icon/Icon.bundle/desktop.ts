@@ -1,47 +1,88 @@
-import { createElement, FC } from 'react';
-import { withModIconGlyphCancel } from 'react-elegant-ui/esm/components/Icon/_glyph/Icon_glyph_cancel';
-import { withModIconGlyphCheck } from 'react-elegant-ui/esm/components/Icon/_glyph/Icon_glyph_check';
-import { withModIconGlyphClose } from 'react-elegant-ui/esm/components/Icon/_glyph/Icon_glyph_close';
-import { withModIconGlyphExpandMore } from 'react-elegant-ui/esm/components/Icon/_glyph/Icon_glyph_expand-more';
-import { withModIconGlyphUnfoldMore } from 'react-elegant-ui/esm/components/Icon/_glyph/Icon_glyph_unfold-more';
-import { withModIconSizeM } from 'react-elegant-ui/esm/components/Icon/_size/Icon_size_m';
-import { withModIconSizeS } from 'react-elegant-ui/esm/components/Icon/_size/Icon_size_s';
-import { Icon as BaseIcon } from 'react-elegant-ui/esm/components/Icon/Icon';
-import { compose, composeU, ExtractProps } from 'react-elegant-ui/esm/lib/compose';
+import { createElement } from 'react';
+import * as AstryxIconModule from '@astryxdesign/core/Icon';
 
-import { withGlyphAutoFix } from '../_glyph/Icon_glyph_autofix';
-import { withGlyphBookmark } from '../_glyph/Icon_glyph_bookmark';
-import { withGlyphBookmarkBorder } from '../_glyph/Icon_glyph_bookmark-border';
-import { withGlyphDelete } from '../_glyph/Icon_glyph_delete';
-import { withGlyphDictionary } from '../_glyph/Icon_glyph_dictionary';
-import { withGlyphHistory } from '../_glyph/Icon_glyph_history';
-import { withGlyphSettings } from '../_glyph/Icon_glyph_settings';
-import { withGlyphSwapHoriz } from '../_glyph/Icon_glyph_swap-horiz';
-import { withGlyphVolumeUp } from '../_glyph/Icon_glyph_volume-up';
+import { IconGlyphAutoFix } from '../_glyph/Icon_glyph_autofix';
+import { IconGlyphBookmark } from '../_glyph/Icon_glyph_bookmark';
+import { IconGlyphBookmarkBorder } from '../_glyph/Icon_glyph_bookmark-border';
+import { IconGlyphDelete } from '../_glyph/Icon_glyph_delete';
+import { IconGlyphDictionary } from '../_glyph/Icon_glyph_dictionary';
+import { IconGlyphHistory } from '../_glyph/Icon_glyph_history';
+import { IconGlyphSettings } from '../_glyph/Icon_glyph_settings';
+import { IconGlyphSwapHoriz } from '../_glyph/Icon_glyph_swap-horiz';
+import { IconGlyphVolumeUp } from '../_glyph/Icon_glyph_volume-up';
 
-const ComposedIcon = compose(
-	composeU(
-		withGlyphSettings,
-		withGlyphSwapHoriz,
-		withGlyphDictionary,
-		withGlyphDelete,
-		withGlyphVolumeUp,
-		withGlyphAutoFix,
-		withGlyphBookmark,
-		withGlyphBookmarkBorder,
-		withGlyphHistory,
+const AstryxIcon = AstryxIconModule.Icon;
+type AstryxIconProps = AstryxIconModule.IconProps;
+type IconType = AstryxIconModule.IconType;
 
-		withModIconGlyphUnfoldMore,
-		withModIconGlyphExpandMore,
-		withModIconGlyphClose,
-		withModIconGlyphCheck,
-		withModIconGlyphCancel,
-	),
+export type LegacyIconGlyph =
+	| 'autoFix'
+	| 'bookmark'
+	| 'bookmark-border'
+	| 'cancel'
+	| 'check'
+	| 'close'
+	| 'delete'
+	| 'dictionary'
+	| 'expand-more'
+	| 'history'
+	| 'settings'
+	| 'swap-horiz'
+	| 'unfold-more'
+	| 'volume-up';
 
-	composeU(withModIconSizeM, withModIconSizeS),
-)(BaseIcon);
+type LegacyIconSize = 's' | 'm' | 'l';
 
-export type IIconProps = ExtractProps<typeof ComposedIcon>;
+export interface IIconProps extends Omit<AstryxIconProps, 'icon' | 'ref' | 'size'> {
+	glyph?: LegacyIconGlyph;
+	icon?: AstryxIconProps['icon'];
+	scalable?: boolean;
+	size?: LegacyIconSize;
+}
 
-export const Icon: FC<IIconProps> = ({ size = 'm', scalable = true, ...props }) =>
-	createElement(ComposedIcon, { ...props, size, scalable });
+const iconGlyphs: Record<LegacyIconGlyph, AstryxIconProps['icon']> = {
+	autoFix: IconGlyphAutoFix,
+	bookmark: IconGlyphBookmark,
+	'bookmark-border': IconGlyphBookmarkBorder,
+	cancel: 'close',
+	check: 'check',
+	close: 'close',
+	delete: IconGlyphDelete,
+	dictionary: IconGlyphDictionary,
+	'expand-more': 'chevronDown',
+	history: IconGlyphHistory,
+	settings: IconGlyphSettings,
+	'swap-horiz': IconGlyphSwapHoriz,
+	'unfold-more': 'arrowsUpDown',
+	'volume-up': IconGlyphVolumeUp,
+};
+
+const sizes: Record<LegacyIconSize, NonNullable<AstryxIconProps['size']>> = {
+	s: 'sm',
+	m: 'md',
+	l: 'lg',
+};
+
+/**
+ * Compatibility adapter for the extension's legacy glyph names. New callers
+ * should pass Astryx semantic icon names or typed SVG components via `icon`.
+ */
+export function Icon({
+	glyph,
+	icon,
+	scalable: _scalable,
+	size = 'm',
+	...props
+}: IIconProps) {
+	const resolvedIcon = icon ?? (glyph === undefined ? undefined : iconGlyphs[glyph]);
+
+	if (resolvedIcon === undefined) return null;
+
+	return createElement(AstryxIcon, {
+		...props,
+		icon: resolvedIcon,
+		size: sizes[size],
+	});
+}
+
+export type { IconType };

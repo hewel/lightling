@@ -1,10 +1,10 @@
 import { FC, useContext, useEffect, useRef, useState } from 'react';
-import { useImmutableCallback } from 'react-elegant-ui/esm/hooks/useImmutableCallback';
 import { cn } from '@bem-react/classname';
 
 import { Button } from '@/components/primitives/Button/Button.bundle/universal';
 import { IModalProps, Modal } from '@/components/primitives/Modal/Modal.bundle/desktop';
 import { Textinput } from '@/components/primitives/Textinput/Textinput.bundle/desktop';
+import { useImmutableCallback } from '@/lib/hooks/useImmutableCallback';
 import { getMessage } from '@/lib/language';
 
 import { OptionsModalsContext } from '../../OptionsPage';
@@ -89,6 +89,7 @@ export const Editor: FC<EditorProps> = ({ data, onClose, onSave, error }) => {
 						value={name}
 						onInputText={setName}
 						placeholder={getMessage('editorWindow_data_title')}
+						width="100%"
 					/>
 				</div>
 
@@ -106,7 +107,10 @@ export const Editor: FC<EditorProps> = ({ data, onClose, onSave, error }) => {
 					<Button key="save" view="action" onPress={onSavePress}>
 						{getMessage('editorWindow_save')}
 					</Button>
-					<Button key="close" onPress={onClose}>
+					<Button
+						key="close"
+						onPress={(event) => onClose?.(event.nativeEvent, 'click')}
+					>
 						{getMessage('editorWindow_close')}
 					</Button>
 				</div>

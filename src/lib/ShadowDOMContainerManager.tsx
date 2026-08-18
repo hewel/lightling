@@ -3,6 +3,8 @@ import { createRoot, Root } from 'react-dom/client';
 import root from 'react-shadow';
 import browser from 'webextension-polyfill';
 
+import { AstryxShadowRootProvider } from '../components/providers/AstryxProvider';
+
 // Set position explicitly
 const rootContainerStyles = {
 	all: 'unset',
@@ -74,7 +76,7 @@ export class ShadowDOMContainerManager {
 						href={browser.runtime.getURL(path)}
 					/>
 				))}
-				{child}
+				<AstryxShadowRootProvider>{child}</AstryxShadowRootProvider>
 			</root.div>,
 		);
 	};

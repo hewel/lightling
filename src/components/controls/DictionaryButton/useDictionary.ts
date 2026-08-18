@@ -1,8 +1,8 @@
 import { isEqual } from 'lodash';
 import { useCallback, useEffect, useState } from 'react';
-import { useImmutableCallback } from 'react-elegant-ui/esm/hooks/useImmutableCallback';
 
 import { isExtensionContext } from '@/lib/browser';
+import { useImmutableCallback } from '@/lib/hooks/useImmutableCallback';
 import { TELEMETRY_EVENT_NAME } from '@/lib/telemetry';
 import { trackClientEvent } from '@/requests/backend/telemetry';
 import {

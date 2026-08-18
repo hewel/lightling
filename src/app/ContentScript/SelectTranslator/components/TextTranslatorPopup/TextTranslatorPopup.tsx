@@ -1,12 +1,10 @@
 import React, { FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { isKeyCode, Keys } from 'react-elegant-ui/esm/lib/keyboard';
 import { cn } from '@bem-react/classname';
 
 import { Modal } from '@/components/primitives/Modal/Modal.bundle/desktop';
 import { Popup } from '@/components/primitives/Popup/Popup';
 import { isMobileBrowser } from '@/lib/browser';
 import LogoElement from '@/res/logo-icon.svg';
-import { theme } from '@/themes/presets/default/desktop';
 
 import {
 	TextTranslator,
@@ -30,8 +28,10 @@ export interface TextTranslatorPopupProps extends Omit<
 	closeHandler: () => void;
 }
 
-const cnTheme = cn('Theme');
 const cnTextTranslatorPopup = cn('TextTranslatorPopup');
+
+const isActivationKey = (code: string) =>
+	code === 'Enter' || code === 'NumpadEnter' || code === 'Space';
 
 // TODO: split styles
 export const TextTranslatorPopup: FC<TextTranslatorPopupProps> = ({
@@ -192,7 +192,7 @@ export const TextTranslatorPopup: FC<TextTranslatorPopupProps> = ({
 					tabIndex={0}
 					ref={translateButtonRef}
 					onKeyDown={(evt) => {
-						if (isKeyCode(evt.code, [Keys.ENTER, Keys.SPACE])) {
+						if (isActivationKey(evt.code)) {
 							evt.preventDefault();
 							doTranslate();
 						}
@@ -214,7 +214,7 @@ export const TextTranslatorPopup: FC<TextTranslatorPopupProps> = ({
 	// Mobile view
 	if (isMobile && translating) {
 		return (
-			<div className={cnTextTranslatorPopup({ mobile: true }, [cnTheme(theme)])}>
+			<div className={cnTextTranslatorPopup({ mobile: true })}>
 				<Modal view="default" visible preventBodyScroll zIndex={zIndex}>
 					{content}
 				</Modal>
@@ -231,7 +231,7 @@ export const TextTranslatorPopup: FC<TextTranslatorPopupProps> = ({
 			<div style={cursorStyle} ref={cursorRef} />
 
 			{/* Render popup attached to cursor */}
-			<div className={cnTextTranslatorPopup({}, [cnTheme(theme)])}>
+			<div className={cnTextTranslatorPopup()}>
 				<Popup
 					target="anchor"
 					anchor={cursorRef}

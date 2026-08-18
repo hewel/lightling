@@ -47,7 +47,19 @@ npm run prepare:extension
 npx extension dev --browser=firefox
 ```
 
-If you change theme tokens, rebuild them with `npm run build:tokens`.
+The interface uses ASTRYX with the neutral theme. Before changing UI, use the
+project-local CLI to discover the supported components, layouts, and tokens:
+
+```sh
+npx astryx build "describe the interface"
+npx astryx component ComponentName
+npx astryx docs tokens
+```
+
+Run `npx astryx doctor` after changing ASTRYX dependencies or theme wiring.
+The generated conventions in `AGENTS.md` are the source of truth for new UI.
+`npm run prepare:extension` also refreshes the compiler-safe neutral theme CSS;
+do not edit `src/themes/astryx-neutral.css` directly.
 
 To debug on Android, first stage the Firefox variant with `make buildFirefox`, then run `make devAndroidFirefox`. The Android command loads the extension from `build/firefox`. See the [Android debugging instructions](./AndroidDebug.md) for device setup.
 

@@ -32,15 +32,31 @@
 	width: 100%;
 }
 
-.TextTranslator-Input .Textarea-Wrap {
+.TextTranslator-Input .TextareaAdapter-ControlPlane {
 	display: flex;
-	height: 150px;
+	height: calc(var(--spacing-12) * 3 + var(--spacing-1-5));
 	flex-direction: column;
+	gap: var(--spacing-1);
 }
 
-.TextTranslator-Input .Textarea-Control {
-	min-height: initial;
-	max-height: initial;
+.TextTranslator-Input .TextareaAdapter-Input {
+	flex: 1 1 auto;
+	min-height: 0;
+}
+
+.TextTranslator-Input .TextareaAdapter-Input > * {
+	height: 100%;
+}
+
+.TextTranslator-Input .TextareaAdapter-Field {
+	height: 100%;
+}
+
+.TextTranslator-Input .TextareaAdapter-Field textarea {
+	height: 100%;
+	min-height: 0;
+	max-height: none;
+	resize: none;
 }
 
 .TextTranslator-Input .TextTranslator-TextActions {

@@ -8,6 +8,12 @@ Object.defineProperty(globalThis, 'IS_REACT_ACT_ENVIRONMENT', {
 	value: true,
 });
 
+function requireElement<T extends Element>(element: T | null): T {
+	if (element === null) throw new Error('Expected element to be rendered');
+
+	return element;
+}
+
 type PopupHarnessProps = Pick<IPopupProps, 'onClose' | 'visible'> & {
 	updateRef?: AnchoredPopupProps['UNSTABLE_updatePosition'];
 };
@@ -68,6 +74,23 @@ const ReplacedAnchorHarness: FC<{
 	);
 };
 
+const EssentialRefHarness: FC<{
+	onClose: NonNullable<IPopupProps['onClose']>;
+}> = ({ onClose }) => {
+	const essentialRef = useRef<HTMLButtonElement>(null);
+
+	return (
+		<>
+			<button ref={essentialRef} type="button">
+				Essential control
+			</button>
+			<Popup essentialRefs={[essentialRef]} onClose={onClose} visible>
+				Popup content
+			</Popup>
+		</>
+	);
+};
+
 describe('Popup', () => {
 	let container: HTMLDivElement;
 	let host: HTMLDivElement;
@@ -96,6 +119,11 @@ describe('Popup', () => {
 		await act(async () => Promise.resolve());
 	}
 
+	function click(target: EventTarget) {
+		target.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+		target.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+	}
+
 	it('positions inline with absolute top/left styles and exposes manual updates', async () => {
 		const updateRef = createRef<() => void>();
 
@@ -103,6 +131,7 @@ describe('Popup', () => {
 
 		const popup = container.querySelector<HTMLElement>('.Popup');
 		expect(popup).not.toBeNull();
+		expect(popup?.classList.contains('astryx-card')).toBe(true);
 		expect(popup?.classList.contains('Popup_view_default')).toBe(true);
 		expect(popup?.classList.contains('Popup_visible')).toBe(true);
 		expect(popup?.dataset.popperPlacement).toBeTruthy();
@@ -122,6 +151,19 @@ describe('Popup', () => {
 		const popup = container.querySelector<HTMLElement>('.Popup');
 		expect(popup).not.toBeNull();
 		expect(popup?.classList.contains('Popup_visible')).toBe(false);
+		expect(popup?.style.visibility).toBe('hidden');
+	});
+
+	it('unmounts hidden popups when keepMounted is false', async () => {
+		await act(async () => {
+			root.render(
+				<Popup keepMounted={false} view="default" visible={false}>
+					Hidden popup
+				</Popup>,
+			);
+		});
+
+		expect(container.querySelector('.Popup')).toBeNull();
 	});
 
 	it('supports the non-anchored popup shell', async () => {
@@ -140,6 +182,50 @@ describe('Popup', () => {
 		expect(popup?.style.position).toBe('');
 	});
 
+	it('preserves root attributes, refs, slots, z-index, and tail hooks', async () => {
+		const innerRef = createRef<HTMLDivElement>();
+		const tailRef = createRef<HTMLDivElement>();
+		const onRenderTail = vi.fn((tail) => tail);
+		const renderChildren = vi.fn(() => <span data-slot="content">Content</span>);
+
+		await act(async () => {
+			root.render(
+				<Popup
+					addonAfter={<span data-slot="after">After</span>}
+					addonBefore={<span data-slot="before">Before</span>}
+					aria-label="Compatibility popup"
+					className="custom-popup"
+					hasTail
+					innerRef={innerRef}
+					style={{ maxWidth: 'var(--spacing-10)' }}
+					tailRef={tailRef}
+					UNSTABLE_onRenderTail={onRenderTail}
+					view="default"
+					visible
+					zIndex={73}
+				>
+					{renderChildren}
+				</Popup>,
+			);
+		});
+
+		const popup = requireElement(container.querySelector<HTMLElement>('.Popup'));
+		expect(popup).toBe(innerRef.current);
+		expect(popup.classList.contains('custom-popup')).toBe(true);
+		expect(popup.getAttribute('aria-label')).toBe('Compatibility popup');
+		expect(popup.style.maxWidth).toBe('var(--spacing-10)');
+		expect(popup.style.zIndex).toBe('73');
+		expect(
+			[...popup.querySelectorAll<HTMLElement>('[data-slot]')].map(
+				(element) => element.dataset.slot,
+			),
+		).toEqual(['before', 'content', 'after']);
+		expect(renderChildren).toHaveBeenCalledWith({ tailRef });
+		expect(onRenderTail).toHaveBeenCalledOnce();
+		expect(tailRef.current).toBe(popup.querySelector('.Popup-Tail'));
+		expect(tailRef.current?.style.width).toBe('var(--spacing-4)');
+	});
+
 	it('tracks a replacement anchor that uses the same ref object', async () => {
 		const onClose = vi.fn();
 
@@ -152,10 +238,8 @@ describe('Popup', () => {
 			await Promise.resolve();
 		});
 
-		const anchor = container.querySelector('a');
-		expect(anchor).not.toBeNull();
-		anchor?.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
-		anchor?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+		const anchor = requireElement(container.querySelector('a'));
+		click(anchor);
 		expect(onClose).not.toHaveBeenCalled();
 	});
 
@@ -164,21 +248,113 @@ describe('Popup', () => {
 
 		await renderPopup({ onClose, visible: true });
 
-		const anchor = container.querySelector('button');
-		expect(anchor).not.toBeNull();
+		const anchor = requireElement(container.querySelector('button'));
 
-		anchor?.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
-		anchor?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+		click(anchor);
 		expect(onClose).not.toHaveBeenCalled();
 
-		document.body.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
-		document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-		expect(onClose).toHaveBeenCalledWith(expect.any(MouseEvent), 'click');
+		click(document.body);
+		expect(onClose).toHaveBeenCalledOnce();
+		expect(onClose.mock.calls[0]?.[0]).toBeInstanceOf(MouseEvent);
+		expect(onClose.mock.calls[0]?.[1]).toBe('click');
 
 		onClose.mockClear();
 		document.dispatchEvent(
 			new KeyboardEvent('keyup', { bubbles: true, code: 'Escape' }),
 		);
-		expect(onClose).toHaveBeenCalledWith(expect.any(KeyboardEvent), 'esc');
+		expect(onClose).toHaveBeenCalledOnce();
+		expect(onClose.mock.calls[0]?.[0]).toBeInstanceOf(KeyboardEvent);
+		expect(onClose.mock.calls[0]?.[1]).toBe('esc');
+	});
+
+	it('reads essential refs live inside a closed shadow root', async () => {
+		const onClose = vi.fn();
+
+		await act(async () => {
+			root.render(<EssentialRefHarness onClose={onClose} />);
+		});
+
+		click(requireElement(container.querySelector('button')));
+		expect(onClose).not.toHaveBeenCalled();
+
+		click(document.body);
+		expect(onClose).toHaveBeenCalledOnce();
+		expect(onClose.mock.calls[0]?.[0]).toBeInstanceOf(MouseEvent);
+		expect(onClose.mock.calls[0]?.[1]).toBe('click');
+	});
+
+	it('dismisses only the topmost visible popup', async () => {
+		const firstOnClose = vi.fn();
+		const secondOnClose = vi.fn();
+
+		await act(async () => {
+			root.render(
+				<>
+					<Popup onClose={firstOnClose} visible>
+						First popup
+					</Popup>
+					<Popup onClose={secondOnClose} visible>
+						Second popup
+					</Popup>
+				</>,
+			);
+		});
+
+		click(document.body);
+		expect(secondOnClose).toHaveBeenCalledOnce();
+		expect(secondOnClose.mock.calls[0]?.[0]).toBeInstanceOf(MouseEvent);
+		expect(secondOnClose.mock.calls[0]?.[1]).toBe('click');
+		expect(firstOnClose).not.toHaveBeenCalled();
+
+		secondOnClose.mockClear();
+		await act(async () => {
+			root.render(
+				<>
+					<Popup onClose={firstOnClose} visible>
+						First popup
+					</Popup>
+					<Popup onClose={secondOnClose} visible={false}>
+						Second popup
+					</Popup>
+				</>,
+			);
+		});
+
+		document.dispatchEvent(
+			new KeyboardEvent('keyup', { bubbles: true, code: 'Escape' }),
+		);
+		expect(firstOnClose).toHaveBeenCalledOnce();
+		expect(firstOnClose.mock.calls[0]?.[0]).toBeInstanceOf(KeyboardEvent);
+		expect(firstOnClose.mock.calls[0]?.[1]).toBe('esc');
+		expect(secondOnClose).not.toHaveBeenCalled();
+	});
+
+	it('portals into scope while honoring the essential host click region', async () => {
+		const onClose = vi.fn();
+		const scopeElement = document.createElement('section');
+		document.body.append(scopeElement);
+		const scopeRef = { current: scopeElement };
+
+		await act(async () => {
+			root.render(
+				<Popup hostRef={scopeRef} onClose={onClose} scope={scopeRef} visible>
+					Portaled popup
+				</Popup>,
+			);
+		});
+
+		expect(container.querySelector('.Popup')).toBeNull();
+		expect(scopeElement.querySelector('.Popup')).not.toBeNull();
+
+		click(scopeElement);
+		expect(onClose).not.toHaveBeenCalled();
+
+		click(document.body);
+		expect(onClose).toHaveBeenCalledOnce();
+		expect(onClose.mock.calls[0]?.[0]).toBeInstanceOf(MouseEvent);
+		expect(onClose.mock.calls[0]?.[1]).toBe('click');
+
+		await act(async () => root.render(null));
+		scopeElement.remove();
 	});
 });

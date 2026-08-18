@@ -1,18 +1,12 @@
-.Modal-Table {
-	display: flex;
-	justify-content: center;
-	align-items: center;
-	box-sizing: border-box;
-	flex-wrap: wrap;
+.Modal.Modal {
+	max-width: 100vw;
 }
 
-.Modal-Cell {
-	max-width: 100%;
-	padding: var(--modal-size-m-content-indent);
-	box-sizing: border-box;
+.Modal_hideBackdrop::backdrop {
+	background-color: transparent;
+	backdrop-filter: none;
 }
 
-.Modal-Content.Modal-Content {
-	max-width: 100%;
-	margin: 0;
+.Modal:not(.Modal_hasAnimation) {
+	animation: none;
 }

@@ -17,6 +17,8 @@ import { afterEach, describe, expect, test } from 'vitest';
 
 import { withoutInjectedContentStyles } from '../../extension.config.mjs';
 
+import { findAstryxThemeArtifactProblems } from '../validateExtensionBuilds.mjs';
+
 const scriptsDirectory = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const temporaryDirectories = [];
 const execFileAsync = promisify(execFile);
@@ -113,6 +115,49 @@ afterEach(async () => {
 });
 
 describe('extension build helpers', () => {
+	test('requires the neutral theme in every emitted CSS bundle', async () => {
+		const projectDirectory = await mkdtemp(
+			join(tmpdir(), 'linguist-extension-theme-artifact-'),
+		);
+		temporaryDirectories.push(projectDirectory);
+		const contentStylesDirectory = resolve(projectDirectory, 'content_scripts');
+		await mkdir(contentStylesDirectory, { recursive: true });
+		await Promise.all([
+			writeFile(
+				resolve(projectDirectory, 'action.css'),
+				'@layer astryx-theme{}[data-astryx-theme=neutral]{}[data-astryx-theme=neutral] .astryx-button.destructive{}',
+			),
+			writeFile(
+				resolve(contentStylesDirectory, 'content-0.css'),
+				'@layer  astryx-theme{}[data-astryx-theme="neutral"]{}',
+			),
+		]);
+
+		await expect(findAstryxThemeArtifactProblems(projectDirectory)).resolves.toEqual([
+			'content_scripts/content-0.css is missing the Astryx neutral component overrides',
+		]);
+
+		await writeFile(
+			resolve(contentStylesDirectory, 'content-0.css'),
+			'@layer astryx-theme{}[data-astryx-theme="neutral"]{}[data-astryx-theme="neutral"] .astryx-button.destructive{}',
+		);
+		await expect(findAstryxThemeArtifactProblems(projectDirectory)).resolves.toEqual(
+			[],
+		);
+	});
+
+	test('rejects artifacts without CSS bundles', async () => {
+		const projectDirectory = await mkdtemp(
+			join(tmpdir(), 'linguist-extension-empty-artifact-'),
+		);
+		temporaryDirectories.push(projectDirectory);
+		await writeFile(resolve(projectDirectory, 'action.css.map'), '{}');
+
+		await expect(findAstryxThemeArtifactProblems(projectDirectory)).resolves.toEqual([
+			'build must emit at least one CSS bundle',
+		]);
+	});
+
 	test('keeps content styles web-accessible without injecting them into pages', () => {
 		const webAccessibleResources = [
 			{

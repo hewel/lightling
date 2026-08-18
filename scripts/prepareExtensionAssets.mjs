@@ -4,6 +4,8 @@ import { fileURLToPath } from 'node:url';
 
 import sharp from 'sharp';
 
+import { prepareAstryxTheme } from './prepareAstryxTheme.mjs';
+
 const scriptsDirectory = dirname(fileURLToPath(import.meta.url));
 const projectDirectory = resolve(scriptsDirectory, '..');
 const packagePath = resolve(projectDirectory, 'package.json');
@@ -48,6 +50,8 @@ async function getThirdpartyAssets() {
 }
 
 export async function prepareExtensionAssets({ requireThirdparty = false } = {}) {
+	await prepareAstryxTheme();
+
 	const [packageJson, manifest] = await Promise.all([
 		readJson(packagePath),
 		readJson(manifestPath),

@@ -1,14 +1,23 @@
-import { createElement, FC } from 'react';
-import { compose, composeU, ExtractProps } from 'react-elegant-ui/lib/compose';
+import { createElement, FC, ReactNode } from 'react';
+import { Banner, BannerProps } from '@astryxdesign/core/Banner';
 
-import { withModNotificationTypeDefault } from '../_type/Notification_type_default';
-import { Notification as BaseNotification } from '../Notification';
+import {
+	notificationTypeDefaultStatus,
+	NotificationTypeDefault,
+} from '../_type/Notification_type_default';
 
-const ComposedNotification = compose(composeU(withModNotificationTypeDefault))(
-	BaseNotification,
-);
+export interface INotificationProps
+	extends NotificationTypeDefault, Omit<BannerProps, 'children' | 'status' | 'title'> {
+	children: ReactNode;
+}
 
-export type INotificationProps = ExtractProps<typeof ComposedNotification>;
-
-export const Notification: FC<INotificationProps> = ({ type = 'default', ...props }) =>
-	createElement(ComposedNotification, { ...props, type });
+export const Notification: FC<INotificationProps> = ({
+	children,
+	type: _type = 'default',
+	...props
+}) =>
+	createElement(Banner, {
+		...props,
+		status: notificationTypeDefaultStatus,
+		title: children,
+	});

@@ -1,6 +1,6 @@
 import { FC, useCallback, useEffect, useRef, useState } from 'react';
-import { Checkbox } from 'react-elegant-ui/esm/components/Checkbox/Checkbox.bundle/desktop';
-import { Spinner } from 'react-elegant-ui/esm/components/Spinner/Spinner.bundle/desktop';
+import { CheckboxInput } from '@astryxdesign/core/CheckboxInput';
+import { Spinner } from '@astryxdesign/core/Spinner';
 import { cn } from '@bem-react/classname';
 
 import { DictionaryButton } from '@/components/controls/DictionaryButton/DictionaryButton';
@@ -131,7 +131,7 @@ export const TranslationsHistory: FC<TranslationsHistoryProps> = ({
 		}
 	}, [translations, ttsPlayer, ttsState]);
 
-	const [checkedItems, setCheckedItems] = useState<Record<number, any>>({});
+	const [checkedItems, setCheckedItems] = useState<Record<number, true>>({});
 
 	// Remove checked items that no more exists
 	useEffect(() => {
@@ -146,7 +146,7 @@ export const TranslationsHistory: FC<TranslationsHistoryProps> = ({
 			const fixedDictionary = { ...checkedItems };
 
 			notExistsKeys.forEach((key) => {
-				delete fixedDictionary[key as any];
+				delete fixedDictionary[Number(key)];
 			});
 
 			setCheckedItems(fixedDictionary);
@@ -210,7 +210,7 @@ export const TranslationsHistory: FC<TranslationsHistoryProps> = ({
 	const selectedItemsNumber = Object.keys(checkedItems).length;
 	const toggleSelectionAll = useCallback(() => {
 		// Empty selection
-		const selectedItems: Record<number, any> = {};
+		const selectedItems: Record<number, true> = {};
 
 		const shouldSelectAll =
 			selectedItemsNumber === 0 || selectedItemsNumber < translations.length;
@@ -297,6 +297,8 @@ export const TranslationsHistory: FC<TranslationsHistoryProps> = ({
 				)}
 				<Textinput
 					hasClear
+					label={getMessage('history_searchPlaceholder')}
+					isLabelHidden
 					className={cnTranslationsHistory('Search')}
 					placeholder={getMessage('history_searchPlaceholder')}
 					value={searchInput.value}
@@ -307,12 +309,16 @@ export const TranslationsHistory: FC<TranslationsHistoryProps> = ({
 				/>
 
 				<LayoutFlow direction="horizontal" indent="l">
-					<Checkbox
-						indeterminate={isIndeterminateTranslationsSelection}
-						checked={hasSelectedTranslations}
-						setChecked={toggleSelectionAll}
-						disabled={translations.length === 0}
-						title={getMessage('history_controls_selectAll')}
+					<CheckboxInput
+						label={getMessage('history_controls_selectAll')}
+						isLabelHidden
+						value={
+							isIndeterminateTranslationsSelection
+								? 'indeterminate'
+								: hasSelectedTranslations
+						}
+						onChange={toggleSelectionAll}
+						isDisabled={translations.length === 0}
 					/>
 
 					<Button
@@ -362,12 +368,13 @@ export const TranslationsHistory: FC<TranslationsHistoryProps> = ({
 									}
 								}}
 								headStartSlot={
-									<Checkbox
-										checked={key in checkedItems}
-										setChecked={() => {
+									<CheckboxInput
+										label={getMessage('history_control_selectEntry')}
+										isLabelHidden
+										value={key in checkedItems}
+										onChange={() => {
 											toggleCheckbox(key);
 										}}
-										title={getMessage('history_control_selectEntry')}
 									/>
 								}
 								controlPanelSlot={
@@ -397,7 +404,7 @@ export const TranslationsHistory: FC<TranslationsHistoryProps> = ({
 							ref={loadMoreSentinelRef}
 							className={cnTranslationsHistory('InfinityScrollLoader')}
 						>
-							<Spinner view="primitive" progress />
+							<Spinner aria-label="Loading translations" />
 						</div>
 					)}
 				</div>

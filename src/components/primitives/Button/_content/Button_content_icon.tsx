@@ -1,26 +1,5 @@
-import { cnButton, IButtonProps } from 'react-elegant-ui/esm/components/Button/Button';
-import { IButtonDesktopRegistry } from 'react-elegant-ui/esm/components/Button/Button.registry/desktop';
-import { withHOCConstructor } from 'react-elegant-ui/esm/lib/compose';
-import { useComponentRegistry } from 'react-elegant-ui/esm/lib/di';
-
-import './Button_content_icon.css';
-
-export interface ButtonContentIcon {
-	content?: 'icon';
-}
-
 /**
- * Modifier for square buttons with icon
+ * Icon-only rendering is now owned by Astryx IconButton in the local Button
+ * compatibility adapter. This identity helper remains for obsolete imports.
  */
-export const withModButtonContentIcon = withHOCConstructor<
-	ButtonContentIcon,
-	IButtonProps
->({ matchProps: { content: 'icon' } }, (Button) => ({ content, children, ...props }) => {
-	const { Content } = useComponentRegistry<IButtonDesktopRegistry>(cnButton());
-
-	return (
-		<Button {...props} className={cnButton({ content }, [props.className])} raw>
-			<Content raw>{children}</Content>
-		</Button>
-	);
-});
+export const withModButtonContentIcon = <T,>(Component: T): T => Component;

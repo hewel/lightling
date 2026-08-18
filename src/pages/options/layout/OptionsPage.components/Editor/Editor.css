@@ -25,10 +25,6 @@
 	justify-content: right;
 }
 
-.Editor .Textinput {
-	width: 100%;
-}
-
 .Editor-EditorContainer {
 	display: flex;
 	flex-grow: 5;

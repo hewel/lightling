@@ -4,6 +4,7 @@ build
 dist
 /thirdparty
 
-# Artifacts
-src/themes/presets/{*,**}/*.css
+# Generated compatibility theme
+src/themes/astryx-neutral.css
+
 /build

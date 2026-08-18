@@ -1,5 +1,4 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { useEqualMemo } from 'react-elegant-ui/esm/hooks/useEqualMemo';
 
 export type Message = {
 	text: string;
@@ -21,7 +20,7 @@ export const useToastMessages = ({ hideDelay = 3000 }: Options) => {
 	const [messagePointers, setMessagePointers] = useState<symbol[]>([]);
 
 	// Map for keep order
-	const messagesMap = useEqualMemo(
+	const messagesMap = useMemo(
 		() =>
 			new Map<
 				symbol,

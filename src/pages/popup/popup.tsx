@@ -2,8 +2,8 @@ import '../../polyfills/scrollfix';
 
 import { FC, useCallback, useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { configureRootTheme } from 'react-elegant-ui/esm/theme';
 
+import { AstryxProvider } from '../../components/providers/AstryxProvider';
 import { isMobileBrowser } from '../../lib/browser';
 import { getMessage } from '../../lib/language';
 import { getConfig } from '../../requests/backend/getConfig';
@@ -11,8 +11,6 @@ import { getTranslatorFeatures } from '../../requests/backend/getTranslatorFeatu
 import { ping as pingBackend } from '../../requests/backend/ping';
 // Requests
 import { ping as pingClient } from '../../requests/contentscript/ping';
-// Resources
-import { theme } from '../../themes/presets/default/desktop';
 import { AppConfigType } from '../../types/runtime';
 
 import { IPopupWindowTab, PopupWindow, TranslatorFeatures } from './layout/PopupWindow';
@@ -177,11 +175,13 @@ const PopupPage: FC<PopupPageProps> = ({ rootElement }) => {
 function renderPage() {
 	const rootElement = document.body.querySelector('#root');
 	if (rootElement !== null && rootElement instanceof HTMLElement) {
-		createRoot(rootElement).render(<PopupPage rootElement={rootElement} />);
+		createRoot(rootElement).render(
+			<AstryxProvider>
+				<PopupPage rootElement={rootElement} />
+			</AstryxProvider>,
+		);
 	}
 }
-
-configureRootTheme({ theme, root: document.documentElement });
 
 // For universal render
 if (document.readyState == 'loading') {

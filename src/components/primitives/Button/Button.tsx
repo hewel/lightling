@@ -1,91 +1,218 @@
-import { FC } from 'react';
 import {
-	cnButton,
-	IButtonProps as IButtonPropsDefault,
-} from 'react-elegant-ui/esm/components/Button/Button';
-import { IButtonRegistry } from 'react-elegant-ui/esm/components/Button/Button.registry';
-import { useComponentRegistry } from 'react-elegant-ui/esm/lib/di';
-import { usePress } from '@react-aria/interactions';
-import { mergeProps } from '@react-aria/utils';
+	Children,
+	isValidElement,
+	type ElementType,
+	type MouseEventHandler,
+	type ReactNode,
+	type Ref,
+} from 'react';
+import * as AstryxButtonModule from '@astryxdesign/core/Button';
+import { IconButton } from '@astryxdesign/core/IconButton';
 
-import './Button.css';
-
-export * from 'react-elegant-ui/esm/components/Button/Button';
+const AstryxButton = AstryxButtonModule.Button;
+type AstryxButtonProps = AstryxButtonModule.ButtonProps;
 
 export const defaultProps = {
-	as: 'button' as const,
+	as: 'button',
 };
 
-export interface IButtonProps extends IButtonPropsDefault {
+type LegacyButtonView = 'action' | 'clear' | 'default' | 'pseudo';
+type LegacyButtonSize = 's' | 'm' | 'l';
+type LegacyButtonWidth = AstryxButtonProps['width'] | 'max';
+type IconProvider = ReactNode | ((className: string) => ReactNode);
+
+export interface IButtonProps extends Omit<
+	AstryxButtonProps,
+	| 'as'
+	| 'children'
+	| 'endContent'
+	| 'href'
+	| 'icon'
+	| 'isDisabled'
+	| 'label'
+	| 'onClick'
+	| 'ref'
+	| 'size'
+	| 'type'
+	| 'variant'
+	| 'width'
+> {
+	as?: ElementType;
+	addonAfter?: ReactNode;
+	addonBefore?: ReactNode;
+	children?: ReactNode;
+	content?: 'icon';
+	disabled?: boolean;
+	icon?: IconProvider;
+	iconLeft?: IconProvider;
+	iconRight?: IconProvider;
+	innerRef?: Ref<HTMLButtonElement | HTMLAnchorElement>;
+	onClick?: MouseEventHandler<HTMLButtonElement | HTMLAnchorElement>;
+	onPress?: (event: React.MouseEvent<HTMLButtonElement | HTMLAnchorElement>) => void;
 	preventFocusOnPress?: boolean;
+	pressAnimation?: boolean;
+	raw?: boolean;
+	size?: LegacyButtonSize;
+	title?: string;
+	type?: 'button' | 'link' | 'reset' | 'submit';
+	url?: string;
+	view?: LegacyButtonView;
+	width?: LegacyButtonWidth;
+}
+
+const variants: Record<LegacyButtonView, AstryxButtonProps['variant']> = {
+	action: 'primary',
+	clear: 'ghost',
+	default: 'secondary',
+	pseudo: 'ghost',
+};
+
+const sizes: Record<LegacyButtonSize, NonNullable<AstryxButtonProps['size']>> = {
+	s: 'sm',
+	m: 'md',
+	l: 'lg',
+};
+
+function hasTextContent(content: ReactNode): boolean {
+	return Children.toArray(content).some((child) => {
+		if (typeof child === 'string' || typeof child === 'number') return true;
+		return isValidElement<{ children?: ReactNode }>(child)
+			? hasTextContent(child.props.children)
+			: false;
+	});
+}
+
+function getIcon(icon: IconProvider | undefined): ReactNode {
+	return typeof icon === 'function' ? icon('astryx-button-icon') : icon;
+}
+
+function getLabel({ children, title, ...props }: IButtonProps): string {
+	if (typeof children === 'string' || typeof children === 'number') {
+		return String(children);
+	}
+
+	return title ?? props['aria-label'] ?? 'Action';
+}
+
+function assignRef<T>(ref: Ref<T> | undefined, value: T | null): void {
+	if (typeof ref === 'function') {
+		ref(value);
+	} else if (ref !== undefined && ref !== null) {
+		ref.current = value;
+	}
 }
 
 /**
- * This is library implementation of button, but with fix for prevent focus
+ * Compatibility adapter for the extension's legacy Button API.
+ *
+ * New surfaces should prefer Astryx Button or IconButton directly. This keeps
+ * existing callers working while translating their legacy view, size, press,
+ * and link props to Astryx's accessible controls.
  */
-export const Button: FC<IButtonProps> = (({
-	as = defaultProps.as,
-	disabled,
-	raw,
+export function Button({
+	addonAfter,
+	addonBefore,
+	as: renderAs,
+	children,
+	content,
+	disabled = false,
 	icon,
 	iconLeft,
 	iconRight,
-	children,
 	innerRef,
-	className,
-	addonBefore,
-	addonAfter,
+	onClick,
+	onMouseDown,
 	onPress,
-	onPressChange,
-	onPressStart,
-	onPressEnd,
-	onPressUp,
-	preventFocusOnPress,
+	preventFocusOnPress = false,
+	pressAnimation: _pressAnimation,
+	raw: _raw,
+	size = 'm',
+	title,
+	type = 'button',
+	url,
+	view = 'default',
+	width,
 	...props
-}: IButtonProps) => {
-	const { isPressed, pressProps } = usePress({
+}: IButtonProps) {
+	const label = getLabel({ children, title, ...props });
+	const leadingIcon = getIcon(iconLeft ?? icon);
+	const trailingIcon = getIcon(iconRight);
+	const isIconOnly =
+		content === 'icon' ||
+		((leadingIcon !== undefined ||
+			trailingIcon !== undefined ||
+			children !== undefined) &&
+			!hasTextContent(children));
+	const isLink = type === 'link' || renderAs === 'a' || url !== undefined;
+	const handleClick: MouseEventHandler<HTMLButtonElement | HTMLAnchorElement> = (
+		event,
+	) => {
+		onClick?.(event);
+		if (!event.defaultPrevented) onPress?.(event);
+	};
+	const handleMouseDown: MouseEventHandler<HTMLButtonElement> = (event) => {
+		if (preventFocusOnPress) event.preventDefault();
+		onMouseDown?.(event);
+	};
+	const visibleContent =
+		addonBefore === undefined && addonAfter === undefined
+			? children
+			: [addonBefore, children, addonAfter];
+	const commonProps = {
+		...props,
+		className: props.className,
 		isDisabled: disabled,
-		onPress,
-		onPressChange,
-		onPressStart,
-		onPressEnd,
-		onPressUp,
-		preventFocusOnPress,
-	});
+		label,
+		size: sizes[size],
+		style: props.style,
+		tooltip: title,
+		variant: variants[view],
+		width: width === 'max' ? '100%' : width,
+	};
 
-	const iconLeftOrIcon = iconLeft || icon;
+	if (isLink) {
+		const iconOnlyContent = leadingIcon ?? trailingIcon ?? children;
 
-	// insert innerRef back when `as` is component type
-	if (typeof as !== 'string') {
-		(props as IButtonProps).innerRef = innerRef;
+		return (
+			<AstryxButton
+				{...commonProps}
+				as={typeof renderAs === 'string' ? undefined : renderAs}
+				href={url}
+				icon={isIconOnly ? iconOnlyContent : leadingIcon}
+				isIconOnly={isIconOnly}
+				endContent={isIconOnly ? undefined : trailingIcon}
+				onClick={handleClick}
+				ref={(element) => assignRef(innerRef, element)}
+			>
+				{isIconOnly ? undefined : visibleContent}
+			</AstryxButton>
+		);
 	}
 
-	const Component = as;
-	const propsMix = mergeProps(props, pressProps);
-
-	const { Content, Text, Icon } = useComponentRegistry<IButtonRegistry>(cnButton());
+	if (isIconOnly) {
+		return (
+			<IconButton
+				{...commonProps}
+				icon={leadingIcon ?? children}
+				onClick={handleClick}
+				onMouseDown={handleMouseDown}
+				ref={(element) => assignRef(innerRef, element)}
+				type={type}
+			/>
+		);
+	}
 
 	return (
-		<Component
-			ref={typeof as === 'string' ? innerRef : undefined}
-			{...propsMix}
-			className={cnButton({ pressed: isPressed, disabled, raw }, [className])}
-			disabled={disabled}
-			aria-disabled={disabled}
+		<AstryxButton
+			{...commonProps}
+			endContent={trailingIcon}
+			icon={leadingIcon}
+			onClick={handleClick}
+			onMouseDown={handleMouseDown}
+			ref={(element) => assignRef(innerRef, element)}
+			type={type}
 		>
-			{addonBefore}
-			{raw ? (
-				children
-			) : (
-				<Content>
-					{iconLeftOrIcon && <Icon provider={iconLeftOrIcon} side="left" />}
-					{!children ? undefined : <Text>{children}</Text>}
-					{iconRight && <Icon provider={iconRight} side="right" />}
-				</Content>
-			)}
-			{addonAfter}
-		</Component>
+			{visibleContent}
+		</AstryxButton>
 	);
-}) as FC<IButtonProps>;
-
-Button.displayName = cnButton();
+}

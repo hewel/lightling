@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useImmutableCallback } from 'react-elegant-ui/esm/hooks/useImmutableCallback';
 
 import { trackClientEvent } from '../../requests/backend/telemetry';
 import { getTTS } from '../../requests/backend/tts/getTTS';
 
 import { TELEMETRY_EVENT_NAME } from '../telemetry';
+import { useImmutableCallback } from './useImmutableCallback';
 
 type PlayerSignal = {
 	active: symbol | null;

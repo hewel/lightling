@@ -1,0 +1,19 @@
+.TextareaAdapter-ControlPlane {
+	position: relative;
+}
+
+.TextareaAdapter-Input {
+	min-width: 0;
+	min-height: 0;
+}
+
+.TextareaAdapter-Clear {
+	position: absolute;
+	inset-block-start: var(--spacing-1);
+	inset-inline-end: var(--spacing-1);
+	pointer-events: auto;
+}
+
+.TextareaAdapter_hasClear .TextareaAdapter-Field textarea {
+	padding-inline-end: var(--spacing-10);
+}

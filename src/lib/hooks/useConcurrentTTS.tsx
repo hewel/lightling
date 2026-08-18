@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { useImmutableCallback } from 'react-elegant-ui/esm/hooks/useImmutableCallback';
 
+import { useImmutableCallback } from './useImmutableCallback';
 import { useTTS } from './useTTS';
 
 /**
