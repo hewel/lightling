@@ -400,6 +400,7 @@ export const generateTree = ({
         },
         {
           title: getMessage('settings_option_selectTranslation_header_languageChoice'),
+          fieldSpacing: 'relaxed',
           groupContent: [
             {
               path: 'selectTranslator.rememberDirection',
@@ -480,6 +481,7 @@ export const generateTree = ({
       groupContent: [
         {
           title: 'Popup button',
+          fieldSpacing: 'relaxed',
           groupContent: [
             {
               description: getMessage(

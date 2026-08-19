@@ -53,6 +53,9 @@ export const optionsPageStyles = stylex.create({
     flexDirection: 'column',
     gap: 'calc(var(--typography-layout-indent-l-all) * 1.5)',
   },
+  relaxedFieldSpacing: {
+    gap: 'var(--spacing-10)',
+  },
   pageSectionTitle: {
     maxWidth: '100%',
     overflow: 'hidden',
@@ -69,94 +72,8 @@ export const optionsPageStyles = stylex.create({
     flexDirection: 'column',
     gap: '2.5rem',
   },
-  optionSection: {
-    position: 'relative',
-    display: {
-      default: 'grid',
-      '@media (width <= 600px)': 'block',
-    },
-    gridTemplateColumns: '12.5rem auto',
-    gap: '1em',
-  },
-  changedOptionSection: {
-    '::before': {
-      backgroundColor: '#f2f5ff',
-      display: {
-        default: 'block',
-        '@media (width <= 600px)': 'none',
-      },
-      content: '""',
-      width: '100%',
-      height: '100%',
-      position: 'absolute',
-      zIndex: -1,
-      padding: '0.5em 0',
-      marginTop: '-0.5em',
-    },
-  },
-  optionTitle: {
-    textAlign: {
-      default: 'right',
-      '@media (width <= 600px)': 'left',
-    },
-    lineHeight: '140%',
-    fontWeight: {
-      default: 'normal',
-      '@media (width <= 600px)': 'bold',
-    },
-    marginBlockEnd: {
-      default: 0,
-      '@media (width <= 600px)': '0.5rem',
-    },
-    marginInlineStart: {
-      default: '1rem',
-      '@media (width <= 600px)': 0,
-    },
-    ':empty': {
-      display: {
-        default: 'initial',
-        '@media (width <= 600px)': 'none',
-      },
-    },
-  },
-  optionContainer: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 'var(--typography-layout-indent-m-all)',
-    position: {
-      default: 'static',
-      '@media (width <= 600px)': 'relative',
-    },
-    marginInlineEnd: {
-      default: '1rem',
-      '@media (width <= 600px)': 0,
-    },
-  },
-  changedOptionContainer: {
-    '::before': {
-      backgroundColor: '#f2f5ff',
-      display: {
-        default: 'none',
-        '@media (width <= 600px)': 'block',
-      },
-      content: '""',
-      width: '100%',
-      height: '100%',
-      position: 'absolute',
-      zIndex: -1,
-      padding: '0.5em',
-      margin: '-0.5em',
-    },
-  },
   optionDescription: {
-    color: 'var(--color-typo-secondary)',
-    fontSize: '1rem',
-    whiteSpace: 'break-spaces',
-    lineHeight: '140%',
-  },
-  optionErrorMessage: {
-    color: 'var(--color-typo-alert)',
-    fontSize: 'var(--typography-layout-size-s-font-size)',
+    whiteSpace: 'pre-wrap',
   },
   textarea: {
     width: 'min(100%, calc(var(--spacing-10) * 15))',

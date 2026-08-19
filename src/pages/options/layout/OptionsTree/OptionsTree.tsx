@@ -1,17 +1,18 @@
-import { FC, ReactNode, useCallback } from 'react';
+import { type FC, type ReactNode, useCallback, useId } from 'react';
+import { Button } from '@astryxdesign/core/Button';
 import { CheckboxInput } from '@astryxdesign/core/CheckboxInput';
+import { Field } from '@astryxdesign/core/Field';
 import { Selector } from '@astryxdesign/core/Selector';
-import { VStack } from '@astryxdesign/core/Stack';
+import { HStack, VStack } from '@astryxdesign/core/Stack';
+import { Text } from '@astryxdesign/core/Text';
 import * as stylex from '@stylexjs/stylex';
 
 import { Hotkey } from '@/components/controls/Hotkey';
-import { Button } from '@/components/primitives/Button/Button.bundle/desktop';
 import { Textarea } from '@/components/primitives/Textarea/Textarea.bundle/desktop';
 import { Textinput } from '@/components/primitives/Textinput/Textinput.bundle/desktop';
-import { getValueAtPath, isDeepEqual } from '@/lib/utils';
+import { getValueAtPath } from '@/lib/utils';
 import { AppConfigType } from '@/types/runtime';
 
-import { OptionSection } from '../OptionSection/OptionSection';
 import { optionsPageStyles } from '../OptionsPage.stylex';
 import { PageSection } from '../PageSection/PageSection';
 
@@ -100,6 +101,7 @@ export interface OptionsGroup {
   id?: string;
   title: string;
   titleSize?: HeadingLevel;
+  fieldSpacing?: 'default' | 'relaxed';
   groupContent: (OptionsGroup | OptionItem | undefined)[];
 }
 
@@ -120,6 +122,257 @@ const normalizeHeadingLevel = (level: number): HeadingLevel => {
   return 6;
 };
 
+interface OptionFieldProps {
+  item: OptionItem;
+  value: OptionValue;
+  error?: string;
+  setOptionValue: (name: string | undefined, value: OptionValue) => void;
+}
+
+const renderWithRichDescription = (
+  field: ReactNode,
+  description: ReactNode | undefined,
+  descriptionID: string,
+) =>
+  description === undefined || typeof description === 'string' ? (
+    field
+  ) : (
+    <VStack gap={2}>
+      {field}
+      <Text
+        id={descriptionID}
+        type="supporting"
+        xstyle={optionsPageStyles.optionDescription}
+      >
+        {description}
+      </Text>
+    </VStack>
+  );
+
+const OptionField: FC<OptionFieldProps> = ({ item, value, error, setOptionValue }) => {
+  const { title, description, path, optionContent: option } = item;
+  const controlID = useId();
+  const labelID = `${controlID}-label`;
+  const descriptionID = `${controlID}-description`;
+  const statusID = `${controlID}-status`;
+  const richDescriptionID = `${controlID}-rich-description`;
+  const label =
+    title ??
+    (option.type === 'Checkbox' || option.type === 'Button' ? option.text : undefined) ??
+    path ??
+    'Option';
+  const stringDescription = typeof description === 'string' ? description : undefined;
+  const status =
+    error === undefined ? undefined : { type: 'error' as const, message: error };
+  const describedBy =
+    [
+      stringDescription === undefined ? undefined : descriptionID,
+      status === undefined ? undefined : statusID,
+      description === undefined || typeof description === 'string'
+        ? undefined
+        : richDescriptionID,
+    ]
+      .filter(Boolean)
+      .join(' ') || undefined;
+
+  switch (option.type) {
+    case 'Checkbox': {
+      const reverse = option.reverse ?? false;
+      const checked = value === undefined ? undefined : reverse != !!value;
+      return renderWithRichDescription(
+        <CheckboxInput
+          label={label}
+          description={stringDescription}
+          className={stylex.props(optionsPageStyles.checkbox).className}
+          status={status}
+          value={checked ?? false}
+          width="100%"
+          onChange={(checked) => {
+            setOptionValue(path, reverse != checked);
+          }}
+        />,
+        description,
+        richDescriptionID,
+      );
+    }
+    case 'Hotkey': {
+      const hotkeyValue = typeof value === 'string' || value === null ? value : null;
+      return renderWithRichDescription(
+        <Hotkey
+          label={label}
+          description={stringDescription}
+          status={status}
+          value={hotkeyValue}
+          onChange={(value) => {
+            setOptionValue(path, value);
+          }}
+        />,
+        description,
+        richDescriptionID,
+      );
+    }
+    case 'CheckboxGroup': {
+      if (!Array.isArray(value)) {
+        throw new TypeError('value is not array');
+      }
+
+      return renderWithRichDescription(
+        <Field
+          label={label}
+          inputID={controlID}
+          labelID={labelID}
+          isGroupLabel
+          description={stringDescription}
+          descriptionID={descriptionID}
+          status={status === undefined ? undefined : { ...status, messageID: statusID }}
+          statusVariant="detached"
+          width="100%"
+        >
+          <HStack
+            id={controlID}
+            role="group"
+            aria-labelledby={labelID}
+            aria-describedby={describedBy}
+            gap={3}
+          >
+            {option.options.map((checkbox, index) => {
+              const optionName = option.valueMap[index];
+              const checked = (checkbox.reverse ?? false) !== value.includes(optionName);
+              return (
+                <CheckboxInput
+                  key={optionName}
+                  label={checkbox.text || `${label} ${index + 1}`}
+                  className={stylex.props(optionsPageStyles.checkbox).className}
+                  value={checked}
+                  onChange={(checked) => {
+                    setOptionValue(
+                      path,
+                      value
+                        .filter((currentValue) => currentValue !== optionName)
+                        .concat(
+                          (checkbox.reverse ?? false) !== checked ? [optionName] : [],
+                        ),
+                    );
+                  }}
+                />
+              );
+            })}
+          </HStack>
+        </Field>,
+        description,
+        richDescriptionID,
+      );
+    }
+    case 'Button': {
+      return renderWithRichDescription(
+        <Field
+          label={label}
+          inputID={controlID}
+          description={stringDescription}
+          descriptionID={descriptionID}
+          status={status === undefined ? undefined : { ...status, messageID: statusID }}
+          statusVariant="detached"
+          width="100%"
+        >
+          <Button
+            id={controlID}
+            label={option.text}
+            variant={option.view === 'action' ? 'primary' : 'secondary'}
+            isDisabled={option.disabled}
+            aria-describedby={describedBy}
+            onClick={option.action}
+          />
+        </Field>,
+        description,
+        richDescriptionID,
+      );
+    }
+    case 'InputMultilineFromArray':
+      return renderWithRichDescription(
+        <Textarea
+          autoResize
+          label={label}
+          description={stringDescription}
+          xstyle={optionsPageStyles.textarea}
+          status={status}
+          value={Array.isArray(value) ? value.join('\n') : undefined}
+          width="100%"
+          spellCheck={false}
+          onInputText={(value) => {
+            const parsedArray = value.split('\n');
+            setOptionValue(
+              path,
+              parsedArray.length === 1 && parsedArray[0] === '' ? [] : parsedArray,
+            );
+          }}
+        />,
+        description,
+        richDescriptionID,
+      );
+    case 'InputNumber': {
+      const inputValue =
+        typeof value === 'string' || typeof value === 'number' ? value : undefined;
+      return renderWithRichDescription(
+        <Textinput
+          label={label}
+          description={stringDescription}
+          status={status}
+          value={inputValue}
+          width="100%"
+          spellCheck={false}
+          onInputText={(value) => {
+            const parsedNumber = +value;
+            setOptionValue(path, isNaN(parsedNumber) ? value : parsedNumber);
+          }}
+        />,
+        description,
+        richDescriptionID,
+      );
+    }
+    case 'InputText': {
+      const inputValue = typeof value === 'string' ? value : undefined;
+      return renderWithRichDescription(
+        <Textinput
+          label={label}
+          description={stringDescription}
+          type={option.isSecret === true ? 'password' : undefined}
+          status={status}
+          value={inputValue}
+          width="100%"
+          spellCheck={false}
+          onInputText={(value) => {
+            setOptionValue(path, value);
+          }}
+        />,
+        description,
+        richDescriptionID,
+      );
+    }
+    case 'SelectList': {
+      const selectValue =
+        typeof value === 'string' ? value : Array.isArray(value) ? value[0] : undefined;
+      return renderWithRichDescription(
+        <Selector
+          label={label}
+          description={stringDescription}
+          status={status}
+          options={option.options.map(({ id, content }) => ({
+            value: id,
+            label: content,
+          }))}
+          value={selectValue}
+          width="100%"
+          onChange={(newValue) => {
+            setOptionValue(path, newValue);
+          }}
+        />,
+        description,
+        richDescriptionID,
+      );
+    }
+  }
+};
+
 export const OptionsTree: FC<OptionsTreeProps> = ({
   tree,
   config,
@@ -135,164 +388,6 @@ export const OptionsTree: FC<OptionsTreeProps> = ({
     [setOptionValue],
   );
 
-  const renderOption = useCallback(
-    (
-      { title, path, optionContent: option }: OptionItem,
-      value: OptionValue,
-      error?: string,
-    ) => {
-      switch (option.type) {
-        case 'Checkbox': {
-          const reverse = option.reverse ?? false;
-          const checked = value === undefined ? undefined : reverse != !!value;
-          const label = option.text || title || path || 'Option';
-          return (
-            <CheckboxInput
-              label={label}
-              isLabelHidden={!option.text}
-              className={stylex.props(optionsPageStyles.checkbox).className}
-              value={checked ?? false}
-              onChange={(checked) => {
-                setOptionValueProxy(path, reverse != checked);
-              }}
-            />
-          );
-        }
-        case 'Hotkey': {
-          const hotkeyValue = typeof value === 'string' || value === null ? value : null;
-          return (
-            <Hotkey
-              value={hotkeyValue}
-              onChange={(value) => {
-                setOptionValueProxy(path, value);
-              }}
-            />
-          );
-        }
-        case 'CheckboxGroup': {
-          if (!Array.isArray(value)) {
-            throw new TypeError('value is not array');
-          }
-
-          return (
-            <div {...stylex.props(optionsPageStyles.indentHorizontal)}>
-              {option.options.map((checkbox, index) => {
-                const optionName = option.valueMap[index];
-                const valueIndex = value.indexOf(optionName);
-                const isExistValue = valueIndex !== -1;
-                const checked = (checkbox.reverse ?? false) !== isExistValue;
-                return (
-                  <CheckboxInput
-                    key={index}
-                    label={checkbox.text || `${title ?? path ?? 'Option'} ${index + 1}`}
-                    isLabelHidden={!checkbox.text}
-                    className={stylex.props(optionsPageStyles.checkbox).className}
-                    value={checked}
-                    onChange={(checked) => {
-                      setOptionValueProxy(
-                        path,
-                        value
-                          .filter((val) => val !== optionName)
-                          .concat(
-                            (checkbox.reverse ?? false) !== checked ? [optionName] : [],
-                          ),
-                      );
-                    }}
-                  />
-                );
-              })}
-            </div>
-          );
-        }
-        case 'Button':
-          return (
-            <Button
-              view={option.view ?? 'default'}
-              onPress={option.action}
-              disabled={option.disabled}
-            >
-              {option.text}
-            </Button>
-          );
-        case 'InputMultilineFromArray':
-          return (
-            <Textarea
-              autoResize
-              label={title ?? path ?? 'Option value'}
-              isLabelHidden
-              xstyle={optionsPageStyles.textarea}
-              status={error !== undefined ? { type: 'error', message: error } : undefined}
-              value={Array.isArray(value) ? value.join('\n') : undefined}
-              spellCheck={false}
-              onInputText={(value) => {
-                const parsedArray = value.split('\n');
-                setOptionValueProxy(
-                  path,
-                  parsedArray.length === 1 && parsedArray[0] === '' ? [] : parsedArray,
-                );
-              }}
-            />
-          );
-        case 'InputNumber': {
-          const inputValue =
-            typeof value === 'string' || typeof value === 'number' ? value : undefined;
-          return (
-            <Textinput
-              label={title ?? path ?? 'Option value'}
-              isLabelHidden
-              status={error !== undefined ? { type: 'error', message: error } : undefined}
-              value={inputValue}
-              spellCheck={false}
-              onInputText={(value) => {
-                const parsedNumber = +value;
-                setOptionValueProxy(path, isNaN(parsedNumber) ? value : parsedNumber);
-              }}
-            />
-          );
-        }
-        case 'InputText': {
-          const inputValue = typeof value === 'string' ? value : undefined;
-          return (
-            <Textinput
-              label={title ?? path ?? 'Option value'}
-              isLabelHidden
-              type={option.isSecret === true ? 'password' : undefined}
-              status={error !== undefined ? { type: 'error', message: error } : undefined}
-              value={inputValue}
-              spellCheck={false}
-              onInputText={(value) => {
-                setOptionValueProxy(path, value);
-              }}
-            />
-          );
-        }
-        case 'SelectList': {
-          const selectValue =
-            typeof value === 'string'
-              ? value
-              : Array.isArray(value)
-                ? value[0]
-                : undefined;
-          return (
-            <Selector
-              label={title ?? path ?? 'Option value'}
-              isLabelHidden
-              options={option.options.map(({ id, content }) => ({
-                value: id,
-                label: content,
-              }))}
-              value={selectValue}
-              onChange={(newValue) => {
-                setOptionValueProxy(path, newValue);
-              }}
-            />
-          );
-        }
-      }
-    },
-    [setOptionValueProxy],
-  );
-
   const renderTree = useCallback(
     (tree: OptionsGroup['groupContent'], globalLevel = 1) => {
       const modifiedConfigStorage: Readonly<Record<string, OptionValue>> =
@@ -302,51 +397,50 @@ export const OptionsTree: FC<OptionsTreeProps> = ({
         if (item === undefined) return undefined;
 
         if ('optionContent' in item) {
-          const { title, description, path } = item;
-
+          const { path } = item;
           let configValue: OptionValue;
-          let changed = false;
 
           if (path !== undefined) {
-            if (path in modifiedConfigStorage) {
-              configValue = modifiedConfigStorage[path];
-              if (!isDeepEqual(configValue, getOptionValue(config, path))) {
-                changed = true;
-              }
-            } else {
-              configValue = getOptionValue(config, path);
-            }
+            configValue =
+              path in modifiedConfigStorage
+                ? modifiedConfigStorage[path]
+                : getOptionValue(config, path);
           }
 
           const error = path !== undefined && path in errors ? errors[path] : undefined;
           return (
-            <OptionSection {...{ title, description, changed, error }} key={index}>
-              {renderOption(item, configValue, error)}
-            </OptionSection>
-          );
-        } else {
-          const localLevel = item.titleSize ?? normalizeHeadingLevel(globalLevel);
-
-          return (
-            <PageSection id={item.id} title={item.title} level={localLevel} key={index}>
-              <div
-                {...stylex.props(
-                  globalLevel > 2
-                    ? optionsPageStyles.indentVertical
-                    : optionsPageStyles.subgroups,
-                )}
-              >
-                {renderTree(
-                  item.groupContent,
-                  item.title !== undefined ? localLevel + 1 : localLevel,
-                )}
-              </div>
-            </PageSection>
+            <OptionField
+              item={item}
+              value={configValue}
+              error={error}
+              setOptionValue={setOptionValueProxy}
+              key={path ?? `${globalLevel}-${index}`}
+            />
           );
         }
+
+        const localLevel = item.titleSize ?? normalizeHeadingLevel(globalLevel);
+        return (
+          <PageSection id={item.id} title={item.title} level={localLevel} key={index}>
+            <VStack
+              gap={0}
+              xstyle={[
+                globalLevel > 2
+                  ? optionsPageStyles.indentVertical
+                  : optionsPageStyles.subgroups,
+                item.fieldSpacing === 'relaxed' && optionsPageStyles.relaxedFieldSpacing,
+              ]}
+            >
+              {renderTree(
+                item.groupContent,
+                item.title !== undefined ? localLevel + 1 : localLevel,
+              )}
+            </VStack>
+          </PageSection>
+        );
       });
     },
-    [config, errors, modifiedConfig, renderOption],
+    [config, errors, modifiedConfig, setOptionValueProxy],
   );
 
   return (

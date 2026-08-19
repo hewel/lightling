@@ -1,19 +1,27 @@
-import { FC, useEffect, useState } from 'react';
+import { type FC, useEffect, useState } from 'react';
+import { Button } from '@astryxdesign/core/Button';
 import { HStack } from '@astryxdesign/core/Stack';
+import { TextInput, type TextInputStatus } from '@astryxdesign/core/TextInput';
 
 import { getMessage } from '@/lib/language';
-
-import { Button } from '../../primitives/Button/Button.bundle/universal';
-import { Textinput } from '../../primitives/Textinput/Textinput.bundle/desktop';
 
 import { getUnifiedKeyName } from './utils';
 
 export type HotkeyProps = {
+  label: string;
+  description?: string;
+  status?: TextInputStatus;
   value: string | null;
   onChange: (value: string | null) => void;
 };
 
-export const Hotkey: FC<HotkeyProps> = ({ value, onChange }) => {
+export const Hotkey: FC<HotkeyProps> = ({
+  label,
+  description,
+  status,
+  value,
+  onChange,
+}) => {
   const [isFocus, setIsFocus] = useState(false);
 
   useEffect(() => {
@@ -85,8 +93,12 @@ export const Hotkey: FC<HotkeyProps> = ({ value, onChange }) => {
   }, [isFocus, onChange]);
 
   return (
-    <HStack gap={2}>
-      <Textinput
+    <HStack gap={2} align="end">
+      <TextInput
+        label={label}
+        description={description}
+        status={status}
+        isReadOnly
         onFocus={() => {
           setIsFocus(true);
         }}
@@ -101,12 +113,11 @@ export const Hotkey: FC<HotkeyProps> = ({ value, onChange }) => {
         }
       />
       <Button
+        label={getMessage('component_hotkey_resetButton')}
         onClick={() => {
           onChange(null);
         }}
-      >
-        {getMessage('component_hotkey_resetButton')}
-      </Button>
+      />
     </HStack>
   );
 };
