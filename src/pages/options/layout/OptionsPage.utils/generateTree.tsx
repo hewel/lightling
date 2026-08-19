@@ -23,7 +23,12 @@ type Options = {
   clearCacheProcess: boolean;
   translatorModules: Record<string, string>;
   ttsModules: Record<string, string>;
+  llmModels: string[] | null;
+  llmTestProcess: boolean;
+  llmModelsProcess: boolean;
   clearCache: () => void;
+  testLLMConnection: () => void;
+  loadLLMModels: () => void;
   toggleCustomTranslatorsWindow: () => void;
   toggleTTSModulesWindow: () => void;
 };
@@ -35,7 +40,12 @@ export const generateTree = ({
   clearCacheProcess,
   translatorModules,
   ttsModules,
+  llmModels,
+  llmTestProcess,
+  llmModelsProcess,
   clearCache,
+  testLLMConnection,
+  loadLLMModels,
   toggleCustomTranslatorsWindow,
   toggleTTSModulesWindow,
 }: Options): OptionsGroup[] => {
@@ -109,11 +119,41 @@ export const generateTree = ({
               path: 'llmTranslator.apiKey',
               optionContent: { type: 'InputText', isSecret: true },
             },
+            llmModels !== null && llmModels.length > 0
+              ? {
+                  title: getMessage('settings_option_llmTranslator_model'),
+                  description: getMessage('settings_option_llmTranslator_model_desc'),
+                  path: 'llmTranslator.model',
+                  optionContent: {
+                    type: 'SelectList',
+                    options: llmModels.map((id) => ({ id, content: id })),
+                  },
+                }
+              : {
+                  title: getMessage('settings_option_llmTranslator_model'),
+                  description: getMessage('settings_option_llmTranslator_model_desc'),
+                  path: 'llmTranslator.model',
+                  optionContent: { type: 'InputText' },
+                },
             {
-              title: getMessage('settings_option_llmTranslator_model'),
-              description: getMessage('settings_option_llmTranslator_model_desc'),
-              path: 'llmTranslator.model',
-              optionContent: { type: 'InputText' },
+              title: getMessage('settings_option_llmTranslator_test'),
+              description: getMessage('settings_option_llmTranslator_test_desc'),
+              optionContent: {
+                type: 'Button',
+                text: getMessage('settings_option_llmTranslator_testButton'),
+                disabled: llmTestProcess,
+                action: testLLMConnection,
+              },
+            },
+            {
+              title: getMessage('settings_option_llmTranslator_fetchModels'),
+              description: getMessage('settings_option_llmTranslator_fetchModels_desc'),
+              optionContent: {
+                type: 'Button',
+                text: getMessage('settings_option_llmTranslator_fetchModelsButton'),
+                disabled: llmModelsProcess,
+                action: loadLLMModels,
+              },
             },
           ],
         },

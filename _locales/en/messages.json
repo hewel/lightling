@@ -273,6 +273,15 @@
   "settings_message_importConfig_success": {
     "message": "Import complete"
   },
+  "settings_message_llmTranslator_modelsEmpty": {
+    "message": "The API returned an empty model list"
+  },
+  "settings_message_llmTranslator_modelsLoaded": {
+    "message": "Model list loaded"
+  },
+  "settings_message_llmTranslator_testSuccess": {
+    "message": "Test translation succeeded:"
+  },
   "settings_message_resetConfig_confirm": {
     "message": "Confirm to reset the settings to default values"
   },
@@ -344,6 +353,24 @@
   },
   "settings_option_llmTranslator_model_desc": {
     "message": "Model identifier, for example gpt-4o-mini"
+  },
+  "settings_option_llmTranslator_test": {
+    "message": "Test connection"
+  },
+  "settings_option_llmTranslator_test_desc": {
+    "message": "Send a small translation request with the current settings to verify the API URL, key and model"
+  },
+  "settings_option_llmTranslator_testButton": {
+    "message": "Test"
+  },
+  "settings_option_llmTranslator_fetchModels": {
+    "message": "Fetch model list"
+  },
+  "settings_option_llmTranslator_fetchModels_desc": {
+    "message": "Load the list of models available at the API URL to pick a model instead of typing its identifier"
+  },
+  "settings_option_llmTranslator_fetchModelsButton": {
+    "message": "Fetch models"
   },
   "settings_option_pageTranslation": {
     "message": "The full page translation"

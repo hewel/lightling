@@ -24,6 +24,8 @@ import { openFileDialog, readAsText, saveFile } from '@/lib/files';
 import { getMessage } from '@/lib/language';
 import { TELEMETRY_EVENT_NAME } from '@/lib/telemetry';
 import { telemetry } from '@/lib/telemetry/singleton';
+import { fetchLLMModels, testLLMTranslator } from '@/lib/translators/llm/api';
+import type { LLMTranslatorConfig } from '@/lib/translators/llm/LLMTranslator';
 import { getValueAtPath, isDeepEqual } from '@/lib/utils';
 // Requests
 import { clearCache as clearCacheReq } from '@/requests/backend/clearCache';
@@ -223,6 +225,56 @@ export const OptionsPage: FC<OptionsPageProps> = () => {
   }, [handleError, showToast]);
 
   //
+  // LLM translator
+  //
+
+  const [llmTestProcess, setLLMTestProcess] = useState<boolean>(false);
+  const [llmModels, setLLMModels] = useState<string[] | null>(null);
+  const [llmModelsProcess, setLLMModelsProcess] = useState<boolean>(false);
+
+  // Current field values, including unsaved edits
+  const getLLMConfig = useCallback((): LLMTranslatorConfig => {
+    const base = config?.llmTranslator ?? { apiUrl: '', apiKey: '', model: '' };
+    return {
+      apiUrl: modifiedConfig?.['llmTranslator.apiUrl'] ?? base.apiUrl,
+      apiKey: modifiedConfig?.['llmTranslator.apiKey'] ?? base.apiKey,
+      model: modifiedConfig?.['llmTranslator.model'] ?? base.model,
+    };
+  }, [config, modifiedConfig]);
+
+  const testLLMConnection = useCallback(() => {
+    setLLMTestProcess(true);
+    testLLMTranslator(getLLMConfig())
+      .then((translatedText) => {
+        showToast({
+          body: `${getMessage('settings_message_llmTranslator_testSuccess')} "${translatedText}"`,
+        });
+      })
+      .catch(handleError)
+      .finally(() => {
+        setLLMTestProcess(false);
+      });
+  }, [getLLMConfig, handleError, showToast]);
+
+  const loadLLMModels = useCallback(() => {
+    setLLMModelsProcess(true);
+    fetchLLMModels(getLLMConfig())
+      .then((models) => {
+        if (models.length === 0) {
+          showToast({ body: getMessage('settings_message_llmTranslator_modelsEmpty') });
+          return;
+        }
+
+        setLLMModels(models);
+        showToast({ body: getMessage('settings_message_llmTranslator_modelsLoaded') });
+      })
+      .catch(handleError)
+      .finally(() => {
+        setLLMModelsProcess(false);
+      });
+  }, [getLLMConfig, handleError, showToast]);
+
+  //
   // Utils
   //
 
@@ -283,7 +335,12 @@ export const OptionsPage: FC<OptionsPageProps> = () => {
       clearCacheProcess,
       translatorModules,
       ttsModules,
+      llmModels,
+      llmTestProcess,
+      llmModelsProcess,
       clearCache,
+      testLLMConnection,
+      loadLLMModels,
       toggleCustomTranslatorsWindow: () => {
         setIsOpenCustomTranslatorsWindow((value) => !value);
       },
@@ -293,7 +350,17 @@ export const OptionsPage: FC<OptionsPageProps> = () => {
     });
 
     setConfigTree(configTree);
-  }, [translatorModules, clearCacheProcess, clearCache, ttsModules]);
+  }, [
+    translatorModules,
+    clearCacheProcess,
+    clearCache,
+    ttsModules,
+    llmModels,
+    llmTestProcess,
+    llmModelsProcess,
+    testLLMConnection,
+    loadLLMModels,
+  ]);
 
   //
   // Section navigation
