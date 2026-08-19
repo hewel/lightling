@@ -850,18 +850,18 @@
   }
   :root,
   .x1q1ms06 {
-    --font-size-4xs: 0.375rem;
-    --font-size-3xs: 0.4375rem;
-    --font-size-2xs: 0.5rem;
-    --font-size-xs: 0.625rem;
-    --font-size-sm: 0.75rem;
-    --font-size-base: 0.875rem;
-    --font-size-lg: 1.0625rem;
-    --font-size-xl: 1.25rem;
-    --font-size-2xl: 1.5rem;
-    --font-size-3xl: 1.8125rem;
-    --font-size-4xl: 2.1875rem;
-    --font-size-5xl: 2.625rem;
+    --font-size-4xs: 6px;
+    --font-size-3xs: 7px;
+    --font-size-2xs: 8px;
+    --font-size-xs: 10px;
+    --font-size-sm: 12px;
+    --font-size-base: 14px;
+    --font-size-lg: 17px;
+    --font-size-xl: 20px;
+    --font-size-2xl: 24px;
+    --font-size-3xl: 29px;
+    --font-size-4xl: 35px;
+    --font-size-5xl: 42px;
   }
   :root,
   .x1ccmotb {
@@ -3335,13 +3335,13 @@
     font-family: var(--font-family-heading);
   }
   .xboafo0:not(#\#):not(#\#):not(#\#) {
-    font-size: 0.75rem;
+    font-size: 12px;
   }
   .x1603h9y:not(#\#):not(#\#):not(#\#) {
-    font-size: 1.25rem;
+    font-size: 20px;
   }
   .xngnso2:not(#\#):not(#\#):not(#\#) {
-    font-size: 1.5rem;
+    font-size: 24px;
   }
   .x1k6wstc:not(#\#):not(#\#):not(#\#) {
     font-size: 10px;
@@ -3356,7 +3356,7 @@
     font-size: 16px;
   }
   .x1jchvi3:not(#\#):not(#\#):not(#\#) {
-    font-size: 1rem;
+    font-size: 16px;
   }
   .xwsyq91:not(#\#):not(#\#):not(#\#) {
     font-size: 20px;
@@ -4814,12 +4814,12 @@
   }
   @media (pointer: coarse) {
     .x6pjikd.x6pjikd:not(#\#):not(#\#):not(#\#) {
-      font-size: max(1rem, var(--text-body-size));
+      font-size: max(16px, var(--text-body-size));
     }
   }
   @media (pointer: coarse) {
     .xdk3u5w.xdk3u5w:not(#\#):not(#\#):not(#\#) {
-      font-size: max(1rem, var(--text-label-size));
+      font-size: max(16px, var(--text-label-size));
     }
   }
   @media (pointer: coarse) {
@@ -5131,16 +5131,16 @@
     bottom: var(--x-bottom);
   }
   .xvle69y:not(#\#):not(#\#):not(#\#):not(#\#) {
-    height: 0.75rem;
+    height: 12px;
   }
   .xqtp20y:not(#\#):not(#\#):not(#\#):not(#\#) {
     height: 0;
   }
   .xmll18r:not(#\#):not(#\#):not(#\#):not(#\#) {
-    height: 1.25rem;
+    height: 20px;
   }
   .xam5rvr:not(#\#):not(#\#):not(#\#):not(#\#) {
-    height: 1.5rem;
+    height: 24px;
   }
   .x5yr21d:not(#\#):not(#\#):not(#\#):not(#\#) {
     height: 100%;
@@ -5185,7 +5185,7 @@
     height: 1px;
   }
   .x1l36t39:not(#\#):not(#\#):not(#\#):not(#\#) {
-    height: 1rem;
+    height: 16px;
   }
   .x1qx5ct2:not(#\#):not(#\#):not(#\#):not(#\#) {
     height: 20px;
@@ -5560,7 +5560,7 @@
     min-width: 180px;
   }
   .xgomdpo:not(#\#):not(#\#):not(#\#):not(#\#) {
-    min-width: 1rem;
+    min-width: 16px;
   }
   .x1jzhcrs:not(#\#):not(#\#):not(#\#):not(#\#) {
     min-width: 200px;
@@ -5800,16 +5800,16 @@
     top: var(--x-top);
   }
   .x1jw3ynk:not(#\#):not(#\#):not(#\#):not(#\#) {
-    width: 0.75rem;
+    width: 12px;
   }
   .xnalus7:not(#\#):not(#\#):not(#\#):not(#\#) {
     width: 0;
   }
   .xwqq7k2:not(#\#):not(#\#):not(#\#):not(#\#) {
-    width: 1.25rem;
+    width: 20px;
   }
   .xp8d6y2:not(#\#):not(#\#):not(#\#):not(#\#) {
-    width: 1.5rem;
+    width: 24px;
   }
   .xh8yej3:not(#\#):not(#\#):not(#\#):not(#\#) {
     width: 100%;
@@ -5845,7 +5845,7 @@
     width: 1px;
   }
   .xcdlrvm:not(#\#):not(#\#):not(#\#):not(#\#) {
-    width: 1rem;
+    width: 16px;
   }
   .x1oysuqx:not(#\#):not(#\#):not(#\#):not(#\#) {
     width: 200px;
@@ -6420,18 +6420,18 @@
   }
 
   [data-astryx-theme='vivid'] {
-    --font-size-4xs: 0.375rem;
-    --font-size-3xs: 0.4375rem;
-    --font-size-2xs: 0.5rem;
-    --font-size-xs: 0.625rem;
-    --font-size-sm: 0.75rem;
-    --font-size-base: 0.875rem;
-    --font-size-lg: 1.0625rem;
-    --font-size-xl: 1.25rem;
-    --font-size-2xl: 1.5rem;
-    --font-size-3xl: 1.8125rem;
-    --font-size-4xl: 2.1875rem;
-    --font-size-5xl: 2.625rem;
+    --font-size-4xs: 6px;
+    --font-size-3xs: 7px;
+    --font-size-2xs: 8px;
+    --font-size-xs: 10px;
+    --font-size-sm: 12px;
+    --font-size-base: 14px;
+    --font-size-lg: 17px;
+    --font-size-xl: 20px;
+    --font-size-2xl: 24px;
+    --font-size-3xl: 29px;
+    --font-size-4xl: 35px;
+    --font-size-5xl: 42px;
     --text-heading-1-size: var(--font-size-2xl);
     --text-heading-1-weight: var(--font-weight-semibold);
     --text-heading-1-leading: 1.3333;
@@ -6583,10 +6583,10 @@
     --color-icon-gray: light-dark(#525252, #a3a3a3);
     --color-text-gray: light-dark(#262626, #e5e5e5);
     --radius-none: 0px;
-    --radius-inner: 0.375rem;
-    --radius-element: 0.625rem;
-    --radius-container: 0.75rem;
-    --radius-page: 1.75rem;
+    --radius-inner: 6px;
+    --radius-element: 10px;
+    --radius-container: 12px;
+    --radius-page: 28px;
     --radius-full: 9999px;
     --shadow-low:
       0 2px 4px light-dark(oklch(0 0 0 / 5%), oklch(0 0 0 / 25%)),

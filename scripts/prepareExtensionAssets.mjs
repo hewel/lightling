@@ -4,9 +4,30 @@ import { createRequire } from 'node:module';
 import { dirname, extname, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import postcss from 'postcss';
 import sharp from 'sharp';
 
 import { prepareAstryxTheme } from './prepareAstryxTheme.mjs';
+
+// The bundler applies `postcss-rem-to-pixel` (see postcss.config.mjs) to regular CSS
+// entries, but the shadow stylesheet ships as a raw .txt asset outside that pipeline.
+// rem inside a shadow tree resolves against the host page's root font size, which
+// arbitrary pages override, so the shadow styles are converted here the same way.
+const remUnitPattern = /(-?\d*\.?\d+)rem\b/g;
+const remRootValue = 16;
+const remUnitPrecision = 5;
+
+function convertRemToPixel(css, from) {
+  const root = postcss.parse(css, { from });
+  root.walkDecls((decl) => {
+    if (!decl.value.includes('rem')) return;
+    decl.value = decl.value.replace(remUnitPattern, (_match, value) => {
+      const pixels = Number.parseFloat(value) * remRootValue;
+      return `${Number(pixels.toFixed(remUnitPrecision))}px`;
+    });
+  });
+  return root.toString();
+}
 
 const scriptsDirectory = dirname(fileURLToPath(import.meta.url));
 const projectDirectory = resolve(scriptsDirectory, '..');
@@ -81,15 +102,14 @@ async function prepareContentShadowStyles() {
       })
       .join('\n\n') +
     '\n';
-  const content = execFileSync(
-    formatterBinary,
-    [`--stdin-filepath=${contentShadowStylesFormatPath}`],
-    {
+  const content = convertRemToPixel(
+    execFileSync(formatterBinary, [`--stdin-filepath=${contentShadowStylesFormatPath}`], {
       cwd: projectDirectory,
       encoding: 'utf8',
       input: unformattedContent,
       stdio: ['pipe', 'pipe', 'inherit'],
-    },
+    }),
+    contentShadowStylesFormatPath,
   );
 
   let current = '';
