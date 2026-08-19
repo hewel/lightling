@@ -24,8 +24,8 @@ import { openFileDialog, readAsText, saveFile } from '@/lib/files';
 import { getMessage } from '@/lib/language';
 import { TELEMETRY_EVENT_NAME } from '@/lib/telemetry';
 import { telemetry } from '@/lib/telemetry/singleton';
-import { fetchLLMModels, testLLMTranslator } from '@/lib/translators/llm/api';
-import type { LLMTranslatorConfig } from '@/lib/translators/llm/LLMTranslator';
+import { testLLMTranslator } from '@/lib/translators/llm/api';
+import { getActiveLLMProfile } from '@/lib/translators/llm/LLMTranslator';
 import { getValueAtPath, isDeepEqual } from '@/lib/utils';
 // Requests
 import { clearCache as clearCacheReq } from '@/requests/backend/clearCache';
@@ -58,6 +58,11 @@ const TTSList = lazy(() =>
   import('./OptionsPage.components/TTSList/TTSList').then(({ TTSList }) => ({
     default: TTSList,
   })),
+);
+const LLMProfilesManager = lazy(() =>
+  import('./OptionsPage.components/LLMProfilesManager/LLMProfilesManager').then(
+    ({ LLMProfilesManager }) => ({ default: LLMProfilesManager }),
+  ),
 );
 
 type Errors = null | Record<string, string>;
@@ -229,22 +234,24 @@ export const OptionsPage: FC<OptionsPageProps> = () => {
   //
 
   const [llmTestProcess, setLLMTestProcess] = useState<boolean>(false);
-  const [llmModels, setLLMModels] = useState<string[] | null>(null);
-  const [llmModelsProcess, setLLMModelsProcess] = useState<boolean>(false);
+  const [isLLMProfilesWindowOpen, setIsLLMProfilesWindowOpen] = useState(false);
 
-  // Current field values, including unsaved edits
-  const getLLMConfig = useCallback((): LLMTranslatorConfig => {
-    const base = config?.llmTranslator ?? { apiUrl: '', apiKey: '', model: '' };
-    return {
-      apiUrl: modifiedConfig?.['llmTranslator.apiUrl'] ?? base.apiUrl,
-      apiKey: modifiedConfig?.['llmTranslator.apiKey'] ?? base.apiKey,
-      model: modifiedConfig?.['llmTranslator.model'] ?? base.model,
-    };
+  const llmProfiles = useMemo(
+    () => config?.llmTranslator.profiles.map(({ name }) => name) ?? [],
+    [config],
+  );
+
+  // The active profile, honoring an unsaved picker change
+  const getLLMProfile = useCallback(() => {
+    const llmTranslator = config?.llmTranslator ?? { activeProfile: '', profiles: [] };
+    const activeProfile =
+      modifiedConfig?.['llmTranslator.activeProfile'] ?? llmTranslator.activeProfile;
+    return getActiveLLMProfile({ activeProfile, profiles: llmTranslator.profiles });
   }, [config, modifiedConfig]);
 
   const testLLMConnection = useCallback(() => {
     setLLMTestProcess(true);
-    testLLMTranslator(getLLMConfig())
+    testLLMTranslator(getLLMProfile())
       .then((translatedText) => {
         showToast({
           body: `${getMessage('settings_message_llmTranslator_testSuccess')} "${translatedText}"`,
@@ -254,25 +261,7 @@ export const OptionsPage: FC<OptionsPageProps> = () => {
       .finally(() => {
         setLLMTestProcess(false);
       });
-  }, [getLLMConfig, handleError, showToast]);
-
-  const loadLLMModels = useCallback(() => {
-    setLLMModelsProcess(true);
-    fetchLLMModels(getLLMConfig())
-      .then((models) => {
-        if (models.length === 0) {
-          showToast({ body: getMessage('settings_message_llmTranslator_modelsEmpty') });
-          return;
-        }
-
-        setLLMModels(models);
-        showToast({ body: getMessage('settings_message_llmTranslator_modelsLoaded') });
-      })
-      .catch(handleError)
-      .finally(() => {
-        setLLMModelsProcess(false);
-      });
-  }, [getLLMConfig, handleError, showToast]);
+  }, [getLLMProfile, handleError, showToast]);
 
   //
   // Utils
@@ -335,12 +324,13 @@ export const OptionsPage: FC<OptionsPageProps> = () => {
       clearCacheProcess,
       translatorModules,
       ttsModules,
-      llmModels,
+      llmProfiles,
       llmTestProcess,
-      llmModelsProcess,
       clearCache,
       testLLMConnection,
-      loadLLMModels,
+      toggleLLMProfilesWindow: () => {
+        setIsLLMProfilesWindowOpen((value) => !value);
+      },
       toggleCustomTranslatorsWindow: () => {
         setIsOpenCustomTranslatorsWindow((value) => !value);
       },
@@ -355,11 +345,9 @@ export const OptionsPage: FC<OptionsPageProps> = () => {
     clearCacheProcess,
     clearCache,
     ttsModules,
-    llmModels,
+    llmProfiles,
     llmTestProcess,
-    llmModelsProcess,
     testLLMConnection,
-    loadLLMModels,
   ]);
 
   //
@@ -494,6 +482,17 @@ export const OptionsPage: FC<OptionsPageProps> = () => {
                 visible
                 onClose={() => {
                   setIsTTSModulesWindowOpen(false);
+                }}
+                updateConfig={updateConfig}
+              />
+            </Suspense>
+          )}
+          {isLLMProfilesWindowOpen && (
+            <Suspense fallback={<Spinner />}>
+              <LLMProfilesManager
+                visible
+                onClose={() => {
+                  setIsLLMProfilesWindowOpen(false);
                 }}
                 updateConfig={updateConfig}
               />

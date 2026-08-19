@@ -1,5 +1,7 @@
 import { Effect, Schema } from 'effect';
 
+import { AppConfig } from '@/types/runtime';
+
 import { checkTypeByPath, decodeStruct, NonNaNNumber, tryDecode } from './types';
 
 describe('runtime type helpers', () => {
@@ -84,6 +86,38 @@ describe('runtime type helpers', () => {
     expect(checkTypeByPath(schema, ['llmTranslator', 'apiKey'], 'key')).toBe(true);
     expect(checkTypeByPath(schema, ['llmTranslator', 'apiKey'], 42)).toBe(false);
     expect(checkTypeByPath(schema, ['llmTranslator', 'missing'], 'x')).toBe(false);
+  });
+
+  test('validates whole section values and leaf paths of the app config', () => {
+    // `updateConfig` saves the `llmTranslator` section as a unit from the profiles manager
+    expect(
+      checkTypeByPath(AppConfig, ['llmTranslator'], {
+        activeProfile: 'OpenAI',
+        profiles: [
+          {
+            name: 'OpenAI',
+            provider: 'openai',
+            apiUrl: 'https://api.openai.com/v1',
+            apiKey: '',
+            model: 'gpt-4o-mini',
+          },
+        ],
+      }),
+    ).toBe(true);
+    expect(
+      checkTypeByPath(AppConfig, ['llmTranslator'], {
+        activeProfile: 'OpenAI',
+        profiles: [
+          { name: 'OpenAI', provider: 'unknown', apiUrl: '', apiKey: '', model: '' },
+        ],
+      }),
+    ).toBe(false);
+    expect(checkTypeByPath(AppConfig, ['llmTranslator', 'activeProfile'], 'OpenAI')).toBe(
+      true,
+    );
+    expect(checkTypeByPath(AppConfig, ['llmTranslator', 'activeProfile'], 42)).toBe(
+      false,
+    );
   });
 
   test('preserves legacy number semantics by rejecting only NaN', () => {

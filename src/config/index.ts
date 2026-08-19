@@ -10,9 +10,16 @@ export const DEFAULT_TTS = 'google';
 export const defaultConfig: AppConfigType = {
   translatorModule: DEFAULT_TRANSLATOR,
   llmTranslator: {
-    apiUrl: 'https://api.openai.com/v1',
-    apiKey: '',
-    model: 'gpt-4o-mini',
+    activeProfile: 'OpenAI',
+    profiles: [
+      {
+        name: 'OpenAI',
+        provider: 'openai',
+        apiUrl: 'https://api.openai.com/v1',
+        apiKey: '',
+        model: 'gpt-4o-mini',
+      },
+    ],
   },
   ttsModule: DEFAULT_TTS,
   language: getUserLanguage(),

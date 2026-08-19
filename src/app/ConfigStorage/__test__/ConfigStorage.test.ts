@@ -9,7 +9,7 @@ import { ConfigStorageMigration } from '../ConfigStorage.migrations';
 import configVersion1 from './config-v1.json';
 import configVersion3 from './config-v3.json';
 
-const latestVersion = 10;
+const latestVersion = 11;
 
 describe('config migrations', () => {
   beforeAll(clearAllMocks);
@@ -25,6 +25,43 @@ describe('config migrations', () => {
 
     expect(appConfig).toEqual(configVersion3);
     expect(localStorage.getItem('config.Main')).toBeNull();
+  });
+
+  test('migrate config from v10 flat LLM config to v11 profiles', async () => {
+    // Load data with the flat llmTranslator shape of version 10
+    localStorage.setItem('config.Main', JSON.stringify(configVersion1));
+    await ConfigStorageMigration.migrate(0, 10);
+    await browser.storage.local.set({
+      appConfig: {
+        ...(await browser.storage.local.get('appConfig')).appConfig,
+        llmTranslator: {
+          apiUrl: 'https://llm.example/v1',
+          apiKey: 'secret-key',
+          model: 'test-model',
+        },
+      },
+    });
+
+    // Migrate data
+    await ConfigStorageMigration.migrate(10, 11);
+
+    const { appConfig } = await browser.storage.local.get('appConfig');
+    expect(appConfig.llmTranslator).toEqual({
+      activeProfile: 'Default',
+      profiles: [
+        {
+          name: 'Default',
+          provider: 'openai-compatible',
+          apiUrl: 'https://llm.example/v1',
+          apiKey: 'secret-key',
+          model: 'test-model',
+        },
+      ],
+    });
+
+    // Keep the shared storage clean for the following snapshot test
+    await browser.storage.local.clear();
+    localStorage.clear();
   });
 
   test('migrate config v0 to latest version', async () => {

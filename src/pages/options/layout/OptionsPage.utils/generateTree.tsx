@@ -23,12 +23,11 @@ type Options = {
   clearCacheProcess: boolean;
   translatorModules: Record<string, string>;
   ttsModules: Record<string, string>;
-  llmModels: string[] | null;
+  llmProfiles: string[];
   llmTestProcess: boolean;
-  llmModelsProcess: boolean;
   clearCache: () => void;
   testLLMConnection: () => void;
-  loadLLMModels: () => void;
+  toggleLLMProfilesWindow: () => void;
   toggleCustomTranslatorsWindow: () => void;
   toggleTTSModulesWindow: () => void;
 };
@@ -40,12 +39,11 @@ export const generateTree = ({
   clearCacheProcess,
   translatorModules,
   ttsModules,
-  llmModels,
+  llmProfiles,
   llmTestProcess,
-  llmModelsProcess,
   clearCache,
   testLLMConnection,
-  loadLLMModels,
+  toggleLLMProfilesWindow,
   toggleCustomTranslatorsWindow,
   toggleTTSModulesWindow,
 }: Options): OptionsGroup[] => {
@@ -108,33 +106,23 @@ export const generateTree = ({
           title: getMessage('settings_option_llmTranslator_header'),
           groupContent: [
             {
-              title: getMessage('settings_option_llmTranslator_apiUrl'),
-              description: getMessage('settings_option_llmTranslator_apiUrl_desc'),
-              path: 'llmTranslator.apiUrl',
-              optionContent: { type: 'InputText' },
+              title: getMessage('settings_option_llmTranslator_activeProfile'),
+              description: getMessage('settings_option_llmTranslator_activeProfile_desc'),
+              path: 'llmTranslator.activeProfile',
+              optionContent: {
+                type: 'SelectList',
+                options: llmProfiles.map((name) => ({ id: name, content: name })),
+              },
             },
             {
-              title: getMessage('settings_option_llmTranslator_apiKey'),
-              description: getMessage('settings_option_llmTranslator_apiKey_desc'),
-              path: 'llmTranslator.apiKey',
-              optionContent: { type: 'InputText', isSecret: true },
+              title: getMessage('settings_option_llmTranslator_manage'),
+              description: getMessage('settings_option_llmTranslator_manage_desc'),
+              optionContent: {
+                type: 'Button',
+                text: getMessage('settings_option_llmTranslator_manageButton'),
+                action: toggleLLMProfilesWindow,
+              },
             },
-            llmModels !== null && llmModels.length > 0
-              ? {
-                  title: getMessage('settings_option_llmTranslator_model'),
-                  description: getMessage('settings_option_llmTranslator_model_desc'),
-                  path: 'llmTranslator.model',
-                  optionContent: {
-                    type: 'SelectList',
-                    options: llmModels.map((id) => ({ id, content: id })),
-                  },
-                }
-              : {
-                  title: getMessage('settings_option_llmTranslator_model'),
-                  description: getMessage('settings_option_llmTranslator_model_desc'),
-                  path: 'llmTranslator.model',
-                  optionContent: { type: 'InputText' },
-                },
             {
               title: getMessage('settings_option_llmTranslator_test'),
               description: getMessage('settings_option_llmTranslator_test_desc'),
@@ -143,16 +131,6 @@ export const generateTree = ({
                 text: getMessage('settings_option_llmTranslator_testButton'),
                 disabled: llmTestProcess,
                 action: testLLMConnection,
-              },
-            },
-            {
-              title: getMessage('settings_option_llmTranslator_fetchModels'),
-              description: getMessage('settings_option_llmTranslator_fetchModels_desc'),
-              optionContent: {
-                type: 'Button',
-                text: getMessage('settings_option_llmTranslator_fetchModelsButton'),
-                disabled: llmModelsProcess,
-                action: loadLLMModels,
               },
             },
           ],

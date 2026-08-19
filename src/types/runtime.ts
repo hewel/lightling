@@ -31,20 +31,42 @@ const OptionalBoolean = Schema.Union([Schema.Boolean, Schema.Undefined]).pipe(
   Schema.withDecodingDefault(Effect.succeed(undefined)),
 );
 
+export const LLMProvider = Schema.Literals([
+  'openai',
+  'anthropic',
+  'openrouter',
+  'openai-compatible',
+]);
+
+export const LLMProfile = Schema.Struct({
+  name: Schema.String,
+  provider: LLMProvider,
+  apiUrl: Schema.String,
+  apiKey: Schema.String,
+  model: Schema.String,
+});
+
 export const AppConfig = Schema.Struct({
   language: Schema.String,
   translatorModule: Schema.String,
   llmTranslator: Schema.Struct({
-    apiUrl: Schema.String,
-    apiKey: Schema.String,
-    model: Schema.String,
+    // Name of the profile in `profiles` used for translation
+    activeProfile: Schema.String,
+    profiles: Schema.mutable(Schema.Array(LLMProfile)),
   }).pipe(
     Schema.withDecodingDefault(
       // `Effect.sync` so each decode gets a fresh object (AppConfigType is DeepMutable)
       Effect.sync(() => ({
-        apiUrl: 'https://api.openai.com/v1',
-        apiKey: '',
-        model: 'gpt-4o-mini',
+        activeProfile: 'OpenAI',
+        profiles: [
+          {
+            name: 'OpenAI',
+            provider: 'openai' as const,
+            apiUrl: 'https://api.openai.com/v1',
+            apiKey: '',
+            model: 'gpt-4o-mini',
+          },
+        ],
       })),
     ),
   ),

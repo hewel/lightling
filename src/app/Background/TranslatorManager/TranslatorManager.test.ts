@@ -44,9 +44,8 @@ const defaultConfig = {
     ignoreCase: true,
   },
   llmTranslator: {
-    apiUrl: '',
-    apiKey: '',
-    model: '',
+    activeProfile: '',
+    profiles: [],
   },
 };
 

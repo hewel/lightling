@@ -26,6 +26,63 @@
   "common_llmTranslator": {
     "message": "LLM"
   },
+  "llmProvider_openaiCompatible": {
+    "message": "OpenAI-compatible"
+  },
+  "llmProvider_custom": {
+    "message": "Custom"
+  },
+  "llmProfiles_managerTitle": {
+    "message": "LLM providers"
+  },
+  "llmProfiles_emptyList": {
+    "message": "No providers yet. Add one with a preset below."
+  },
+  "llmProfiles_addProvider": {
+    "message": "Provider preset"
+  },
+  "llmProfiles_add": {
+    "message": "Add"
+  },
+  "llmProfiles_edit": {
+    "message": "Edit"
+  },
+  "llmProfiles_delete": {
+    "message": "Delete"
+  },
+  "llmProfiles_deleteConfirm": {
+    "message": "Are you sure you want to delete the \"$provider_name$\" provider?",
+    "placeholders": {
+      "provider_name": {
+        "content": "$1",
+        "example": "OpenAI"
+      }
+    }
+  },
+  "llmProfiles_active": {
+    "message": "Active"
+  },
+  "llmProfiles_setActive": {
+    "message": "Set active"
+  },
+  "llmProfiles_editProfile": {
+    "message": "Edit provider"
+  },
+  "llmProfiles_profileName": {
+    "message": "Name"
+  },
+  "llmProfiles_provider": {
+    "message": "Provider"
+  },
+  "llmProfiles_save": {
+    "message": "Save"
+  },
+  "llmProfiles_emptyName": {
+    "message": "Enter a provider name"
+  },
+  "llmProfiles_duplicateName": {
+    "message": "A provider with this name already exists"
+  },
   "common_offlineTranslator": {
     "message": "$1 - Offline translator"
   },
@@ -336,38 +393,38 @@
   "settings_option_llmTranslator_header": {
     "message": "LLM translator"
   },
+  "settings_option_llmTranslator_activeProfile": {
+    "message": "Active provider"
+  },
+  "settings_option_llmTranslator_activeProfile_desc": {
+    "message": "Provider profile used by the LLM translation module"
+  },
+  "settings_option_llmTranslator_manage": {
+    "message": "LLM providers"
+  },
+  "settings_option_llmTranslator_manage_desc": {
+    "message": "Add, edit or remove LLM provider profiles"
+  },
+  "settings_option_llmTranslator_manageButton": {
+    "message": "Manage providers"
+  },
   "settings_option_llmTranslator_apiUrl": {
     "message": "API URL"
-  },
-  "settings_option_llmTranslator_apiUrl_desc": {
-    "message": "Base URL of an OpenAI-compatible API, for example https://api.openai.com/v1"
   },
   "settings_option_llmTranslator_apiKey": {
     "message": "API key"
   },
-  "settings_option_llmTranslator_apiKey_desc": {
-    "message": "Access key for the API. Leave it empty for servers without authorization. Select the \"LLM\" translation module to apply this configuration"
-  },
   "settings_option_llmTranslator_model": {
     "message": "Model"
-  },
-  "settings_option_llmTranslator_model_desc": {
-    "message": "Model identifier, for example gpt-4o-mini"
   },
   "settings_option_llmTranslator_test": {
     "message": "Test connection"
   },
   "settings_option_llmTranslator_test_desc": {
-    "message": "Send a small translation request with the current settings to verify the API URL, key and model"
+    "message": "Send a small translation request with the active provider profile to verify its settings"
   },
   "settings_option_llmTranslator_testButton": {
     "message": "Test"
-  },
-  "settings_option_llmTranslator_fetchModels": {
-    "message": "Fetch model list"
-  },
-  "settings_option_llmTranslator_fetchModels_desc": {
-    "message": "Load the list of models available at the API URL to pick a model instead of typing its identifier"
   },
   "settings_option_llmTranslator_fetchModelsButton": {
     "message": "Fetch models"

@@ -204,6 +204,47 @@ const migrations: Migration[] = [
       await browser.storage.local.set({ [storageName]: actualData });
     },
   },
+  {
+    // Convert the flat LLM translator config to a profiles list
+    version: 11,
+    async migrate() {
+      const storageName = 'appConfig';
+
+      let { [storageName]: actualData } = await browser.storage.local.get(storageName);
+      if (
+        actualData === null ||
+        typeof actualData !== 'object' ||
+        Array.isArray(actualData)
+      ) {
+        actualData = {};
+      }
+
+      const llmTranslator = actualData.llmTranslator;
+      if (
+        llmTranslator !== null &&
+        typeof llmTranslator === 'object' &&
+        !Array.isArray(llmTranslator) &&
+        typeof llmTranslator.apiUrl === 'string'
+      ) {
+        actualData.llmTranslator = {
+          activeProfile: 'Default',
+          profiles: [
+            {
+              name: 'Default',
+              provider: 'openai-compatible',
+              apiUrl: llmTranslator.apiUrl,
+              apiKey:
+                typeof llmTranslator.apiKey === 'string' ? llmTranslator.apiKey : '',
+              model: typeof llmTranslator.model === 'string' ? llmTranslator.model : '',
+            },
+          ],
+        };
+      }
+
+      // Write data
+      await browser.storage.local.set({ [storageName]: actualData });
+    },
+  },
 ];
 
 export const ConfigStorageMigration = createMigrationTask(migrations, {

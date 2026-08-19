@@ -48,3 +48,5 @@ oklch
 Segoe
 statusdot
 unstub
+lmstudio
+openrouter
