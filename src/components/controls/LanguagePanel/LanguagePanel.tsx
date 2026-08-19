@@ -133,7 +133,8 @@ export const LanguagePanel: FC<LanguagePanelProps> = ({
         onChange={onFromChange}
         hasSearch
         searchPlaceholder={getMessage('lang_searchPlaceholder')}
-        width="100%"
+        width={mobile ? '100%' : 'max-content'}
+        size="sm"
       />
       <IconButton
         label={getMessage('lang_swap')}
@@ -153,7 +154,8 @@ export const LanguagePanel: FC<LanguagePanelProps> = ({
         onChange={onToChange}
         hasSearch
         searchPlaceholder={getMessage('lang_searchPlaceholder')}
-        width="100%"
+        width={mobile ? '100%' : 'max-content'}
+        size="sm"
       />
     </Stack>
   );

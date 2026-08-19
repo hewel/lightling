@@ -1,13 +1,13 @@
 import { FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import browser from 'webextension-polyfill';
-import { Collapsible } from '@astryxdesign/core/Collapsible';
-import { Divider } from '@astryxdesign/core/Divider';
+import { Button as GhostButton } from '@astryxdesign/core/Button';
 import { IconButton } from '@astryxdesign/core/IconButton';
 import { Spinner } from '@astryxdesign/core/Spinner';
 import { HStack, StackItem, VStack } from '@astryxdesign/core/Stack';
 import * as stylex from '@stylexjs/stylex';
-import { IconVolume2, IconX } from '@tabler/icons-react';
+import { IconChevronDown, IconVolume2, IconX } from '@tabler/icons-react';
 
+import { CopyButton } from '@/components/controls/CopyButton/CopyButton';
 import { DictionaryButton } from '@/components/controls/DictionaryButton/DictionaryButton';
 import { LanguagePanel } from '@/components/controls/LanguagePanel/LanguagePanel';
 // Components
@@ -25,8 +25,6 @@ import { TRANSLATION_ORIGIN } from '@/requests/backend/history/constants';
 import { trackClientEvent } from '@/requests/backend/telemetry';
 import { ITranslation } from '@/types/translation/Translation';
 
-import './TextTranslator.css';
-
 const styles = stylex.create({
   root: {
     boxSizing: 'border-box',
@@ -39,12 +37,12 @@ const styles = stylex.create({
     textAlign: 'initial',
   },
   body: {
-    maxWidth: 'calc(var(--spacing-10) * 15)',
+    maxWidth: 'calc(var(--spacing-10) * 10)',
     maxHeight: 'calc(var(--spacing-10) * 10)',
     paddingBlock: 'var(--spacing-1)',
     overflowY: 'auto',
-    fontSize: 'var(--text-supporting-size)',
-    lineHeight: 'var(--text-supporting-leading)',
+    fontSize: 'var(--text-body-size)',
+    lineHeight: 'var(--text-body-leading)',
     whiteSpace: 'pre-line',
     scrollbarWidth: 'thin',
   },
@@ -58,6 +56,9 @@ const styles = stylex.create({
   },
   error: {
     color: 'var(--color-error)',
+  },
+  chevronOpen: {
+    transform: 'rotate(180deg)',
   },
 });
 
@@ -356,6 +357,8 @@ export const TextTranslator: FC<TextTranslatorComponentProps> = ({
 
   const isMobile = useMemo(() => isMobileBrowser(), []);
 
+  const [isOriginalOpen, setIsOriginalOpen] = useState(false);
+
   const listenLabel = getMessage('common_listen');
   const closeLabel = getMessage('common_close');
 
@@ -372,7 +375,12 @@ export const TextTranslator: FC<TextTranslatorComponentProps> = ({
 
   if (translatorFeatures !== undefined && (translatedText !== null || error !== null)) {
     return (
-      <VStack gap={2} width="max-content" maxWidth="100%" xstyle={styles.root}>
+      <VStack
+        gap={2}
+        width="max-content"
+        maxWidth="min(100vw, calc(var(--spacing-10) * 10 + var(--spacing-3) * 2))"
+        xstyle={styles.root}
+      >
         {isMobile && (
           <HStack justify="end" width="100%">
             {closeButton}
@@ -397,11 +405,11 @@ export const TextTranslator: FC<TextTranslatorComponentProps> = ({
         </HStack>
         {error === null ? (
           <>
-            <HStack gap={1} width="100%" align="start">
-              <StackItem size="fill" xstyle={styles.body}>
-                {translatedText}
-              </StackItem>
-              <HStack gap={0.5}>
+            <StackItem size="fill" xstyle={styles.body}>
+              {translatedText}
+            </StackItem>
+            <HStack width="100%" align="center" justify="between">
+              <HStack gap={0.5} align="center">
                 <IconButton
                   label={listenLabel}
                   tooltip={listenLabel}
@@ -411,36 +419,39 @@ export const TextTranslator: FC<TextTranslatorComponentProps> = ({
                   onClick={ttsTranslate.toggle}
                   isDisabled={to === undefined || !ttsModule.isSupportedLanguage(to)}
                 />
+                <CopyButton text={translatedText} />
                 <DictionaryButton translation={dictionaryData} />
               </HStack>
+              {showOriginalText && (
+                <GhostButton
+                  label={getMessage('inlineTranslator_showOriginalText')}
+                  icon={
+                    <IconChevronDown
+                      {...stylex.props(isOriginalOpen && styles.chevronOpen)}
+                    />
+                  }
+                  variant="ghost"
+                  size="sm"
+                  aria-expanded={isOriginalOpen}
+                  onClick={() => setIsOriginalOpen((isOpen) => !isOpen)}
+                />
+              )}
             </HStack>
-            {!showOriginalText ? undefined : (
-              <>
-                <Divider />
-                <HStack gap={1} width="100%" align="center">
-                  <StackItem size="fill">
-                    <Collapsible
-                      className="TextTranslatorDisclosure"
-                      trigger={getMessage('inlineTranslator_showOriginalText')}
-                      defaultIsOpen={false}
-                      onOpenChange={updatePopup}
-                    >
-                      <p {...stylex.props(styles.originalText)}>{originalText}</p>
-                    </Collapsible>
-                  </StackItem>
-                  <IconButton
-                    label={listenLabel}
-                    tooltip={listenLabel}
-                    icon={<IconVolume2 />}
-                    variant="ghost"
-                    size="sm"
-                    onClick={ttsOriginal.toggle}
-                    isDisabled={
-                      from === undefined || !ttsModule.isSupportedLanguage(from)
-                    }
-                  />
-                </HStack>
-              </>
+            {showOriginalText && isOriginalOpen && (
+              <HStack gap={1} width="100%" align="start">
+                <StackItem size="fill">
+                  <p {...stylex.props(styles.originalText)}>{originalText}</p>
+                </StackItem>
+                <IconButton
+                  label={listenLabel}
+                  tooltip={listenLabel}
+                  icon={<IconVolume2 />}
+                  variant="ghost"
+                  size="sm"
+                  onClick={ttsOriginal.toggle}
+                  isDisabled={from === undefined || !ttsModule.isSupportedLanguage(from)}
+                />
+              </HStack>
             )}
           </>
         ) : (

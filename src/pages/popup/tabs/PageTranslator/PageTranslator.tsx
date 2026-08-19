@@ -1,6 +1,10 @@
 import { FC, useCallback, useMemo } from 'react';
+import { Badge } from '@astryxdesign/core/Badge';
 import { Collapsible } from '@astryxdesign/core/Collapsible';
+import { Heading } from '@astryxdesign/core/Heading';
 import { Selector } from '@astryxdesign/core/Selector';
+import { HStack, VStack } from '@astryxdesign/core/Stack';
+import { Text } from '@astryxdesign/core/Text';
 import * as stylex from '@stylexjs/stylex';
 
 import { PageTranslatorStats } from '@/app/ContentScript/PageTranslator/PageTranslator';
@@ -12,60 +16,8 @@ import { MutableValue } from '@/types/utils';
 import { TabData } from '../../layout/PopupWindow';
 
 const styles = stylex.create({
-  root: {
-    fontFamily: 'var(--typography-font-family)',
-  },
-  verticalContainer: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 'var(--typography-controls-indent-l)',
-  },
-  horizontalContainer: {
-    display: 'flex',
-    gap: 'var(--typography-controls-indent-l)',
-  },
-  header: {
-    margin:
-      'var(--typography-layout-indent-l-all) 0 var(--typography-layout-indent-m-all)',
-  },
   translateButtonFill: {
     width: '100%',
-  },
-  langPanel: {
-    display: 'inline',
-  },
-  langPanelMobile: {
-    display: 'block',
-  },
-  counterContainer: {
-    display: 'flex',
-    gap: 'var(--button-size-s-indent-outer)',
-  },
-  counter: {
-    display: 'inline-block',
-    backgroundColor: 'var(--button-view-default-fill-color-disabled)',
-    color: 'var(--button-view-default-typo-color-disabled)',
-    fontSize: 'var(--button-size-s-font-size)',
-    lineHeight: 'var(--button-size-s-line-height)',
-    padding: '0 var(--button-size-m-indent-inner)',
-    borderRadius: 'var(--button-border-radius)',
-  },
-  counterContent: {
-    marginInlineStart: 'var(--typography-layout-indent-s-all)',
-    borderInlineStart: 'var(--border-width) solid currentcolor',
-    paddingInlineStart: 'var(--typography-layout-indent-s-all)',
-  },
-  placeholder: {
-    marginBlockEnd: '0.5rem',
-  },
-  optionTitle: {
-    marginInlineEnd: 'var(--typography-controls-indent-l)',
-  },
-  optionTitleMobile: {
-    display: 'block',
-  },
-  optionValue: {
-    marginInlineEnd: 'var(--typography-controls-indent-l)',
   },
 });
 
@@ -196,13 +148,11 @@ export const PageTranslator: FC<PageTranslatorProps> = ({
     [],
   );
 
+  const ActionStack = isMobile ? VStack : HStack;
+
   return (
-    <div {...stylex.props(styles.root, styles.verticalContainer)}>
-      <div
-        {...stylex.props(
-          isMobile ? styles.verticalContainer : styles.horizontalContainer,
-        )}
-      >
+    <VStack gap={3}>
+      <ActionStack gap={2} align={isMobile ? 'stretch' : 'center'} width="100%">
         <Button
           view="action"
           onPress={toggleTranslate}
@@ -211,18 +161,16 @@ export const PageTranslator: FC<PageTranslatorProps> = ({
         >
           {actionBtnText}
         </Button>
-        <div {...stylex.props(styles.langPanel, isMobile && styles.langPanelMobile)}>
-          <LanguagePanel
-            auto={translatorFeatures.isSupportAutodetect}
-            languages={translatorFeatures.supportedLanguages}
-            from={from}
-            to={to}
-            setFrom={setFrom}
-            setTo={setTo}
-            mobile={isMobile}
-          />
-        </div>
-      </div>
+        <LanguagePanel
+          auto={translatorFeatures.isSupportAutodetect}
+          languages={translatorFeatures.supportedLanguages}
+          from={from}
+          to={to}
+          setFrom={setFrom}
+          setTo={setTo}
+          mobile={isMobile}
+        />
+      </ActionStack>
 
       {/* Options */}
       <Collapsible
@@ -230,90 +178,67 @@ export const PageTranslator: FC<PageTranslatorProps> = ({
         isOpen={isShowOptions}
         onOpenChange={setIsShowOptions}
       >
-        <div {...stylex.props(styles.verticalContainer)}>
-          <div>
-            <h4 {...stylex.props(styles.header)}>
+        <VStack gap={3}>
+          <VStack gap={2}>
+            <Heading level={4}>
               {getMessage('pageTranslator_commonPreferences_title') +
-                (localizedLang && ` (${localizedLang})`)}
-            </h4>
-            <div>
-              <span
-                {...stylex.props(
-                  styles.optionTitle,
-                  isMobile && styles.optionTitleMobile,
-                )}
-              >
-                {getMessage('pageTranslator_option_autoTranslate')}
-              </span>
-              <span {...stylex.props(styles.optionValue)}>
-                <Selector
-                  label={getMessage('pageTranslator_commonPreferences_title')}
-                  isLabelHidden
-                  options={translateLanguageOptions}
-                  value={languagePreferences}
-                  onChange={setTranslateLangAdaptor}
-                />
-              </span>
-            </div>
-          </div>
+                (localizedLang !== null ? ` (${localizedLang})` : '')}
+            </Heading>
+            <HStack gap={2} align="center" justify="between" width="100%">
+              <Text>{getMessage('pageTranslator_option_autoTranslate')}</Text>
+              <Selector
+                label={getMessage('pageTranslator_commonPreferences_title')}
+                isLabelHidden
+                options={translateLanguageOptions}
+                value={languagePreferences}
+                onChange={setTranslateLangAdaptor}
+              />
+            </HStack>
+          </VStack>
 
-          <div>
-            <h4 {...stylex.props(styles.header)}>
+          <VStack gap={2}>
+            <Heading level={4}>
               {getMessage('pageTranslator_sitePreferences_title')} {escapedHostname}
-            </h4>
-            <div>
-              <span
-                {...stylex.props(
-                  styles.optionTitle,
-                  isMobile && styles.optionTitleMobile,
-                )}
-              >
-                {getMessage('pageTranslator_option_autoTranslate')}
-              </span>
-              <span {...stylex.props(styles.optionValue)}>
-                <Selector
-                  label={getMessage('pageTranslator_sitePreferences_title')}
-                  isLabelHidden
-                  options={translateSiteOptions}
-                  value={sitePreferences}
-                  onChange={setTranslateStateAdaptor}
-                />
-              </span>
-            </div>
-          </div>
-        </div>
+            </Heading>
+            <HStack gap={2} align="center" justify="between" width="100%">
+              <Text>{getMessage('pageTranslator_option_autoTranslate')}</Text>
+              <Selector
+                label={getMessage('pageTranslator_sitePreferences_title')}
+                isLabelHidden
+                options={translateSiteOptions}
+                value={sitePreferences}
+                onChange={setTranslateStateAdaptor}
+              />
+            </HStack>
+          </VStack>
+        </VStack>
       </Collapsible>
 
-      {showCounters ? (
-        <>
-          <h4 {...stylex.props(styles.header)}>
-            {getMessage('pageTranslator_translationReport')}
-          </h4>
-          <div {...stylex.props(styles.counterContainer)}>
-            <span {...stylex.props(styles.counter)}>
-              {getMessage('pageTranslator_translationReport_resolve')}
-              <span {...stylex.props(styles.counterContent)}>
-                {counters !== undefined ? counters.resolved : 0}
-              </span>
-            </span>
-            <span {...stylex.props(styles.counter)}>
-              {getMessage('pageTranslator_translationReport_reject')}
-              <span {...stylex.props(styles.counterContent)}>
-                {counters !== undefined ? counters.rejected : 0}
-              </span>
-            </span>
-            <span {...stylex.props(styles.counter)}>
-              {getMessage('pageTranslator_translationReport_queue')}
-              <span {...stylex.props(styles.counterContent)}>
-                {counters !== undefined ? counters.pending : 0}
-              </span>
-            </span>
-          </div>
-        </>
-      ) : (
-        // Placeholder
-        <div {...stylex.props(styles.placeholder)} />
+      {showCounters && (
+        <VStack gap={2}>
+          <Heading level={4}>{getMessage('pageTranslator_translationReport')}</Heading>
+          <HStack gap={2}>
+            <Badge
+              variant="success"
+              label={`${getMessage('pageTranslator_translationReport_resolve')}: ${
+                counters !== undefined ? counters.resolved : 0
+              }`}
+            />
+            <Badge
+              variant="error"
+              label={`${getMessage('pageTranslator_translationReport_reject')}: ${
+                counters !== undefined ? counters.rejected : 0
+              }`}
+            />
+            <Badge
+              variant="neutral"
+              label={`${getMessage('pageTranslator_translationReport_queue')}: ${
+                counters !== undefined ? counters.pending : 0
+              }`}
+            />
+          </HStack>
+        </VStack>
       )}
-    </div>
+    </VStack>
   );
 };

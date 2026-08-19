@@ -8,12 +8,13 @@ import {
   useRef,
   useState,
 } from 'react';
+import { IconButton } from '@astryxdesign/core/IconButton';
 import { Spinner } from '@astryxdesign/core/Spinner';
+import { HStack } from '@astryxdesign/core/Stack';
 import { Tab, TabList } from '@astryxdesign/core/TabList';
 import * as stylex from '@stylexjs/stylex';
 import { IconBook2, IconHistory, IconSettings } from '@tabler/icons-react';
 
-import { Button } from '@/components/primitives/Button/Button.bundle/desktop';
 import { getOptionsPageUrl, isMobileBrowser } from '@/lib/browser';
 import { getMessage } from '@/lib/language';
 import { TELEMETRY_EVENT_NAME } from '@/lib/telemetry';
@@ -31,39 +32,15 @@ const styles = stylex.create({
     maxWidth: '100vw',
   },
   header: {
-    display: 'flex',
-    background: 'var(--popup-window-header-fill-color)',
-    lineHeight: '4rem',
-    padding: '0 var(--typography-layout-indent-l-all)',
-    gap: 'var(--typography-layout-indent-l-all)',
-  },
-  logo: {
-    display: 'inline-block',
+    background: 'var(--color-background-muted)',
   },
   logoIcon: {
     display: 'inline-block',
-    verticalAlign: 'middle',
     width: '5rem',
     height: 'auto',
   },
-  headerMenu: {
-    display: 'block',
-    fontFamily: 'var(--typography-font-family)',
-    textAlign: 'right',
-    width: '100%',
-    float: 'right',
-    lineHeight: 'inherit',
-  },
-  headerIcon: {
-    // Astryx Button's icon wrapper is a 16px flex box; without flexShrink the
-    // svg is compressed to it. 24px stays inside the 32px icon-only button.
-    flexShrink: 0,
-    width: 'var(--spacing-6)',
-    height: 'var(--spacing-6)',
-    margin: '0 0.2rem',
-  },
   tabs: {
-    padding: '0.5rem',
+    padding: 'var(--spacing-2) var(--spacing-3) 0',
     overflowX: 'auto',
   },
   tabsMenu: {
@@ -71,15 +48,14 @@ const styles = stylex.create({
     minWidth: 'max-content',
   },
   content: {
-    padding: '0.5rem',
+    padding: 'var(--spacing-3)',
   },
   errorMessage: {
     minWidth: '100%',
   },
   plainText: {
-    padding: '2rem 0',
-    fontFamily: 'var(--typography-font-family)',
-    fontSize: 'var(--typography-layout-size-l-font-size)',
+    padding: 'var(--spacing-8) 0',
+    fontSize: 'var(--text-large-size)',
     textAlign: 'center',
   },
 });
@@ -338,40 +314,43 @@ export const PopupWindow: FC<PopupWindowProps> = ({
 
   return (
     <div {...stylex.props(isMobile ? styles.mobile : styles.root)}>
-      <div {...stylex.props(styles.header)}>
-        <div {...stylex.props(styles.logo)}>
-          <LogoElement {...stylex.props(styles.logoIcon)} />
-        </div>
-        <div {...stylex.props(styles.headerMenu)}>
-          <Button
-            as="a"
-            type="link"
-            url="/pages/history/history.html"
+      <HStack
+        align="center"
+        justify="between"
+        gap={2}
+        paddingBlock={2}
+        paddingInline={3}
+        width="100%"
+        xstyle={styles.header}
+      >
+        <LogoElement {...stylex.props(styles.logoIcon)} />
+        <HStack gap={1} align="center">
+          <IconButton
+            href="/pages/history/history.html"
             target="_blank"
-            title={getMessage('history_pageTitle')}
-            iconRight={<IconHistory {...stylex.props(styles.headerIcon)} />}
-            view="clear"
+            label={getMessage('history_pageTitle')}
+            tooltip={getMessage('history_pageTitle')}
+            icon={<IconHistory />}
+            variant="ghost"
           />
-          <Button
-            as="a"
-            type="link"
-            url="/pages/dictionary/dictionary.html"
+          <IconButton
+            href="/pages/dictionary/dictionary.html"
             target="_blank"
-            title={getMessage('dictionary_pageTitle')}
-            iconRight={<IconBook2 {...stylex.props(styles.headerIcon)} />}
-            view="clear"
+            label={getMessage('dictionary_pageTitle')}
+            tooltip={getMessage('dictionary_pageTitle')}
+            icon={<IconBook2 />}
+            variant="ghost"
           />
-          <Button
-            as="a"
-            type="link"
-            url={getOptionsPageUrl()}
+          <IconButton
+            href={getOptionsPageUrl()}
             target="_blank"
-            title={getMessage('settings_pageTitle')}
-            iconRight={<IconSettings {...stylex.props(styles.headerIcon)} />}
-            view="clear"
+            label={getMessage('settings_pageTitle')}
+            tooltip={getMessage('settings_pageTitle')}
+            icon={<IconSettings />}
+            variant="ghost"
           />
-        </div>
-      </div>
+        </HStack>
+      </HStack>
       <div style={contentStyle}>{content}</div>
     </div>
   );

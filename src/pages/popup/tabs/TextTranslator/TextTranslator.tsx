@@ -9,9 +9,11 @@ import React, {
   useState,
 } from 'react';
 import ReactDOM from 'react-dom';
+import { HStack, VStack } from '@astryxdesign/core/Stack';
 import * as stylex from '@stylexjs/stylex';
 import { IconVolume2, IconWand } from '@tabler/icons-react';
 
+import { CopyButton } from '@/components/controls/CopyButton/CopyButton';
 import { DictionaryButton } from '@/components/controls/DictionaryButton/DictionaryButton';
 import { LanguagePanel } from '@/components/controls/LanguagePanel/LanguagePanel';
 import { Button } from '@/components/primitives/Button/Button.bundle/desktop';
@@ -33,27 +35,6 @@ import { MutableValue } from '@/types/utils';
 import { TabData } from '../../layout/PopupWindow';
 
 const styles = stylex.create({
-  root: {
-    boxSizing: 'border-box',
-    fontFamily: 'var(--textarea-font-family)',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 'var(--typography-layout-indent-m-all)',
-  },
-  langPanel: {
-    minWidth: 'max-content',
-  },
-  inputContainer: {
-    width: 'min-content',
-    minWidth: '100%',
-    maxWidth: '100%',
-  },
-  inputContainerWrapper: {
-    boxSizing: 'border-box',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 'var(--typography-layout-indent-m-all)',
-  },
   input: {
     width: '100%',
   },
@@ -78,31 +59,34 @@ const styles = stylex.create({
   },
   textActions: {
     display: 'flex',
-    gap: 'var(--typography-layout-indent-s-all)',
+    gap: 'var(--spacing-1)',
   },
   inputTextActions: {
     zIndex: 2,
   },
   resultContainer: {
-    display: 'flex',
-    flexDirection: 'column',
-    backgroundColor: 'var(--textarea-view-default-fill-color-disabled)',
-    color: 'var(--textarea-view-default-typo-color-base)',
-    borderRadius: 'var(--textarea-border-radius)',
     maxHeight: '12.5rem',
-    fontFamily: 'var(--textarea-font-family)',
+    backgroundColor: 'var(--color-background-muted)',
+    borderRadius: 'var(--radius-element)',
   },
   resultText: {
-    minHeight: '8.125rem',
-    overflow: 'auto',
-    padding: 'var(--textarea-size-m-control-indent)',
-    whiteSpace: 'pre-line',
     boxSizing: 'border-box',
+    minHeight: '8.125rem',
+    padding: 'var(--spacing-2)',
+    overflow: 'auto',
+    color: 'var(--color-text-primary)',
+    whiteSpace: 'pre-line',
     wordBreak: 'break-word',
+  },
+  placeholderText: {
+    color: 'var(--color-text-secondary)',
+  },
+  resultActions: {
+    padding: '0 var(--spacing-2) var(--spacing-1)',
   },
   languageSuggestion: {
     display: 'flex',
-    gap: '0.3em',
+    gap: 'var(--spacing-1)',
   },
 });
 
@@ -463,98 +447,100 @@ export const TextTranslator: FC<TextTranslatorProps> = ({
         : null;
 
   return (
-    <div {...stylex.props(styles.root)}>
-      <div {...stylex.props(styles.langPanel)}>
-        <LanguagePanel
-          auto={translatorFeatures.isSupportAutodetect}
-          languages={translatorFeatures.supportedLanguages}
-          from={from}
-          to={to}
-          setFrom={(from) => from !== undefined && setFrom(from)}
-          setTo={(to) => to !== undefined && setTo(to)}
-          swapHandler={swapLanguages}
-          preventFocusOnPress={isFocusOnInput}
-          mobile={isMobile}
-        />
-      </div>
-      <div {...stylex.props(styles.inputContainer)}>
-        <div {...stylex.props(styles.inputContainerWrapper)}>
-          {langSuggestion && (
-            <div {...stylex.props(styles.languageSuggestion)}>
-              <IconWand size="1em" />
-              <span>
-                {getLocalizedNode({
-                  messageName: 'textTranslator_suggestLanguage',
-                  substitutions: [langSuggestion.toLowerCase()],
-                  slots: {
-                    languageSuggest: ApplySuggestComponent,
-                  },
-                })}
-              </span>
-            </div>
-          )}
+    <VStack gap={3}>
+      <LanguagePanel
+        auto={translatorFeatures.isSupportAutodetect}
+        languages={translatorFeatures.supportedLanguages}
+        from={from}
+        to={to}
+        setFrom={(from) => from !== undefined && setFrom(from)}
+        setTo={(to) => to !== undefined && setTo(to)}
+        swapHandler={swapLanguages}
+        preventFocusOnPress={isFocusOnInput}
+        mobile={isMobile}
+      />
+      <VStack gap={2}>
+        {langSuggestion && (
+          <div {...stylex.props(styles.languageSuggestion)}>
+            <IconWand size="1em" />
+            <span>
+              {getLocalizedNode({
+                messageName: 'textTranslator_suggestLanguage',
+                substitutions: [langSuggestion.toLowerCase()],
+                slots: {
+                  languageSuggest: ApplySuggestComponent,
+                },
+              })}
+            </span>
+          </div>
+        )}
 
-          <div>
-            <Textarea
-              placeholder={getMessage('textTranslator_translateInputPlaceholder')}
-              xstyle={styles.input}
-              controlProps={{
-                innerRef: inputControlExternal,
-                controlPlaneXstyle: styles.controlPlane,
-                inputXstyle: styles.inputSlot,
-                fieldXstyle: styles.field,
-              }}
-              value={userInput}
-              onInputText={onTextChange}
-              hasClear
-              onClearClick={clearState}
-              spellCheck={spellCheck}
-              onFocus={() => {
-                setIsFocusOnInput(true);
-              }}
-              onBlur={() => {
-                setIsFocusOnInput(false);
-              }}
-              addonAfterControl={
-                <div {...stylex.props(styles.textActions, styles.inputTextActions)}>
-                  <Button
-                    disabled={
-                      userInput.length === 0 || !ttsModule.isSupportedLanguage(from)
-                    }
-                    onPress={ttsOriginal.toggle}
-                    view="clear"
-                    size="s"
-                  >
-                    <IconVolume2 />
-                  </Button>
-                  <DictionaryButton translation={dictionaryData} />
-                </div>
-              }
-            />
-          </div>
-          <div {...stylex.props(styles.resultContainer)}>
-            <div {...stylex.props(styles.resultText)}>
-              {resultText !== null
-                ? resultText
-                : getMessage('textTranslator_translatePlaceholder')}
-            </div>
-            <div {...stylex.props(styles.textActions)}>
-              <Button
-                disabled={
-                  inTranslateProcess ||
-                  translation === null ||
-                  !ttsModule.isSupportedLanguage(to)
-                }
-                onPress={ttsTranslate.toggle}
-                view="clear"
-                size="s"
-              >
-                <IconVolume2 />
-              </Button>
-            </div>
-          </div>
+        <div>
+          <Textarea
+            placeholder={getMessage('textTranslator_translateInputPlaceholder')}
+            xstyle={styles.input}
+            controlProps={{
+              innerRef: inputControlExternal,
+              controlPlaneXstyle: styles.controlPlane,
+              inputXstyle: styles.inputSlot,
+              fieldXstyle: styles.field,
+            }}
+            value={userInput}
+            onInputText={onTextChange}
+            hasClear
+            onClearClick={clearState}
+            spellCheck={spellCheck}
+            onFocus={() => {
+              setIsFocusOnInput(true);
+            }}
+            onBlur={() => {
+              setIsFocusOnInput(false);
+            }}
+            addonAfterControl={
+              <div {...stylex.props(styles.textActions, styles.inputTextActions)}>
+                <Button
+                  disabled={
+                    userInput.length === 0 || !ttsModule.isSupportedLanguage(from)
+                  }
+                  onPress={ttsOriginal.toggle}
+                  view="clear"
+                  size="s"
+                >
+                  <IconVolume2 />
+                </Button>
+                <DictionaryButton translation={dictionaryData} />
+              </div>
+            }
+          />
         </div>
-      </div>
-    </div>
+        <VStack xstyle={styles.resultContainer}>
+          <div
+            {...stylex.props(
+              styles.resultText,
+              resultText === null && styles.placeholderText,
+            )}
+          >
+            {resultText !== null
+              ? resultText
+              : getMessage('textTranslator_translatePlaceholder')}
+          </div>
+          <HStack gap={1} xstyle={styles.resultActions}>
+            <Button
+              disabled={
+                inTranslateProcess ||
+                translation === null ||
+                !ttsModule.isSupportedLanguage(to)
+              }
+              onPress={ttsTranslate.toggle}
+              view="clear"
+              size="s"
+            >
+              <IconVolume2 />
+            </Button>
+            <CopyButton text={translation ? translation.text : null} />
+          </HStack>
+        </VStack>
+      </VStack>
+    </VStack>
   );
 };
