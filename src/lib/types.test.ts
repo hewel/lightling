@@ -1,4 +1,4 @@
-import { Schema } from 'effect';
+import { Effect, Schema } from 'effect';
 
 import { checkTypeByPath, decodeStruct, NonNaNNumber, tryDecode } from './types';
 
@@ -72,6 +72,18 @@ describe('runtime type helpers', () => {
     expect(checkTypeByPath(schema, ['settings', 'enabled'], true)).toBe(true);
     expect(checkTypeByPath(schema, ['settings', 'enabled'], 'yes')).toBe(false);
     expect(checkTypeByPath(schema, ['settings', 'missing'], true)).toBe(false);
+  });
+
+  test('validates paths through structs with decoding defaults', () => {
+    const schema = Schema.Struct({
+      llmTranslator: Schema.Struct({ apiKey: Schema.String }).pipe(
+        Schema.withDecodingDefault(Effect.succeed({ apiKey: '' })),
+      ),
+    });
+
+    expect(checkTypeByPath(schema, ['llmTranslator', 'apiKey'], 'key')).toBe(true);
+    expect(checkTypeByPath(schema, ['llmTranslator', 'apiKey'], 42)).toBe(false);
+    expect(checkTypeByPath(schema, ['llmTranslator', 'missing'], 'x')).toBe(false);
   });
 
   test('preserves legacy number semantics by rejecting only NaN', () => {

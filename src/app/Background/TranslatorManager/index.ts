@@ -1,15 +1,20 @@
 import { isLanguageCodeISO639v1 } from 'anylang/languages';
 import { IScheduler, Scheduler, SchedulerWithCache } from 'anylang/scheduling';
+import { TranslatorConstructor } from 'anylang/translators';
 
 import { TELEMETRY_EVENT_NAME } from '@/lib/telemetry';
 import { telemetry } from '@/lib/telemetry/singleton';
+import { LLMTranslator } from '@/lib/translators/llm/LLMTranslator';
 import { AppConfigType } from '@/types/runtime';
 import { RecordValues } from '@/types/utils';
 
 import { TranslatorsMap } from '..';
 import { TranslatorsCacheStorage } from '../TranslatorsCacheStorage';
 
-export type Config = Pick<AppConfigType, 'translatorModule' | 'scheduler' | 'cache'>;
+export type Config = Pick<
+  AppConfigType,
+  'translatorModule' | 'scheduler' | 'cache' | 'llmTranslator'
+>;
 
 /**
  * Build and manage a translation scheduler
@@ -88,6 +93,12 @@ export class TranslatorManager<Translators extends TranslatorsMap = TranslatorsM
 
     const translatorClass = this.getTranslatorClass();
 
+    // LLM translator needs API configuration; other translators take no constructor args
+    const constructorArgs =
+      (translatorClass as TranslatorConstructor) === LLMTranslator
+        ? [this.config.llmTranslator]
+        : [];
+
     this.translator = new (class extends translatorClass {
       async translate(
         text: string,
@@ -124,7 +135,7 @@ export class TranslatorManager<Translators extends TranslatorsMap = TranslatorsM
           throw error;
         }
       }
-    })() as InstanceType<RecordValues<Translators>>;
+    })(...constructorArgs) as InstanceType<RecordValues<Translators>>;
 
     return this.translator;
   }

@@ -9,6 +9,11 @@ export const DEFAULT_TTS = 'google';
 // Init config
 export const defaultConfig: AppConfigType = {
   translatorModule: DEFAULT_TRANSLATOR,
+  llmTranslator: {
+    apiUrl: 'https://api.openai.com/v1',
+    apiKey: '',
+    model: 'gpt-4o-mini',
+  },
   ttsModule: DEFAULT_TTS,
   language: getUserLanguage(),
   scheduler: {

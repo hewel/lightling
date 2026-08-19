@@ -172,9 +172,24 @@ export function tryDecode<S extends SyncSchema<unknown>>(
   throw new TypeError('Invalid type');
 }
 
-const isStructSchema = (
-  schema: Schema.Constraint,
-): schema is Schema.Struct<Schema.Struct.Fields> => 'fields' in schema;
+const getStructFields = (schema: Schema.Constraint): Schema.Struct.Fields | null => {
+  if ('fields' in schema) return schema.fields as Schema.Struct.Fields;
+
+  // A struct piped through `Schema.withDecodingDefault` keeps the source struct in `to`.
+  // Schema structs are function objects, so both object and function types are accepted.
+  if ('to' in schema) {
+    const inner: unknown = schema.to;
+    if (
+      (typeof inner === 'object' || typeof inner === 'function') &&
+      inner !== null &&
+      'fields' in inner
+    ) {
+      return inner.fields as Schema.Struct.Fields;
+    }
+  }
+
+  return null;
+};
 
 /**
  * Validate a value against the schema field at the provided object path.
@@ -187,9 +202,10 @@ export const checkTypeByPath = <S extends Schema.Struct<Schema.Struct.Fields>>(
   let current: Schema.Constraint = schema;
 
   for (const segment of path) {
-    if (!isStructSchema(current)) return false;
+    const fields = getStructFields(current);
+    if (fields === null) return false;
 
-    const next = current.fields[segment];
+    const next = fields[segment];
     if (next === undefined) return false;
     current = next;
   }

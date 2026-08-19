@@ -34,6 +34,20 @@ const OptionalBoolean = Schema.Union([Schema.Boolean, Schema.Undefined]).pipe(
 export const AppConfig = Schema.Struct({
   language: Schema.String,
   translatorModule: Schema.String,
+  llmTranslator: Schema.Struct({
+    apiUrl: Schema.String,
+    apiKey: Schema.String,
+    model: Schema.String,
+  }).pipe(
+    Schema.withDecodingDefault(
+      // `Effect.sync` so each decode gets a fresh object (AppConfigType is DeepMutable)
+      Effect.sync(() => ({
+        apiUrl: 'https://api.openai.com/v1',
+        apiKey: '',
+        model: 'gpt-4o-mini',
+      })),
+    ),
+  ),
   ttsModule: Schema.String,
   scheduler: Schema.Struct({
     useCache: Schema.Boolean,

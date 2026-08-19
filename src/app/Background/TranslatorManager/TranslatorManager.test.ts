@@ -1,4 +1,5 @@
 import { clearAllMocks } from '@/lib/tests';
+import { LLMTranslator } from '@/lib/translators/llm/LLMTranslator';
 
 import { TranslatorManager } from '.';
 
@@ -42,6 +43,11 @@ const defaultConfig = {
   cache: {
     ignoreCase: true,
   },
+  llmTranslator: {
+    apiUrl: '',
+    apiKey: '',
+    model: '',
+  },
 };
 
 test('TranslatorManager thrown error when translator module not found', () => {
@@ -68,6 +74,18 @@ test('TranslatorManager translate text with selected translator', async () => {
   const expectedText = await targetTranslator.translate('Hello world', 'en', 'de');
 
   expect(translatedText).toBe(expectedText);
+});
+
+test('TranslatorManager passes llmTranslator config to LLMTranslator', async () => {
+  const translatorManager = new TranslatorManager(
+    { ...defaultConfig, translatorModule: 'LLMTranslator' },
+    { LLMTranslator },
+  );
+
+  const translator = translatorManager.getTranslator();
+  await expect(translator.translate('Hello world', 'en', 'de')).rejects.toThrow(
+    'LLM translator model is not configured',
+  );
 });
 
 describe('TranslatorManager consider cache preferences', () => {

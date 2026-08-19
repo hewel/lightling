@@ -9,6 +9,7 @@ import {
 import { TELEMETRY_EVENT_NAME } from '../../lib/telemetry';
 import { telemetry } from '../../lib/telemetry/singleton';
 import { BergamotTranslator } from '../../lib/translators/bergamot/BergamotTranslator';
+import { LLMTranslator } from '../../lib/translators/llm/LLMTranslator';
 import { isDeepEqual } from '../../lib/utils';
 import {
   createPromiseWithControls,
@@ -67,6 +68,7 @@ export const embeddedTranslators = {
   AutoTranslator,
   GoogleTranslator: AggregatedGoogleTranslator,
   BergamotTranslator,
+  LLMTranslator,
 } as const;
 
 /**
@@ -133,10 +135,11 @@ export class Background {
 
     // Update config of translate manager
     $config.subscribe(
-      ({ scheduler, translatorModule, cache }) => ({
+      ({ scheduler, translatorModule, cache, llmTranslator }) => ({
         scheduler,
         translatorModule,
         cache,
+        llmTranslator,
       }),
       (config) => {
         if (this.translateManager === null) {

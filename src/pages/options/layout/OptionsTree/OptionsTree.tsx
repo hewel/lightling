@@ -27,6 +27,11 @@ export interface OptionInputNumber {
   type: 'InputNumber';
 }
 
+export interface OptionInputText {
+  type: 'InputText';
+  isSecret?: boolean;
+}
+
 export interface OptionInputMultilineFromArray {
   type: 'InputMultilineFromArray';
 }
@@ -83,6 +88,7 @@ export interface OptionItem {
   optionContent:
     | OptionSelectList
     | OptionInputNumber
+    | OptionInputText
     | OptionInputMultilineFromArray
     | OptionCheckbox
     | OptionCheckboxGroup
@@ -240,6 +246,22 @@ export const OptionsTree: FC<OptionsTreeProps> = ({
               onInputText={(value) => {
                 const parsedNumber = +value;
                 setOptionValueProxy(path, isNaN(parsedNumber) ? value : parsedNumber);
+              }}
+            />
+          );
+        }
+        case 'InputText': {
+          const inputValue = typeof value === 'string' ? value : undefined;
+          return (
+            <Textinput
+              label={title ?? path ?? 'Option value'}
+              isLabelHidden
+              type={option.isSecret === true ? 'password' : undefined}
+              status={error !== undefined ? { type: 'error', message: error } : undefined}
+              value={inputValue}
+              spellCheck={false}
+              onInputText={(value) => {
+                setOptionValueProxy(path, value);
               }}
             />
           );

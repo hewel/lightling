@@ -94,6 +94,29 @@ export const generateTree = ({
             action: toggleCustomTranslatorsWindow,
           },
         },
+        {
+          title: getMessage('settings_option_llmTranslator_header'),
+          groupContent: [
+            {
+              title: getMessage('settings_option_llmTranslator_apiUrl'),
+              description: getMessage('settings_option_llmTranslator_apiUrl_desc'),
+              path: 'llmTranslator.apiUrl',
+              optionContent: { type: 'InputText' },
+            },
+            {
+              title: getMessage('settings_option_llmTranslator_apiKey'),
+              description: getMessage('settings_option_llmTranslator_apiKey_desc'),
+              path: 'llmTranslator.apiKey',
+              optionContent: { type: 'InputText', isSecret: true },
+            },
+            {
+              title: getMessage('settings_option_llmTranslator_model'),
+              description: getMessage('settings_option_llmTranslator_model_desc'),
+              path: 'llmTranslator.model',
+              optionContent: { type: 'InputText' },
+            },
+          ],
+        },
       ],
     },
     {

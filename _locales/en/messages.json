@@ -23,6 +23,9 @@
   "common_listen": {
     "message": "Listen"
   },
+  "common_llmTranslator": {
+    "message": "LLM"
+  },
   "common_offlineTranslator": {
     "message": "$1 - Offline translator"
   },
@@ -320,6 +323,27 @@
   },
   "settings_option_history_enable_desc": {
     "message": "When enabled, translations will be recorded and appear on the <slot id=historyPage>history page</slot>"
+  },
+  "settings_option_llmTranslator_header": {
+    "message": "LLM translator"
+  },
+  "settings_option_llmTranslator_apiUrl": {
+    "message": "API URL"
+  },
+  "settings_option_llmTranslator_apiUrl_desc": {
+    "message": "Base URL of an OpenAI-compatible API, for example https://api.openai.com/v1"
+  },
+  "settings_option_llmTranslator_apiKey": {
+    "message": "API key"
+  },
+  "settings_option_llmTranslator_apiKey_desc": {
+    "message": "Access key for the API. Leave it empty for servers without authorization. Select the \"LLM\" translation module to apply this configuration"
+  },
+  "settings_option_llmTranslator_model": {
+    "message": "Model"
+  },
+  "settings_option_llmTranslator_model_desc": {
+    "message": "Model identifier, for example gpt-4o-mini"
   },
   "settings_option_pageTranslation": {
     "message": "The full page translation"
