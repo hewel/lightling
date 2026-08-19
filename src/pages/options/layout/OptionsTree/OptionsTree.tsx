@@ -13,6 +13,7 @@ import { Textinput } from '@/components/primitives/Textinput/Textinput.bundle/de
 import { getValueAtPath } from '@/lib/utils';
 import { AppConfigType } from '@/types/runtime';
 
+import { LLMProfilesFieldList } from '../OptionsPage.components/LLMProfilesFieldList/LLMProfilesFieldList';
 import { optionsPageStyles } from '../OptionsPage.stylex';
 import { PageSection } from '../PageSection/PageSection';
 
@@ -61,9 +62,22 @@ export interface OptionHotkey {
   type: 'Hotkey';
 }
 
+export interface OptionLLMProfiles {
+  type: 'LLMProfiles';
+}
+
 type HeadingLevel = 1 | 2 | 3 | 4 | 5 | 6;
-type OptionValue = boolean | null | number | string | string[] | undefined;
+export type OptionValue =
+  | boolean
+  | null
+  | number
+  | string
+  | string[]
+  | AppConfigType['llmTranslator']
+  | undefined;
 const getOptionValue = (config: AppConfigType, path: string): OptionValue => {
+  if (path === 'llmTranslator') return config.llmTranslator;
+
   const value = getValueAtPath(config, path);
   if (
     value === undefined ||
@@ -94,7 +108,8 @@ export interface OptionItem {
     | OptionCheckbox
     | OptionCheckboxGroup
     | OptionButton
-    | OptionHotkey;
+    | OptionHotkey
+    | OptionLLMProfiles;
 }
 
 export interface OptionsGroup {
@@ -176,6 +191,23 @@ const OptionField: FC<OptionFieldProps> = ({ item, value, error, setOptionValue 
       .join(' ') || undefined;
 
   switch (option.type) {
+    case 'LLMProfiles': {
+      if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+        throw new TypeError('LLM translator config is not an object');
+      }
+
+      return (
+        <LLMProfilesFieldList
+          label={label}
+          description={description}
+          value={value}
+          error={error}
+          onChange={(value) => {
+            setOptionValue(path, value);
+          }}
+        />
+      );
+    }
     case 'Checkbox': {
       const reverse = option.reverse ?? false;
       const checked = value === undefined ? undefined : reverse != !!value;

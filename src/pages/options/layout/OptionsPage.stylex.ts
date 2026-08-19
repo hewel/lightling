@@ -17,9 +17,6 @@ export const optionsPageStyles = stylex.create({
     left: 0,
     right: 0,
     bottom: 0,
-    display: 'flex',
-    justifyContent: 'flex-end',
-    gap: 'var(--spacing-3)',
     padding: 'var(--spacing-3) var(--spacing-6)',
     background: 'var(--options-page-dialog-fill-color)',
     borderTop: '1px solid var(--color-border)',
@@ -43,10 +40,6 @@ export const optionsPageStyles = stylex.create({
   },
   headerSubtitle: {
     marginBlockEnd: 'var(--typography-layout-indent-m-all)',
-  },
-  indentHorizontal: {
-    display: 'flex',
-    gap: 'var(--typography-layout-indent-m-all)',
   },
   indentVertical: {
     display: 'flex',

@@ -23,11 +23,7 @@ type Options = {
   clearCacheProcess: boolean;
   translatorModules: Record<string, string>;
   ttsModules: Record<string, string>;
-  llmProfiles: string[];
-  llmTestProcess: boolean;
   clearCache: () => void;
-  testLLMConnection: () => void;
-  toggleLLMProfilesWindow: () => void;
   toggleCustomTranslatorsWindow: () => void;
   toggleTTSModulesWindow: () => void;
 };
@@ -39,11 +35,7 @@ export const generateTree = ({
   clearCacheProcess,
   translatorModules,
   ttsModules,
-  llmProfiles,
-  llmTestProcess,
   clearCache,
-  testLLMConnection,
-  toggleLLMProfilesWindow,
   toggleCustomTranslatorsWindow,
   toggleTTSModulesWindow,
 }: Options): OptionsGroup[] => {
@@ -106,31 +98,11 @@ export const generateTree = ({
           title: getMessage('settings_option_llmTranslator_header'),
           groupContent: [
             {
-              title: getMessage('settings_option_llmTranslator_activeProfile'),
-              description: getMessage('settings_option_llmTranslator_activeProfile_desc'),
-              path: 'llmTranslator.activeProfile',
-              optionContent: {
-                type: 'SelectList',
-                options: llmProfiles.map((name) => ({ id: name, content: name })),
-              },
-            },
-            {
-              title: getMessage('settings_option_llmTranslator_manage'),
+              title: getMessage('llmProfiles_managerTitle'),
               description: getMessage('settings_option_llmTranslator_manage_desc'),
+              path: 'llmTranslator',
               optionContent: {
-                type: 'Button',
-                text: getMessage('settings_option_llmTranslator_manageButton'),
-                action: toggleLLMProfilesWindow,
-              },
-            },
-            {
-              title: getMessage('settings_option_llmTranslator_test'),
-              description: getMessage('settings_option_llmTranslator_test_desc'),
-              optionContent: {
-                type: 'Button',
-                text: getMessage('settings_option_llmTranslator_testButton'),
-                disabled: llmTestProcess,
-                action: testLLMConnection,
+                type: 'LLMProfiles',
               },
             },
           ],

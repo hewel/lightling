@@ -15,7 +15,6 @@ import { Spinner } from '@astryxdesign/core/Spinner';
 import { HStack, VStack } from '@astryxdesign/core/Stack';
 import { Text } from '@astryxdesign/core/Text';
 import { useToast } from '@astryxdesign/core/Toast';
-import * as stylex from '@stylexjs/stylex';
 
 import { Page } from '@/components/layouts/Page/Page';
 import { Button } from '@/components/primitives/Button/Button.bundle/universal';
@@ -24,8 +23,7 @@ import { openFileDialog, readAsText, saveFile } from '@/lib/files';
 import { getMessage } from '@/lib/language';
 import { TELEMETRY_EVENT_NAME } from '@/lib/telemetry';
 import { telemetry } from '@/lib/telemetry/singleton';
-import { testLLMTranslator } from '@/lib/translators/llm/api';
-import { getActiveLLMProfile } from '@/lib/translators/llm/LLMTranslator';
+import { type LLMTranslatorConfig } from '@/lib/translators/llm/LLMTranslator';
 import { getValueAtPath, isDeepEqual } from '@/lib/utils';
 // Requests
 import { clearCache as clearCacheReq } from '@/requests/backend/clearCache';
@@ -39,9 +37,13 @@ import { updateConfig as updateConfigReq } from '@/requests/backend/updateConfig
 import type { AppConfigType } from '@/types/runtime';
 
 import { OptionsNav } from './OptionsNav/OptionsNav';
+import {
+  getLLMProfilesError,
+  normalizeLLMTranslatorConfig,
+} from './OptionsPage.components/LLMProfilesFieldList/LLMProfilesFieldList';
 import { optionsPageStyles } from './OptionsPage.stylex';
 import { generateTree } from './OptionsPage.utils/generateTree';
-import { type OptionsGroup, OptionsTree } from './OptionsTree/OptionsTree';
+import { type OptionValue, OptionsTree } from './OptionsTree/OptionsTree';
 import { PageSection } from './PageSection/PageSection';
 
 export const OptionsModalsContext = createContext<
@@ -59,13 +61,31 @@ const TTSList = lazy(() =>
     default: TTSList,
   })),
 );
-const LLMProfilesManager = lazy(() =>
-  import('./OptionsPage.components/LLMProfilesManager/LLMProfilesManager').then(
-    ({ LLMProfilesManager }) => ({ default: LLMProfilesManager }),
-  ),
-);
 
 type Errors = null | Record<string, string>;
+
+type ModifiedConfig = Record<string, OptionValue>;
+
+const emptyLLMTranslator: LLMTranslatorConfig = {
+  activeProfile: '',
+  profiles: [],
+};
+
+const getEffectiveLLMTranslator = (
+  config: AppConfigType | undefined,
+  modifiedConfig: ModifiedConfig | null,
+): LLMTranslatorConfig => {
+  const modifiedValue = modifiedConfig?.llmTranslator;
+  if (
+    typeof modifiedValue === 'object' &&
+    modifiedValue !== null &&
+    !Array.isArray(modifiedValue)
+  ) {
+    return modifiedValue;
+  }
+
+  return config?.llmTranslator ?? emptyLLMTranslator;
+};
 
 interface OptionsPageProps {
   messageHideDelay?: number;
@@ -80,8 +100,7 @@ export const OptionsPage: FC<OptionsPageProps> = () => {
 
   const [config, setConfig] = useState<AppConfigType | undefined>();
   const [errors, setErrors] = useState<Errors>(null);
-  const [modifiedConfig, setModifiedConfig] = useState<null | Record<string, any>>(null);
-  const [configTree, setConfigTree] = useState<OptionsGroup[] | undefined>();
+  const [modifiedConfig, setModifiedConfig] = useState<ModifiedConfig | null>(null);
 
   const windowsStackRef = useRef<HTMLDivElement>(null);
 
@@ -191,11 +210,33 @@ export const OptionsPage: FC<OptionsPageProps> = () => {
     setErrors(null);
   }, []);
 
+  const llmTranslator = useMemo(
+    () => getEffectiveLLMTranslator(config, modifiedConfig),
+    [config, modifiedConfig],
+  );
+
   const saveChanges = useCallback(() => {
     // Skip empty changes
     if (modifiedConfig === null) return;
 
-    updateConfigReq(modifiedConfig)
+    const profilesError = getLLMProfilesError(llmTranslator.profiles);
+    if (profilesError !== null) {
+      setErrors((currentErrors) => ({
+        ...(currentErrors ?? {}),
+        llmTranslator: profilesError,
+      }));
+      return;
+    }
+
+    const configChanges =
+      'llmTranslator' in modifiedConfig
+        ? {
+            ...modifiedConfig,
+            llmTranslator: normalizeLLMTranslatorConfig(llmTranslator),
+          }
+        : modifiedConfig;
+
+    updateConfigReq(configChanges)
       .then(async ({ success, errors }) => {
         if (!success) {
           setErrors(errors);
@@ -211,7 +252,7 @@ export const OptionsPage: FC<OptionsPageProps> = () => {
         showToast({ body: getMessage('settings_message_saveChanges_success') });
       })
       .catch(handleError);
-  }, [handleError, modifiedConfig, showToast]);
+  }, [handleError, llmTranslator, modifiedConfig, showToast]);
 
   //
   // Config actions
@@ -230,86 +271,46 @@ export const OptionsPage: FC<OptionsPageProps> = () => {
   }, [handleError, showToast]);
 
   //
-  // LLM translator
-  //
-
-  const [llmTestProcess, setLLMTestProcess] = useState<boolean>(false);
-  const [isLLMProfilesWindowOpen, setIsLLMProfilesWindowOpen] = useState(false);
-
-  const llmProfiles = useMemo(
-    () => config?.llmTranslator.profiles.map(({ name }) => name) ?? [],
-    [config],
-  );
-
-  // The active profile, honoring an unsaved picker change
-  const getLLMProfile = useCallback(() => {
-    const llmTranslator = config?.llmTranslator ?? { activeProfile: '', profiles: [] };
-    const activeProfile =
-      modifiedConfig?.['llmTranslator.activeProfile'] ?? llmTranslator.activeProfile;
-    return getActiveLLMProfile({ activeProfile, profiles: llmTranslator.profiles });
-  }, [config, modifiedConfig]);
-
-  const testLLMConnection = useCallback(() => {
-    setLLMTestProcess(true);
-    testLLMTranslator(getLLMProfile())
-      .then((translatedText) => {
-        showToast({
-          body: `${getMessage('settings_message_llmTranslator_testSuccess')} "${translatedText}"`,
-        });
-      })
-      .catch(handleError)
-      .finally(() => {
-        setLLMTestProcess(false);
-      });
-  }, [getLLMProfile, handleError, showToast]);
-
-  //
   // Utils
   //
 
   const setOptionValue = useCallback(
-    (inputPath: string, value: any) => {
-      // Copy current object
-      let modifiedConfigLocal: Record<string, any> | null = {};
-      for (const path in modifiedConfig) {
-        const configItem = getValueAtPath(config, path);
+    (inputPath: string, value: OptionValue) => {
+      setModifiedConfig((currentModifiedConfig) => {
+        const nextModifiedConfig: ModifiedConfig = {};
+        const currentConfig = currentModifiedConfig ?? {};
 
-        // Copy only if it different from config value
-        if (!isDeepEqual(configItem, modifiedConfig[path])) {
-          modifiedConfigLocal[path] = modifiedConfig[path];
-        }
-      }
-
-      // Set value if not exist equal
-      const modConfigItem = getValueAtPath(modifiedConfig, inputPath);
-      if (!isDeepEqual(modConfigItem, value)) {
-        const configItem = getValueAtPath(config, inputPath);
-        if (isDeepEqual(configItem, value)) {
-          delete modifiedConfigLocal[inputPath];
-        } else {
-          modifiedConfigLocal[inputPath] = value;
-        }
-      }
-
-      if (Object.keys(modifiedConfigLocal).length === 0) {
-        modifiedConfigLocal = null;
-      }
-
-      setModifiedConfig(modifiedConfigLocal);
-
-      // Remove error for option
-      if (errors !== null && inputPath in errors) {
-        let errorsLocal: Errors = { ...errors };
-
-        delete errorsLocal[inputPath];
-        if (Object.keys(errorsLocal).length === 0) {
-          errorsLocal = null;
+        for (const path in currentConfig) {
+          const configItem = getValueAtPath(config, path);
+          if (!isDeepEqual(configItem, currentConfig[path])) {
+            nextModifiedConfig[path] = currentConfig[path];
+          }
         }
 
-        setErrors(errorsLocal);
-      }
+        const modifiedConfigItem = getValueAtPath(currentModifiedConfig, inputPath);
+        if (!isDeepEqual(modifiedConfigItem, value)) {
+          const configItem = getValueAtPath(config, inputPath);
+          if (isDeepEqual(configItem, value)) {
+            delete nextModifiedConfig[inputPath];
+          } else {
+            nextModifiedConfig[inputPath] = value;
+          }
+        }
+
+        return Object.keys(nextModifiedConfig).length === 0 ? null : nextModifiedConfig;
+      });
+
+      setErrors((currentErrors) => {
+        if (currentErrors === null || !(inputPath in currentErrors)) {
+          return currentErrors;
+        }
+
+        const nextErrors = { ...currentErrors };
+        delete nextErrors[inputPath];
+        return Object.keys(nextErrors).length === 0 ? null : nextErrors;
+      });
     },
-    [config, errors, modifiedConfig],
+    [config],
   );
 
   // Init
@@ -318,44 +319,29 @@ export const OptionsPage: FC<OptionsPageProps> = () => {
     // oxlint-disable-next-line react/exhaustive-deps
   }, []);
 
-  // Update config tree
-  useEffect(() => {
-    const configTree = generateTree({
-      clearCacheProcess,
-      translatorModules,
-      ttsModules,
-      llmProfiles,
-      llmTestProcess,
-      clearCache,
-      testLLMConnection,
-      toggleLLMProfilesWindow: () => {
-        setIsLLMProfilesWindowOpen((value) => !value);
-      },
-      toggleCustomTranslatorsWindow: () => {
-        setIsOpenCustomTranslatorsWindow((value) => !value);
-      },
-      toggleTTSModulesWindow: () => {
-        setIsTTSModulesWindowOpen((value) => !value);
-      },
-    });
-
-    setConfigTree(configTree);
-  }, [
-    translatorModules,
-    clearCacheProcess,
-    clearCache,
-    ttsModules,
-    llmProfiles,
-    llmTestProcess,
-    testLLMConnection,
-  ]);
+  const configTree = useMemo(
+    () =>
+      generateTree({
+        clearCacheProcess,
+        translatorModules,
+        ttsModules,
+        clearCache,
+        toggleCustomTranslatorsWindow: () => {
+          setIsOpenCustomTranslatorsWindow((value) => !value);
+        },
+        toggleTTSModulesWindow: () => {
+          setIsTTSModulesWindowOpen((value) => !value);
+        },
+      }),
+    [clearCache, clearCacheProcess, translatorModules, ttsModules],
+  );
 
   //
   // Section navigation
   //
 
   const sections = useMemo(
-    () => configTree?.map(({ id, title }) => ({ id: id!, title })) ?? [],
+    () => configTree.map(({ id, title }) => ({ id: id!, title })),
     [configTree],
   );
 
@@ -396,7 +382,7 @@ export const OptionsPage: FC<OptionsPageProps> = () => {
 
   const isMobile = useMemo(() => isMobileBrowser(), []);
 
-  if (!loaded || config === undefined || configTree === undefined) {
+  if (!loaded || config === undefined) {
     return <Page loading />;
   }
 
@@ -404,31 +390,29 @@ export const OptionsPage: FC<OptionsPageProps> = () => {
   const ActionsStack = isMobile ? VStack : HStack;
   return (
     <Page>
-      <div>
-        <div {...stylex.props(optionsPageStyles.page)}>
+      <VStack gap={0}>
+        <VStack gap={0} xstyle={optionsPageStyles.page}>
           <PageSection title={getMessage('settings_pageTitle')} level={1}>
             <Text as="p" color="secondary" xstyle={optionsPageStyles.headerSubtitle}>
               {getMessage('settings_pageDescription')}
             </Text>
-            <div {...stylex.props(optionsPageStyles.indentHorizontal)}>
-              <ActionsStack gap={3}>
-                <Button onPress={importConfig} width={isMobile ? 'max' : undefined}>
-                  {getMessage('settings_button_import')}
+            <ActionsStack gap={3}>
+              <Button onPress={importConfig} width={isMobile ? 'max' : undefined}>
+                {getMessage('settings_button_import')}
+              </Button>
+              {!isMobile && (
+                <Button onPress={exportConfig} width={isMobile ? 'max' : undefined}>
+                  {getMessage('settings_button_export')}
                 </Button>
-                {!isMobile && (
-                  <Button onPress={exportConfig} width={isMobile ? 'max' : undefined}>
-                    {getMessage('settings_button_export')}
-                  </Button>
-                )}
-                <Button
-                  view="action"
-                  onPress={resetConfig}
-                  width={isMobile ? 'max' : undefined}
-                >
-                  {getMessage('settings_button_reset')}
-                </Button>
-              </ActionsStack>
-            </div>
+              )}
+              <Button
+                view="action"
+                onPress={resetConfig}
+                width={isMobile ? 'max' : undefined}
+              >
+                {getMessage('settings_button_reset')}
+              </Button>
+            </ActionsStack>
 
             <HStack gap={6} align="start" xstyle={optionsPageStyles.optionsTree}>
               <VStack gap={0} xstyle={optionsPageStyles.navColumn}>
@@ -449,20 +433,20 @@ export const OptionsPage: FC<OptionsPageProps> = () => {
               </VStack>
             </HStack>
           </PageSection>
-        </div>
+        </VStack>
 
         {editMode ? (
-          <div {...stylex.props(optionsPageStyles.confirmMenu)}>
+          <HStack gap={3} justify="end" xstyle={optionsPageStyles.confirmMenu}>
             <Button view="action" onPress={saveChanges}>
               {getMessage('settings_button_saveChanges')}
             </Button>
             <Button view="default" onPress={cancelChanges}>
               {getMessage('settings_button_cancel')}
             </Button>
-          </div>
+          </HStack>
         ) : undefined}
 
-        <div ref={windowsStackRef} />
+        <VStack ref={windowsStackRef} gap={0} />
 
         <OptionsModalsContext.Provider value={windowsStackRef}>
           {isOpenCustomTranslatorsWindow && (
@@ -487,19 +471,8 @@ export const OptionsPage: FC<OptionsPageProps> = () => {
               />
             </Suspense>
           )}
-          {isLLMProfilesWindowOpen && (
-            <Suspense fallback={<Spinner />}>
-              <LLMProfilesManager
-                visible
-                onClose={() => {
-                  setIsLLMProfilesWindowOpen(false);
-                }}
-                updateConfig={updateConfig}
-              />
-            </Suspense>
-          )}
         </OptionsModalsContext.Provider>
-      </div>
+      </VStack>
     </Page>
   );
 };
