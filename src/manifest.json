@@ -2,7 +2,7 @@
   "chromium:manifest_version": 3,
   "firefox:manifest_version": 2,
   "name": "__MSG_ext_name__",
-  "version": "7.1.0.1",
+  "version": "7.1.0.2",
   "description": "__MSG_ext_description__",
   "default_locale": "en",
   "icons": {
@@ -52,5 +52,5 @@
     "default_title": "__MSG_ext_name__",
     "default_icon": "static/logo.png"
   },
-  "version_name": "7.1.1-beta.0"
+  "version_name": "7.1.1-beta.1"
 }
