@@ -15,6 +15,7 @@ import { getValueAtPath } from '@/lib/utils';
 import { AppConfigType } from '@/types/runtime';
 
 import { LLMProfilesFieldList } from '../OptionsPage.components/LLMProfilesFieldList/LLMProfilesFieldList';
+import { StatisticsField } from '../OptionsPage.components/StatisticsField/StatisticsField';
 import { optionsPageStyles } from '../OptionsPage.stylex';
 import { PageSection } from '../PageSection/PageSection';
 
@@ -70,6 +71,10 @@ export interface OptionLLMProfiles {
   type: 'LLMProfiles';
 }
 
+export interface OptionStatistics {
+  type: 'Statistics';
+}
+
 type HeadingLevel = 1 | 2 | 3 | 4 | 5 | 6;
 export type OptionValue =
   | boolean
@@ -113,7 +118,8 @@ export interface OptionItem {
     | OptionCheckboxGroup
     | OptionButton
     | OptionHotkey
-    | OptionLLMProfiles;
+    | OptionLLMProfiles
+    | OptionStatistics;
 }
 
 export interface OptionsGroup {
@@ -318,6 +324,23 @@ const OptionField: FC<OptionFieldProps> = ({ item, value, error, setOptionValue 
             aria-describedby={describedBy}
             onClick={option.action}
           />
+        </Field>,
+        description,
+        richDescriptionID,
+      );
+    }
+    case 'Statistics': {
+      return renderWithRichDescription(
+        <Field
+          label={label}
+          inputID={controlID}
+          description={stringDescription}
+          descriptionID={descriptionID}
+          status={status === undefined ? undefined : { ...status, messageID: statusID }}
+          statusVariant="detached"
+          width="100%"
+        >
+          <StatisticsField />
         </Field>,
         description,
         richDescriptionID,

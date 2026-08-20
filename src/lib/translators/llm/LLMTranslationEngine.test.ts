@@ -16,7 +16,13 @@ import {
   TranslationSchedulerReplacedError,
   type LLMRequest,
   type LLMRequestEffect,
+  type LLMResponse,
 } from './LLMTranslationEngine';
+
+const makeResponse = (text: string): LLMResponse => ({
+  text,
+  usage: { inputTokens: null, outputTokens: null },
+});
 
 const makeSettings = (
   overrides: Partial<{
@@ -59,7 +65,7 @@ const makeContextLengthError = (): AiError.AiError =>
   );
 
 const successResponse = (texts: string[]): LLMRequestEffect =>
-  Effect.succeed(JSON.stringify(texts));
+  Effect.succeed(makeResponse(JSON.stringify(texts)));
 
 /**
  * Echo handler: returns one translation per requested item, prefixed, so the
@@ -562,13 +568,62 @@ describe('LLMTranslationEngine', () => {
     });
   });
 
+  describe('usage reporting', () => {
+    test('reports token usage for each successful request', async () => {
+      const onUsage = vi.fn();
+      const engine = new LLMTranslationEngine({
+        loadSettings: () => Promise.resolve(makeSettings()),
+        fetch: () =>
+          Effect.succeed({
+            text: JSON.stringify(['tr:a', 'tr:b']),
+            usage: { inputTokens: 10, outputTokens: 5 },
+          }),
+        onUsage,
+      });
+
+      await expect(
+        engine.translateBatch(['a', 'b'], 'en', 'de', batchOptions()),
+      ).resolves.toEqual(['tr:a', 'tr:b']);
+      expect(onUsage).toHaveBeenCalledTimes(1);
+      expect(onUsage).toHaveBeenCalledWith({ inputTokens: 10, outputTokens: 5 });
+    });
+
+    test('does not report usage for failed requests', async () => {
+      const onUsage = vi.fn();
+      const engine = new LLMTranslationEngine({
+        loadSettings: () => Promise.resolve(makeSettings()),
+        fetch: () => Effect.fail(makeRetryableError()),
+        onUsage,
+      });
+
+      await expect(
+        engine.translateBatch(['a'], 'en', 'de', batchOptions()),
+      ).rejects.toBeDefined();
+      expect(onUsage).not.toHaveBeenCalled();
+    });
+
+    test('skips zero-only usage reports from providers that omit usage', async () => {
+      const onUsage = vi.fn();
+      const engine = new LLMTranslationEngine({
+        loadSettings: () => Promise.resolve(makeSettings()),
+        fetch: () => Effect.succeed(makeResponse(JSON.stringify(['tr:a']))),
+        onUsage,
+      });
+
+      await expect(
+        engine.translateBatch(['a'], 'en', 'de', batchOptions()),
+      ).resolves.toEqual(['tr:a']);
+      expect(onUsage).not.toHaveBeenCalled();
+    });
+  });
+
   describe('invalid output recovery', () => {
     test('bisects a malformed multi-item batch when isolation is enabled', async () => {
       let attempts = 0;
       const engine = createEngine(() => {
         attempts++;
         // Never a valid JSON array, even for a one-item batch
-        return Effect.succeed('not json');
+        return Effect.succeed(makeResponse('not json'));
       });
 
       await expect(
@@ -593,7 +648,7 @@ describe('LLMTranslationEngine', () => {
           const key = getKey(texts);
           const deferred = createDeferred<string>();
           deferreds.set(key, deferred);
-          return Effect.promise(() => deferred.promise);
+          return Effect.promise(() => deferred.promise).pipe(Effect.map(makeResponse));
         },
       });
 
@@ -628,7 +683,7 @@ describe('LLMTranslationEngine', () => {
       let attempts = 0;
       const engine = createEngine(() => {
         attempts++;
-        return Effect.succeed('not json');
+        return Effect.succeed(makeResponse('not json'));
       });
 
       await expect(
@@ -641,7 +696,7 @@ describe('LLMTranslationEngine', () => {
       let attempts = 0;
       const engine = createEngine(() => {
         attempts++;
-        return Effect.succeed('still not json');
+        return Effect.succeed(makeResponse('still not json'));
       });
 
       await expect(
@@ -656,7 +711,7 @@ describe('LLMTranslationEngine', () => {
       const engine = createEngine(() => {
         attempts++;
         return attempts === 1
-          ? Effect.succeed('prose instead of json')
+          ? Effect.succeed(makeResponse('prose instead of json'))
           : successResponse(['recovered']);
       });
 
@@ -682,6 +737,7 @@ describe('LLMTranslationEngine', () => {
           const deferred = createDeferred<string>();
           deferreds.set(key, deferred);
           return Effect.promise(() => deferred.promise).pipe(
+            Effect.map(makeResponse),
             Effect.tap(() => Effect.sync(() => active.delete(key))),
           );
         },
@@ -728,7 +784,7 @@ describe('LLMTranslationEngine', () => {
           startOrder.push(key);
           const deferred = createDeferred<string>();
           deferreds.set(key, deferred);
-          return Effect.promise(() => deferred.promise);
+          return Effect.promise(() => deferred.promise).pipe(Effect.map(makeResponse));
         },
       });
 
@@ -763,7 +819,7 @@ describe('LLMTranslationEngine', () => {
           startOrder.push(key);
           const deferred = createDeferred<string>();
           deferreds.set(key, deferred);
-          return Effect.promise(() => deferred.promise);
+          return Effect.promise(() => deferred.promise).pipe(Effect.map(makeResponse));
         },
       });
 
@@ -857,7 +913,7 @@ describe('LLMTranslationEngine', () => {
           const [key] = textsOf(request);
           const deferred = createDeferred<string>();
           deferreds.set(key, deferred);
-          return Effect.promise(() => deferred.promise);
+          return Effect.promise(() => deferred.promise).pipe(Effect.map(makeResponse));
         },
       });
 
@@ -889,7 +945,7 @@ describe('LLMTranslationEngine', () => {
         loadSettings: () => Promise.resolve(makeSettings({ maxConcurrentRequests: 1 })),
         fetch: () => {
           const deferred = createDeferred<string>();
-          return Effect.promise(() => deferred.promise);
+          return Effect.promise(() => deferred.promise).pipe(Effect.map(makeResponse));
         },
       });
 

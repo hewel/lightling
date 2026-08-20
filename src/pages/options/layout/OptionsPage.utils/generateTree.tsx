@@ -536,5 +536,16 @@ export const generateTree = ({
         },
       ],
     },
+    {
+      id: 'statistics',
+      title: getMessage('settings_section_statistics'),
+      groupContent: [
+        {
+          title: getMessage('settings_option_statistics_title'),
+          description: getMessage('settings_option_statistics_desc'),
+          optionContent: { type: 'Statistics' },
+        },
+      ],
+    },
   ];
 };

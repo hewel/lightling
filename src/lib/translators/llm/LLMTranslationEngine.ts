@@ -66,13 +66,24 @@ export interface LLMRequest {
   readonly signal: AbortSignal;
 }
 
-export type LLMRequestEffect = Effect.Effect<string, AiError.AiError>;
+export interface LLMUsage {
+  readonly inputTokens: number | null;
+  readonly outputTokens: number | null;
+}
+
+export interface LLMResponse {
+  readonly text: string;
+  readonly usage: LLMUsage;
+}
+
+export type LLMRequestEffect = Effect.Effect<LLMResponse, AiError.AiError>;
 
 export type LLMRequestFetcher = (request: LLMRequest) => LLMRequestEffect;
 
 export interface LLMTranslationEngineOptions {
   loadSettings: () => Promise<ResolvedLLMExecutionSettings>;
   fetch: LLMRequestFetcher;
+  onUsage?: (usage: { inputTokens: number; outputTokens: number }) => void;
 }
 
 export interface TranslateBatchOptions {
@@ -233,6 +244,19 @@ export class LLMTranslationEngine {
   private settingsPromise: Promise<ResolvedLLMExecutionSettings> | null = null;
 
   constructor(private readonly options: LLMTranslationEngineOptions) {}
+
+  /**
+   * Reports token usage of one successful provider response. Providers that
+   * omit usage fields report zeros, which are skipped: a zero-only report
+   * carries no information and would only add noise.
+   */
+  private reportUsage(usage: LLMUsage): void {
+    if (this.options.onUsage === undefined) return;
+    const inputTokens = usage.inputTokens ?? 0;
+    const outputTokens = usage.outputTokens ?? 0;
+    if (inputTokens === 0 && outputTokens === 0) return;
+    this.options.onUsage({ inputTokens, outputTokens });
+  }
 
   private getSettings(): Promise<ResolvedLLMExecutionSettings> {
     if (!this.settingsPromise) {
@@ -723,7 +747,10 @@ export class LLMTranslationEngine {
         { signal: controller.signal },
       );
 
-      const parsed = parseLLMResponse(response, units.length);
+      // Report before parsing: a malformed response still consumed tokens
+      this.reportUsage(response.usage);
+
+      const parsed = parseLLMResponse(response.text, units.length);
       if (parsed !== null) {
         for (let i = 0; i < units.length; i++) {
           units[i].onResolved(parsed[i]);
@@ -824,7 +851,9 @@ export class LLMTranslationEngine {
         { signal: controller.signal },
       );
 
-      const correctionParsed = parseLLMResponse(correction, 1);
+      this.reportUsage(correction.usage);
+
+      const correctionParsed = parseLLMResponse(correction.text, 1);
       if (correctionParsed !== null) {
         unit.onResolved(correctionParsed[0]);
         return;

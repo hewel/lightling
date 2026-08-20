@@ -20,6 +20,111 @@
   "common_error": {
     "message": "错误"
   },
+  "common_listen": {
+    "message": "朗读"
+  },
+  "common_llmTranslator": {
+    "message": "LLM"
+  },
+  "llmProvider_openaiCompatible": {
+    "message": "OpenAI 兼容"
+  },
+  "llmProvider_custom": {
+    "message": "自定义"
+  },
+  "llmProfiles_managerTitle": {
+    "message": "LLM 提供商"
+  },
+  "llmProfiles_emptyList": {
+    "message": "暂无提供商。使用下方预设添加一个。"
+  },
+  "llmProfiles_addProvider": {
+    "message": "提供商预设"
+  },
+  "llmProfiles_add": {
+    "message": "添加"
+  },
+  "llmProfiles_edit": {
+    "message": "编辑"
+  },
+  "llmProfiles_delete": {
+    "message": "删除"
+  },
+  "llmProfiles_deleteConfirm": {
+    "message": "确定要删除“$provider_name$”提供商吗？",
+    "placeholders": {
+      "provider_name": {
+        "content": "$1",
+        "example": "OpenAI"
+      }
+    }
+  },
+  "llmProfiles_active": {
+    "message": "使用中"
+  },
+  "llmProfiles_setActive": {
+    "message": "设为使用中"
+  },
+  "llmProfiles_editProfile": {
+    "message": "编辑提供商"
+  },
+  "llmProfiles_profileName": {
+    "message": "名称"
+  },
+  "llmProfiles_provider": {
+    "message": "提供商"
+  },
+  "llmProfiles_save": {
+    "message": "保存"
+  },
+  "llmProfiles_emptyName": {
+    "message": "请输入提供商名称"
+  },
+  "llmProfiles_duplicateName": {
+    "message": "已存在同名提供商"
+  },
+  "llmProfiles_advancedExecution": {
+    "message": "高级执行"
+  },
+  "llmProfiles_contextWindowTokens": {
+    "message": "上下文窗口"
+  },
+  "llmProfiles_contextWindowTokens_desc": {
+    "message": "模型上下文窗口的总 Token 数（最小 512）。自动：$1 Token"
+  },
+  "llmProfiles_preferredInputTokens": {
+    "message": "首选输入"
+  },
+  "llmProfiles_preferredInputTokens_desc": {
+    "message": "提示词批量的目标 Token 数（最小 1）。自动：$1 Token"
+  },
+  "llmProfiles_maxOutputTokens": {
+    "message": "最大输出 Token 数"
+  },
+  "llmProfiles_maxOutputTokens_desc": {
+    "message": "每次翻译请求生成的最大 Token 数（最小 1）。自动：$1"
+  },
+  "llmProfiles_maxConcurrentRequests": {
+    "message": "并行请求数"
+  },
+  "llmProfiles_maxConcurrentRequests_desc": {
+    "message": "并发翻译请求的最大数量（1–8）。自动：$1 个请求"
+  },
+  "llmProfiles_auto": {
+    "message": "自动"
+  },
+  "llmProfiles_outputAutoUncapped": {
+    "message": "按批量大小确定（最小 256；未检测到上限）"
+  },
+  "llmProfiles_outputAutoDetected": {
+    "message": "最多 $1 Token（已检测）"
+  },
+  "llmProfiles_unitTokens": {
+    "message": "Token"
+  },
+  "llmProfiles_unitRequests": {
+    "message": "请求"
+  },
   "common_offlineTranslator": {
     "message": "$1 - 离线翻译器"
   },
@@ -159,6 +264,9 @@
   "lang_detect": {
     "message": "自动检测"
   },
+  "lang_searchPlaceholder": {
+    "message": "搜索语言"
+  },
   "lang_select": {
     "message": "选择语言"
   },
@@ -264,6 +372,15 @@
   "settings_message_importConfig_success": {
     "message": "导入完成"
   },
+  "settings_message_llmTranslator_modelsEmpty": {
+    "message": "API 返回了空的模型列表"
+  },
+  "settings_message_llmTranslator_modelsLoaded": {
+    "message": "模型列表已加载"
+  },
+  "settings_message_llmTranslator_testSuccess": {
+    "message": "测试翻译成功："
+  },
   "settings_message_resetConfig_confirm": {
     "message": "确认将设置重置为默认值"
   },
@@ -314,6 +431,45 @@
   },
   "settings_option_history_enable_desc": {
     "message": "启用后，翻译将被记录并显示在<slot id=historyPage>历史页面</slot>上"
+  },
+  "settings_option_llmTranslator_header": {
+    "message": "LLM 翻译器"
+  },
+  "settings_option_llmTranslator_activeProfile": {
+    "message": "当前提供商"
+  },
+  "settings_option_llmTranslator_activeProfile_desc": {
+    "message": "LLM 翻译模块使用的提供商配置"
+  },
+  "settings_option_llmTranslator_manage": {
+    "message": "LLM 提供商"
+  },
+  "settings_option_llmTranslator_manage_desc": {
+    "message": "添加、编辑或移除 LLM 提供商配置"
+  },
+  "settings_option_llmTranslator_manageButton": {
+    "message": "管理提供商"
+  },
+  "settings_option_llmTranslator_apiUrl": {
+    "message": "API URL"
+  },
+  "settings_option_llmTranslator_apiKey": {
+    "message": "API 密钥"
+  },
+  "settings_option_llmTranslator_model": {
+    "message": "模型"
+  },
+  "settings_option_llmTranslator_test": {
+    "message": "测试连接"
+  },
+  "settings_option_llmTranslator_test_desc": {
+    "message": "使用当前提供商配置发送一个小型翻译请求，以验证其设置"
+  },
+  "settings_option_llmTranslator_testButton": {
+    "message": "测试"
+  },
+  "settings_option_llmTranslator_fetchModelsButton": {
+    "message": "获取模型列表"
   },
   "settings_option_pageTranslation": {
     "message": "整页翻译"
@@ -463,6 +619,12 @@
   "settings_option_selectTranslation_zIndex_desc": {
     "message": "如果某些页面上的元素与翻译文本的弹出窗口重叠，请增加此值"
   },
+  "settings_option_statistics_desc": {
+    "message": "翻译总次数与 LLM Token 消耗总量。"
+  },
+  "settings_option_statistics_title": {
+    "message": "使用统计"
+  },
   "settings_option_textTranslator": {
     "message": "文本翻译"
   },
@@ -532,6 +694,9 @@
   "settings_option_userLanguage_desc": {
     "message": "文本将被翻译成的语言"
   },
+  "settings_pageDescription": {
+    "message": "管理翻译引擎、缓存和界面偏好"
+  },
   "settings_pageTitle": {
     "message": "设置"
   },
@@ -540,6 +705,27 @@
   },
   "settings_section_popup": {
     "message": "弹出窗口"
+  },
+  "settings_section_popupAndHistory": {
+    "message": "弹出窗口和历史记录"
+  },
+  "settings_section_statistics": {
+    "message": "统计"
+  },
+  "statistics_llmInputTokens": {
+    "message": "LLM 输入 Token"
+  },
+  "statistics_llmOutputTokens": {
+    "message": "LLM 输出 Token"
+  },
+  "statistics_reset": {
+    "message": "重置统计"
+  },
+  "statistics_resetConfirm": {
+    "message": "重置所有使用统计？"
+  },
+  "statistics_translations": {
+    "message": "翻译次数"
   },
   "textTranslator_suggestLanguage": {
     "message": "似乎文本语言是<slot id=languageSuggest>$language_name$</slot>",

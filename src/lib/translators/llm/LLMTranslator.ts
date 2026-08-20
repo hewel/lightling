@@ -81,7 +81,12 @@ export class LLMTranslator implements TranslatorInstanceMembers {
   private readonly engine: LLMTranslationEngine;
   private resolvedSettings: ResolvedLLMExecutionSettings | null = null;
 
-  constructor(config: LLMTranslatorConfig) {
+  constructor(
+    config: LLMTranslatorConfig,
+    options: {
+      onTokenUsage?: (usage: { inputTokens: number; outputTokens: number }) => void;
+    } = {},
+  ) {
     this.profile = getActiveLLMProfile(config);
     const settingsPromise = loadLLMExecutionSettings(this.profile).then((settings) => {
       this.resolvedSettings = settings;
@@ -90,6 +95,7 @@ export class LLMTranslator implements TranslatorInstanceMembers {
     this.engine = new LLMTranslationEngine({
       loadSettings: () => settingsPromise,
       fetch: (request) => this.buildFetchEffect(request),
+      onUsage: options.onTokenUsage,
     });
   }
 
@@ -158,7 +164,15 @@ export class LLMTranslator implements TranslatorInstanceMembers {
     const baseEffect = LanguageModel.generateText({
       prompt: request.prompt,
       toolChoice: 'none',
-    }).pipe(Effect.map((response) => response.text));
+    }).pipe(
+      Effect.map((response) => ({
+        text: response.text,
+        usage: {
+          inputTokens: response.usage.inputTokens.total ?? null,
+          outputTokens: response.usage.outputTokens.total ?? null,
+        },
+      })),
+    );
 
     const config = this.buildProviderConfig(provider, model, request.maxOutputTokens);
 

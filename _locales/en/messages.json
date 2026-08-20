@@ -619,6 +619,12 @@
   "settings_option_selectTranslation_zIndex_desc": {
     "message": "Increase this value if elements on some pages overlap the popup with translated text"
   },
+  "settings_option_statistics_desc": {
+    "message": "Total number of translations and LLM tokens consumed."
+  },
+  "settings_option_statistics_title": {
+    "message": "Usage statistics"
+  },
   "settings_option_textTranslator": {
     "message": "Text translation"
   },
@@ -702,6 +708,24 @@
   },
   "settings_section_popupAndHistory": {
     "message": "Popup and history"
+  },
+  "settings_section_statistics": {
+    "message": "Statistics"
+  },
+  "statistics_llmInputTokens": {
+    "message": "LLM input tokens"
+  },
+  "statistics_llmOutputTokens": {
+    "message": "LLM output tokens"
+  },
+  "statistics_reset": {
+    "message": "Reset statistics"
+  },
+  "statistics_resetConfirm": {
+    "message": "Reset all usage statistics?"
+  },
+  "statistics_translations": {
+    "message": "Translations"
   },
   "textTranslator_suggestLanguage": {
     "message": "It seems the text language is <slot id=languageSuggest>$language_name$</slot>",

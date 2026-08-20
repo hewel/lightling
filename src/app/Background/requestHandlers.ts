@@ -26,6 +26,8 @@ import { clearTranslationsFactory } from '../../requests/backend/translations/cl
 import { deleteTranslationFactory } from '../../requests/backend/translations/deleteTranslation';
 import { findTranslationFactory } from '../../requests/backend/translations/findTranslation';
 import { getTranslationsFactory } from '../../requests/backend/translations/getTranslations';
+import { getTranslationStatsFactory } from '../../requests/backend/translationStats/getTranslationStats';
+import { resetTranslationStatsFactory } from '../../requests/backend/translationStats/resetTranslationStats';
 import { addTranslatorFactory } from '../../requests/backend/translators/addTranslator';
 import { applyTranslatorsFactory } from '../../requests/backend/translators/applyTranslators';
 import { deleteTranslatorFactory } from '../../requests/backend/translators/deleteTranslator';
@@ -77,6 +79,9 @@ export const requestHandlers = [
 
   getRecentUsedLanguagesFactory,
   addRecentUsedLanguageFactory,
+
+  getTranslationStatsFactory,
+  resetTranslationStatsFactory,
 
   // Up ping last to give success response only when all request handlers is ready
   pingFactory,

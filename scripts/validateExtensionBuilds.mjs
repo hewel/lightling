@@ -26,7 +26,6 @@ const variants = [
 
 const sharedRuntimeAssets = [
   'static/logo.png',
-  'static/logo.svg',
   'pages/dictionary/dictionary.html',
   'pages/history/history.html',
   'pages/offscreen-documents/main/main.html',

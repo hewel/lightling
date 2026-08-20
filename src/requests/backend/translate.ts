@@ -29,7 +29,15 @@ export const [translateFactory, translateRequest] = buildBackendRequest<
 
       const scheduler = translateManager.getScheduler();
 
-      return scheduler.translate(text, from, to, options);
+      const result = await scheduler.translate(text, from, to, options);
+
+      // Fire-and-forget: statistics must never break translation
+      void backgroundContext
+        .getTranslationStatsStorage()
+        .addTranslation()
+        .catch(() => undefined);
+
+      return result;
     },
 });
 

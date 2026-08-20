@@ -34,9 +34,19 @@ const projectDirectory = resolve(scriptsDirectory, '..');
 const localRequire = createRequire(import.meta.url);
 const packagePath = resolve(projectDirectory, 'package.json');
 const manifestPath = resolve(projectDirectory, 'src/manifest.json');
-const logoSourcePath = resolve(projectDirectory, 'src/res/logo.svg');
-const publicStaticDirectory = resolve(projectDirectory, 'public/static');
+const logoSourcePath = resolve(projectDirectory, 'src/res/logo.png');
 const manifestStaticDirectory = resolve(projectDirectory, 'src/static');
+const legacyPublicLogoPaths = [
+  resolve(projectDirectory, 'public/static/logo.png'),
+  resolve(projectDirectory, 'public/static/logo.svg'),
+];
+const logoSize = 128;
+const logoCornerRadius = Math.round(logoSize * 0.22);
+const logoMask = Buffer.from(
+  `<svg width="${logoSize}" height="${logoSize}" xmlns="http://www.w3.org/2000/svg">` +
+    `<rect width="${logoSize}" height="${logoSize}" rx="${logoCornerRadius}" fill="white"/>` +
+    '</svg>',
+);
 const thirdpartySourceDirectory = resolve(projectDirectory, 'thirdparty/bergamot/build');
 const thirdpartyStagingDirectory = resolve(
   projectDirectory,
@@ -140,17 +150,13 @@ export async function prepareExtensionAssets({ requireThirdparty = false } = {})
     );
   }
 
-  await Promise.all([
-    mkdir(publicStaticDirectory, { recursive: true }),
-    mkdir(manifestStaticDirectory, { recursive: true }),
-  ]);
-  await Promise.all([
-    copyFile(logoSourcePath, resolve(publicStaticDirectory, 'logo.svg')),
-    sharp(logoSourcePath)
-      .resize(128, 128)
-      .png()
-      .toFile(resolve(manifestStaticDirectory, 'logo.png')),
-  ]);
+  await Promise.all(legacyPublicLogoPaths.map((path) => rm(path, { force: true })));
+  await mkdir(manifestStaticDirectory, { recursive: true });
+  await sharp(logoSourcePath)
+    .resize(logoSize, logoSize)
+    .composite([{ input: logoMask, blend: 'dest-in' }])
+    .png()
+    .toFile(resolve(manifestStaticDirectory, 'logo.png'));
 
   const thirdpartyAssets = await getThirdpartyAssets();
   const missingThirdpartyAssets = requiredThirdpartyAssets.filter(

@@ -19,6 +19,7 @@ import { getTranslatorsClasses } from '../../requests/backend/translators';
 import { AppConfigType } from '../../types/runtime';
 
 import { ObservableAsyncStorage } from '../ConfigStorage/ConfigStorage';
+import { TranslationStatsStorage } from './TranslationStatsStorage';
 import { TranslatorManager } from './TranslatorManager';
 import { TTSController } from './TTS/TTSController';
 import { TTSManager } from './TTS/TTSManager';
@@ -116,6 +117,11 @@ export class Background {
     return this.ttsManager;
   }
 
+  private readonly translationStatsStorage = new TranslationStatsStorage();
+  public getTranslationStatsStorage() {
+    return this.translationStatsStorage;
+  }
+
   private ttsController: TTSController | null = null;
   public async getTTSController() {
     if (this.ttsController === null) {
@@ -143,7 +149,11 @@ export class Background {
       }),
       (config) => {
         if (this.translateManager === null) {
-          this.translateManager = new TranslatorManager(config, translators);
+          this.translateManager = new TranslatorManager(config, translators, {
+            onLLMTokenUsage: (usage) => {
+              void this.translationStatsStorage.addLLMUsage(usage).catch(() => undefined);
+            },
+          });
 
           // Return a scheduler instance for awaiters
           if (this.translateManagerPromise !== null) {

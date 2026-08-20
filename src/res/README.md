@@ -1,3 +1,5 @@
-Directory contains assets sources.
+Directory contains asset sources.
 
-All static files will save in `static` directory
+`logo.png` is the canonical project icon. `npm run prepare:extension` generates
+the extension-ready rounded-square icon with transparent corners in the `static`
+directory.

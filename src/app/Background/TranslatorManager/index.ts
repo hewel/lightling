@@ -23,9 +23,19 @@ export type Config = Pick<
 export class TranslatorManager<Translators extends TranslatorsMap = TranslatorsMap> {
   private config: Config;
   private translators: Translators;
-  constructor(config: Config, translators: Translators) {
+  private readonly managerOptions?: {
+    onLLMTokenUsage?: (usage: { inputTokens: number; outputTokens: number }) => void;
+  };
+  constructor(
+    config: Config,
+    translators: Translators,
+    options?: {
+      onLLMTokenUsage?: (usage: { inputTokens: number; outputTokens: number }) => void;
+    },
+  ) {
     this.config = config;
     this.translators = translators;
+    this.managerOptions = options;
   }
 
   public setConfig(config: Config) {
@@ -129,9 +139,9 @@ export class TranslatorManager<Translators extends TranslatorsMap = TranslatorsM
       // LLM cancellation/replacement errors must not emit telemetry.
       // The LLM translator is instantiated directly, and error telemetry
       // is handled exclusively by LLMScheduler on final logical failures.
-      this.translator = new LLMTranslator(this.config.llmTranslator) as InstanceType<
-        RecordValues<Translators>
-      >;
+      this.translator = new LLMTranslator(this.config.llmTranslator, {
+        onTokenUsage: this.managerOptions?.onLLMTokenUsage,
+      }) as InstanceType<RecordValues<Translators>>;
       return this.translator;
     }
 
