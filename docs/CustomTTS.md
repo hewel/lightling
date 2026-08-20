@@ -1,10 +1,10 @@
 # Text to speech
 
-With a custom TTS module, you can use Linguist with your favourite text to speech service.
+With a custom TTS module, you can use Lightling with your favourite text to speech service.
 
 ## Usage
 
-- Go to Linguist settings in the "Text to speech" section
+- Go to Lightling settings in the "Text to speech" section
 - Press the "Manage TTS modules" button
 - Press "Add"
 - Enter a module name and insert the module code

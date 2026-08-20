@@ -46,7 +46,7 @@ export const Landing = () => {
     ref: faqWhyRef,
     minTime: 8000,
     onEngagement() {
-      trackEvent('Engagement: Reading', { target: 'FAQ: Why Linguist' });
+      trackEvent('Engagement: Reading', { target: 'FAQ: Why Lightling' });
     },
   });
 
@@ -73,16 +73,16 @@ export const Landing = () => {
   const faq = [
     {
       ref: faqWhyRef,
-      title: t('faq.items.whyLinguist.title'),
-      content: <Trans t={t} i18nKey={'faq.items.whyLinguist.content'} />,
+      title: t('faq.items.whyLightling.title'),
+      content: <Trans t={t} i18nKey={'faq.items.whyLightling.content'} />,
     },
     {
       ref: faqBabelTowerRef,
-      title: t('faq.items.theLinguistLogo.title'),
+      title: t('faq.items.theLightlingLogo.title'),
       content: (
         <Trans
           t={t}
-          i18nKey={'faq.items.theLinguistLogo.content'}
+          i18nKey={'faq.items.theLightlingLogo.content'}
           components={{
             wiki: (
               <Link
@@ -135,7 +135,7 @@ export const Landing = () => {
           t={t}
           i18nKey={'faq.items.customTranslators.content'}
           components={{
-            'custom-translator': <Link href={'/docs/CustomTranslator'} />,
+            'custom-translator': <Link href={'/lightling/docs/CustomTranslator'} />,
             'libre-translate': (
               <Link href="https://libretranslate.com/" target="_blank" />
             ),
@@ -151,22 +151,15 @@ export const Landing = () => {
           t={t}
           i18nKey={'faq.items.isFree.content'}
           components={{
-            linguist: (
-              <Link href="https://github.com/translate-tools/linguist" target="_blank" />
-            ),
-            donations: (
-              <Link
-                href="https://github.com/translate-tools/linguist#donations"
-                target="_blank"
-              />
-            ),
+            lightling: <Link href="https://github.com/hewel/lightling" target="_blank" />,
+            donations: <Link href="https://github.com/hewel/lightling" target="_blank" />,
           }}
         />
       ),
     },
     {
-      title: t('faq.items.whatIsLinguist.title'),
-      content: <Trans t={t} i18nKey={'faq.items.whatIsLinguist.content'} />,
+      title: t('faq.items.whatIsLightling.title'),
+      content: <Trans t={t} i18nKey={'faq.items.whatIsLightling.content'} />,
     },
   ];
 
@@ -195,13 +188,13 @@ export const Landing = () => {
             <Link variant="base" href="#features">
               {t('navigation.features.content')}
             </Link>
-            <Link variant="base" href="/blog">
+            <Link variant="base" href="/lightling/blog">
               {t('navigation.blog.content')}
             </Link>
-            <Link variant="base" href="/docs">
+            <Link variant="base" href="/lightling/docs">
               {t('navigation.docs.content')}
             </Link>
-            <Link variant="base" href="https://github.com/translate-tools/linguist">
+            <Link variant="base" href="https://github.com/hewel/lightling">
               {t('navigation.github.content')}
             </Link>
           </HStack>
@@ -238,7 +231,7 @@ export const Landing = () => {
                   size="lg"
                   as="a"
                   target="_blank"
-                  href="https://chrome.google.com/webstore/detail/gbefmodhlophhakmoecijeppjblibmie"
+                  href="https://github.com/hewel/lightling/releases"
                   px={4}
                   onClick={() => {
                     trackEvent('Download link: Click', {
@@ -257,7 +250,7 @@ export const Landing = () => {
                   size="lg"
                   as="a"
                   target="_blank"
-                  href="https://addons.mozilla.org/addon/linguist-translator/"
+                  href="https://github.com/hewel/lightling/releases"
                   px={4}
                   onClick={() => {
                     trackEvent('Download link: Click', {
@@ -275,7 +268,7 @@ export const Landing = () => {
               src={screenshotAppPreview}
               maxW={600}
               minW={400}
-              alt="The Linguist in-Browser Popup screenshot"
+              alt="The Lightling in-Browser Popup screenshot"
             />
           </HStack>
         </HStack>
@@ -309,7 +302,7 @@ export const Landing = () => {
                 <div className={clsx(styles.FeatureImage)}>
                   <Image
                     src={screenshotSettings}
-                    alt="Linguist settings screen. User choose a Bergamot - offline translator"
+                    alt="Lightling settings screen. User choose a Bergamot - offline translator"
                   />
                 </div>
                 <VStack
@@ -330,7 +323,7 @@ export const Landing = () => {
                 <div className={clsx(styles.FeatureImage)}>
                   <Image
                     src={screenshotPageTranslation}
-                    alt="The wikipedia page European honey buzzard translated via Linguist"
+                    alt="The wikipedia page European honey buzzard translated via Lightling"
                   />
                 </div>
                 <VStack
@@ -351,7 +344,7 @@ export const Landing = () => {
                 <div className={clsx(styles.FeatureImage)}>
                   <Image
                     src={screenshotSelectedTextTranslation}
-                    alt="The Linguist translation popup for selected text on Wikipedia page about European honey buzzard"
+                    alt="The Lightling translation popup for selected text on Wikipedia page about European honey buzzard"
                   />
                 </div>
                 <VStack
@@ -372,7 +365,7 @@ export const Landing = () => {
                 <div className={clsx(styles.FeatureImage)}>
                   <Image
                     src={screenshotTextTranslation}
-                    alt="Linguist popup where user input text and translate it from English to German language"
+                    alt="Lightling popup where user input text and translate it from English to German language"
                   />
                 </div>
                 <VStack
@@ -391,7 +384,7 @@ export const Landing = () => {
 
               <HStack alignItems="start" spacing={'3rem'} className={styles.Feature}>
                 <div className={clsx(styles.FeatureImage)}>
-                  <Image src={screenshotDictionary} alt="Linguist dictionary page" />
+                  <Image src={screenshotDictionary} alt="Lightling dictionary page" />
                 </div>
                 <VStack
                   className={clsx(styles.FeatureDescription)}
@@ -411,7 +404,7 @@ export const Landing = () => {
                 <div className={clsx(styles.FeatureImage)}>
                   <Image
                     src={screenshotCustomTranslators}
-                    alt="Linguist settings screen with opened modal window to select custom translator"
+                    alt="Lightling settings screen with opened modal window to select custom translator"
                   />
                 </div>
                 <VStack
@@ -426,7 +419,9 @@ export const Landing = () => {
                     <Trans
                       t={t}
                       i18nKey="features.items.customTranslators.content"
-                      components={[<Link key="link" href="/docs/CustomTranslator" />]}
+                      components={[
+                        <Link key="link" href="/lightling/docs/CustomTranslator" />,
+                      ]}
                     />
                   </Text>
                 </VStack>
@@ -444,14 +439,8 @@ export const Landing = () => {
                 t={t}
                 i18nKey="sections.opensource.content"
                 components={[
-                  <Link
-                    key="github"
-                    href="https://github.com/translate-tools/linguist"
-                  />,
-                  <Link
-                    key="donations"
-                    href="https://github.com/translate-tools/linguist#donations"
-                  />,
+                  <Link key="github" href="https://github.com/hewel/lightling" />,
+                  <Link key="donations" href="https://github.com/hewel/lightling" />,
                 ]}
               />
             </Text>
@@ -467,12 +456,12 @@ export const Landing = () => {
                 t={t}
                 i18nKey="sections.support.content"
                 components={[
-                  <Link key="email" href="mailto:support@linguister.io">
-                    support@linguister.io
+                  <Link key="repository" href="https://github.com/hewel/lightling">
+                    on GitHub
                   </Link>,
                   <Link
                     key="issue"
-                    href="https://github.com/translate-tools/linguist/issues/new/choose"
+                    href="https://github.com/hewel/lightling/issues/new/choose"
                   />,
                 ]}
               />

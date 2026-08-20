@@ -18,7 +18,7 @@ describe('runtime type helpers', () => {
 
   test('decodes valid data without removing excess properties', () => {
     const schema = Schema.Struct({ name: Schema.String });
-    const input = { name: 'Linguist', custom: true };
+    const input = { name: 'Lightling', custom: true };
 
     expect(decodeStruct(schema, input)).toEqual({
       data: input,

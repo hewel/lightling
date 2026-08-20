@@ -1,8 +1,8 @@
 # Custom module API
 
-Linguist can be extended via custom modules provided by the user.
+Lightling can be extended via custom modules provided by the user.
 
-You can integrate any services in Linguist via custom modules.
+You can integrate any services in Lightling via custom modules.
 
 
 ## The format
@@ -36,8 +36,8 @@ The environment provides a patched `fetch` object so the custom module can acces
 
 Technically, `fetch` is proxied by a background script through the [`postMessage` API](https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage).
 
-Custom modules are isolated so they are generally secure enough, but as a user you must not run any random code as a Linguist custom module.
+Custom modules are isolated so they are generally secure enough, but as a user you must not run any random code as a Lightling custom module.
 
 ## Usage
 
-When you want to use a custom module, you simply paste the code in Linguist preferences. See the [custom translator guide](../CustomTranslator.md) as an example.
+When you want to use a custom module, you simply paste the code in Lightling preferences. See the [custom translator guide](../CustomTranslator.md) as an example.

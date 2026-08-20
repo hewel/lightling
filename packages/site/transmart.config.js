@@ -1,7 +1,7 @@
 /* cspell:disable */
 const context = `
 Context:
-- Product: Linguist, a privacy-first all-in-one browser extension for translate content in browser.
+- Product: Lightling, a privacy-first all-in-one browser extension for translate content in browser.
 - Audience: primarily women aged 26–38 across mixed professions (e.g., aircraft engineer, programmer, lawyer, sales agent) who are smart, busy, and not necessarily IT-oriented. The copy must remain gender-neutral (never address “women” directly) and welcoming to men as well.
 - Brand voice: confident, calm, and slightly elegant; subtle warmth is fine, but no stereotypes, no “productivity-bro” tone, no cute/flirty lines, and no forced metaphors.
 
@@ -18,7 +18,7 @@ Requirements:
 	- Bad: "Deepink — приложение для заметок с <0>акцентом на приватность</0>, которое помогает поддерживать идеальный порядок.". The "идеальный порядок" is a fluff, user can't understand why it does matter and why they needed in that.
 	- Good: "Deepink — приложение для быстрого создания и огранизации заметок, <0>уважающее вашу приватность</0>.". That is ergonomic and elegant description that explains the elaborates what exactly Deepink can organize, and how exactly it can be useful for user in real world.
 - Headers and introductions may be a bit playful to sell a product, but do not overuse it.
-- Translate texts with considering a SEO. Use strong and fluent keywords native in target language when it possible, to help user find Linguist in google while searching.
+- Translate texts with considering a SEO. Use strong and fluent keywords native in target language when it possible, to help user find Lightling in google while searching.
 
 Constraints:
 - Preserve all literal newline escapes like "\n\n" and paragraph structure.

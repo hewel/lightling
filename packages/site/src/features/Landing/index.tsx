@@ -56,17 +56,17 @@ const MetaTags = () => {
             {
               '@context': 'https://schema.org',
               '@type': 'WebPage',
-              name: 'Linguist - Browser Translation Extension',
+              name: 'Lightling - Browser Translation Extension',
               description:
-                'Linguist is an open-source browser extension for translating web pages efficiently.',
-              url: 'https://linguister.io/',
+                'Lightling is an open-source browser extension for translating web pages efficiently.',
+              url: 'https://hewel.github.io/lightling/',
               mainEntity: {
                 '@type': 'SoftwareApplication',
-                name: 'Linguist',
+                name: 'Lightling',
                 applicationCategory: 'BrowserApplication',
                 operatingSystem: 'All',
-                url: 'https://linguister.io/',
-                license: 'https://opensource.org/licenses/MIT',
+                url: 'https://hewel.github.io/lightling/',
+                license: 'https://opensource.org/license/bsd-3-clause',
                 description:
                   'An open-source browser extension that translates web pages into your preferred language.',
               },

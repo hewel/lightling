@@ -157,7 +157,7 @@ export const DictionaryPage: FC<IDictionaryPageProps> = ({ confirmDelete = true 
     const csv = Papa.unparse([fields, ...rows]);
 
     const date = new Date().toLocaleDateString();
-    saveFile(new Blob([csv], { type: 'text/csv' }), `linguist_dictionary-${date}.csv`);
+    saveFile(new Blob([csv], { type: 'text/csv' }), `lightling_dictionary-${date}.csv`);
   }, [entries]);
 
   const removeAll = useCallback(() => {

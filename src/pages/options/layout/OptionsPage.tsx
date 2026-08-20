@@ -186,7 +186,7 @@ export const OptionsPage: FC<OptionsPageProps> = () => {
     const dump = JSON.stringify(config);
     const file = new Blob([dump], { type: 'application/json' });
 
-    saveFile(file, `linguist-config_${new Date().getTime()}.json`);
+    saveFile(file, `lightling-config_${new Date().getTime()}.json`);
   }, [config]);
 
   const resetConfig = useCallback(() => {

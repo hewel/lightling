@@ -1,15 +1,15 @@
 ---
-title: Use any translation service in browser via Linguist
+title: Use any translation service in browser via Lightling
 authors: [vitonsky]
 tags: [feature]
 date: 2025-09-05T09:20
 ---
 
-Linguist is a highly customizable solution for translation in the browser. By default, you may choose one of the embedded translators, you may even use an offline translator for privacy-sensitive texts.
+Lightling is a highly customizable solution for translation in the browser. By default, you may choose one of the embedded translators, you may even use an offline translator for privacy-sensitive texts.
 
-Although Linguist does not limit you to embedded translators, you may integrate literally any third-party service with Linguist. ChatGPT, DeepL, Ollama, or anything else, you may integrate it all as a [custom translator](/docs/CustomTranslator).
+Although Lightling does not limit you to embedded translators, you may integrate literally any third-party service with Lightling. ChatGPT, DeepL, Ollama, or anything else, you may integrate it all as a [custom translator](/docs/CustomTranslator).
 
-This feature is especially useful for those involved in research work and using Linguist intensively to translate content in many foreign languages, when standard translators may not provide good enough translation quality, or when translation must be fine-tuned.
+This feature is especially useful for those involved in research work and using Lightling intensively to translate content in many foreign languages, when standard translators may not provide good enough translation quality, or when translation must be fine-tuned.
 
 <!-- truncate -->
 

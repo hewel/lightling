@@ -1,11 +1,11 @@
 # Debug on Android
 
-This section provides instructions for debugging Linguist on Android:
+This section provides instructions for debugging Lightling on Android:
 
 - Install and configure [ADB](https://developer.android.com/tools/adb)
 - Run `adb devices` and copy your device identifier
 - Create a file named `.ADB_DEVICE` in the repository root and add your device identifier to it
-- Run `npm run run:mobile-firefox` to start the Firefox for Android instance with the Linguist add-on installed
+- Run `npm run run:mobile-firefox` to start the Firefox for Android instance with the Lightling add-on installed
 
 Additionally, you may find the following resources helpful for debugging Firefox add-ons on Android:
 

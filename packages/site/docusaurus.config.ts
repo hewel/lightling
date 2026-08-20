@@ -3,7 +3,7 @@ import type { Config } from '@docusaurus/types';
 import i18nPages from './src/plugins/i18n-pages';
 
 const config: Config = {
-  title: 'Linguist – Privacy‑First Translation Extension for Chrome and Firefox',
+  title: 'Lightling – Privacy‑First Translation Extension for Chrome and Firefox',
   tagline:
     'Browser extension that translates web pages, selected text, and subtitles. Works instantly and supports offline translation.',
 
@@ -24,10 +24,9 @@ const config: Config = {
   ],
 
   // Set the production url of your site here
-  url: 'https://linguister.io',
-  // Set the /<baseUrl>/ pathname under which your site is served
-  // For GitHub pages deployment, it is often '/<projectName>/'
-  baseUrl: '/',
+  url: 'https://hewel.github.io',
+  // Set the /<baseUrl>/ pathname under which the site is served
+  baseUrl: '/lightling/',
 
   presets: [
     [
@@ -40,9 +39,9 @@ const config: Config = {
           sidebarPath: require.resolve('./sidebars.ts'),
         },
         blog: {
-          blogTitle: 'Linguist Translate blog',
+          blogTitle: 'Lightling blog',
           blogDescription:
-            'A blog of Linguist Translate, the privacy focused translation in your browser',
+            'A blog about Lightling, privacy-first translation in your browser',
           postsPerPage: 'ALL',
           blogSidebarCount: 0,
         },
@@ -60,9 +59,9 @@ const config: Config = {
     },
     navbar: {
       logo: {
-        alt: 'Linguist Translate',
-        src: '/logo.svg',
-        href: '/',
+        alt: 'Lightling',
+        src: 'logo.svg',
+        href: '/lightling/',
         target: '_self',
         width: 100,
       },
@@ -80,7 +79,7 @@ const config: Config = {
           target: '_self',
         },
         {
-          href: 'https://github.com/translate-tools/linguist',
+          href: 'https://github.com/hewel/lightling',
           label: 'GitHub',
           position: 'right',
           target: '_blank',

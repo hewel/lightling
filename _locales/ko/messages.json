@@ -111,7 +111,7 @@
     "message": "웹 페이지 번역, 텍스트 번역, 사전, 기록, 사용자 정의 번역기, 언어 장벽을 허물기 위해 필요한 모든 것"
   },
   "ext_name": {
-    "message": "Linguist - 웹 페이지 번역기"
+    "message": "Lightling - 웹 페이지 번역기"
   },
   "history_control_selectEntry": {
     "message": "대량 작업을 위한 번역 선택",

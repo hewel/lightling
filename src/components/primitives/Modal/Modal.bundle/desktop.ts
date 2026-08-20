@@ -59,7 +59,7 @@ export interface IModalProps extends Omit<
   onClose?: ModalCloseHandler;
   /**
    * Retained for source compatibility. Astryx Dialog locks scrolling while it
-   * is modal; every current Linguist modal opts into the legacy behavior.
+   * is modal; every current Lightling modal opts into the legacy behavior.
    */
   preventBodyScroll?: boolean;
   renderAll?: boolean;
@@ -104,7 +104,7 @@ function getActiveElement(node: HTMLElement | null): HTMLElement | null {
  * Compatibility wrapper for the retired legacy Modal.
  *
  * Astryx owns the native dialog, focus trap, Escape/backdrop handling, and
- * scroll lock. This wrapper keeps Linguist's legacy prop/class/portal contract
+ * scroll lock. This wrapper keeps Lightling's legacy prop/class/portal contract
  * while consumers migrate incrementally.
  */
 export const Modal: FC<IModalProps> = ({

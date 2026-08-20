@@ -1,6 +1,6 @@
 {
   "meta": {
-    "title": "Linguist - Traduce páginas web de forma privada | Extensión de traducción para Chrome y Firefox",
+    "title": "Lightling - Traduce páginas web de forma privada | Extensión de traducción para Chrome y Firefox",
     "description": "Extensión de traducción para Chrome y Firefox centrada en la privacidad. Traduce páginas web, texto seleccionado, subtítulos y mensajes al instante. Funciona sin conexión y permite integrar servicios de traducción y API."
   },
   "navigation": {
@@ -24,11 +24,11 @@
   "sections": {
     "hero": {
       "title": "Traduce páginas web con fluidez",
-      "description": "Linguist es un traductor para navegador flexible, impulsado por los servicios de traducción más populares.\n\nTraduce páginas web completas, texto seleccionado, subtítulos en Netflix o en videollamadas, y mensajes privados. Escucha las traducciones y guarda las más importantes en tu diccionario personal para aprender nuevas palabras, incluso sin conexión.\n\nLinguist es una alternativa moderna y centrada en la privacidad a las extensiones de Google Translate. Pruébalo gratis."
+      "description": "Lightling es un traductor para navegador flexible, impulsado por los servicios de traducción más populares.\n\nTraduce páginas web completas, texto seleccionado, subtítulos en Netflix o en videollamadas, y mensajes privados. Escucha las traducciones y guarda las más importantes en tu diccionario personal para aprender nuevas palabras, incluso sin conexión.\n\nLightling es una alternativa moderna y centrada en la privacidad a las extensiones de Google Translate. Pruébalo gratis."
     },
     "opensource": {
       "title": "Código abierto",
-      "content": "Linguist es una extensión de traducción gratuita y de <0>código abierto</0>. No recopila ni vende los datos de los usuarios.\n\nPuedes <1>hacer una donación</1> para apoyar a Linguist y ayudarnos a mantener nuestra independencia y alta calidad.\n\nComparte Linguist en redes sociales para ayudar a otras personas a descubrirlo."
+      "content": "Lightling es una extensión de traducción gratuita y de <0>código abierto</0>. No recopila ni vende los datos de los usuarios.\n\nPuedes <1>hacer una donación</1> para apoyar a Lightling y ayudarnos a mantener nuestra independencia y alta calidad.\n\nComparte Lightling en redes sociales para ayudar a otras personas a descubrirlo."
     },
     "support": {
       "title": "Soporte",
@@ -47,7 +47,7 @@
       },
       "fullPageTranslation": {
         "title": "Traduce páginas web completas",
-        "content": "Traducción rápida y de alta calidad de páginas completas con solo unos clics.\n\nUsa un atajo de teclado para traducir al instante. Pasa el cursor sobre el texto traducido para ver el original. Traduce incluso páginas privadas protegidas por formularios de inicio de sesión o muros de pago.\n\nConfigura reglas de traducción automática basadas en el idioma de la página o el dominio.\n\nLinguist aplica un enfoque de modificación mínima: solo cambia los nodos de texto, conservando el diseño de la página y la experiencia de uso.\n\nActiva la traducción en tiempo real para reuniones en varios idiomas en Zoom, Google Meet y Microsoft Teams."
+        "content": "Traducción rápida y de alta calidad de páginas completas con solo unos clics.\n\nUsa un atajo de teclado para traducir al instante. Pasa el cursor sobre el texto traducido para ver el original. Traduce incluso páginas privadas protegidas por formularios de inicio de sesión o muros de pago.\n\nConfigura reglas de traducción automática basadas en el idioma de la página o el dominio.\n\nLightling aplica un enfoque de modificación mínima: solo cambia los nodos de texto, conservando el diseño de la página y la experiencia de uso.\n\nActiva la traducción en tiempo real para reuniones en varios idiomas en Zoom, Google Meet y Microsoft Teams."
       },
       "selectedTextTranslation": {
         "title": "Traduce texto seleccionado en cualquier sitio web",
@@ -55,64 +55,64 @@
       },
       "textTranslation": {
         "title": "Traducción rápida de texto",
-        "content": "¿Necesitas traducir algo rápidamente? Haz clic en el icono de Linguist e introduce tu texto.\n\nNo es necesario cambiar de pestaña ni abrir sitios web de traducción. Traduce directamente en tu navegador utilizando el servicio que prefieras."
+        "content": "¿Necesitas traducir algo rápidamente? Haz clic en el icono de Lightling e introduce tu texto.\n\nNo es necesario cambiar de pestaña ni abrir sitios web de traducción. Traduce directamente en tu navegador utilizando el servicio que prefieras."
       },
       "knowledgeBase": {
         "title": "Crea tu base de conocimientos personal",
-        "content": "Cada traducción se guarda en tu historial, y puedes añadir las entradas importantes a tu diccionario personal. Busca en tu diccionario y en tu historial de traducción en cualquier momento.\n\nNada se pierde, ni siquiera durante largas sesiones de investigación o estudio.\n\nEl diccionario funciona sin conexión, lo que hace que Linguist sea ideal para estudiantes de idiomas y viajeros que necesitan acceso constante a sus listas de palabras."
+        "content": "Cada traducción se guarda en tu historial, y puedes añadir las entradas importantes a tu diccionario personal. Busca en tu diccionario y en tu historial de traducción en cualquier momento.\n\nNada se pierde, ni siquiera durante largas sesiones de investigación o estudio.\n\nEl diccionario funciona sin conexión, lo que hace que Lightling sea ideal para estudiantes de idiomas y viajeros que necesitan acceso constante a sus listas de palabras."
       },
       "customTranslators": {
         "title": "Integra servicios de traducción y API",
-        "content": "Linguist te permite elegir qué servicio de traducción utilizar.\n\nEs compatible con proveedores de traducción populares como Google, Yandex y Microsoft, con más de 100 idiomas disponibles.\n\nSi un servicio que necesitas no está incluido, puedes añadirlo como un <0>traductor personalizado</0>.\n\nLos traductores personalizados te permiten integrar cualquier sistema de traducción: desde servicios modernos basados en modelos de lenguaje (LLM) como ChatGPT, DeepL, DeepSeek y Gemini, hasta traductores locales que se ejecutan en tu dispositivo, como Ollama o LibreTranslate."
+        "content": "Lightling te permite elegir qué servicio de traducción utilizar.\n\nEs compatible con proveedores de traducción populares como Google, Yandex y Microsoft, con más de 100 idiomas disponibles.\n\nSi un servicio que necesitas no está incluido, puedes añadirlo como un <0>traductor personalizado</0>.\n\nLos traductores personalizados te permiten integrar cualquier sistema de traducción: desde servicios modernos basados en modelos de lenguaje (LLM) como ChatGPT, DeepL, DeepSeek y Gemini, hasta traductores locales que se ejecutan en tu dispositivo, como Ollama o LibreTranslate."
       }
     }
   },
   "faq": {
     "title": "Preguntas frecuentes",
     "items": {
-      "whatIsLinguist": {
-        "title": "¿Qué es Linguist?",
-        "content": "Linguist es una extensión de traducción para Chrome y Firefox centrada en la privacidad.\n\nTe permite traducir páginas web completas, texto seleccionado, subtítulos y mensajes directamente en tu navegador, sin tener que cambiar a sitios web de traducción externos."
+      "whatIsLightling": {
+        "title": "¿Qué es Lightling?",
+        "content": "Lightling es una extensión de traducción para Chrome y Firefox centrada en la privacidad.\n\nTe permite traducir páginas web completas, texto seleccionado, subtítulos y mensajes directamente en tu navegador, sin tener que cambiar a sitios web de traducción externos."
       },
-      "whyLinguist": {
-        "title": "¿Por qué usar Linguist?",
-        "content": "Existen muchas extensiones de navegador que traducen páginas web, y algunos navegadores incluso incluyen traductores integrados. Entonces, ¿por qué usar Linguist?\n\nLa mayoría de los traductores integrados y las extensiones de traducción tienen una flexibilidad limitada. Muchos dependen de un único proveedor de traducción, como Google Translate o Microsoft Bing, mientras que Firefox ofrece su propio traductor sin conexión. En la mayoría de los casos, no puedes elegir el servicio que mejor se adapte a tus necesidades.\n\nSi la calidad de la traducción no es lo suficientemente buena para lo que necesitas, o si enviar texto privado a servicios de terceros no es una opción aceptable, muchas herramientas te dejan sin una buena alternativa.\n\nAdemás, muchas herramientas se centran en una sola tarea. Algunas traducen páginas completas, mientras que otras solo traducen el texto seleccionado.\n\nAl mismo tiempo, algunas extensiones de traducción están diseñadas principalmente para la monetización. Funciones como el historial de traducción o los diccionarios personales pueden requerir una suscripción, y a veces incluso características básicas como el modo oscuro se tratan como opciones premium.\n\nLinguist adopta un enfoque diferente. Está diseñado como una herramienta de traducción práctica. Puedes elegir el servicio de traducción que mejor te funcione, cambiar entre proveedores o añadir tus propios traductores personalizados.\n\nLinguist también reúne todo en un solo lugar: traduce páginas web completas, texto seleccionado, subtítulos y mensajes, mientras llevas un registro de las traducciones importantes en tu historial y diccionario personal."
+      "whyLightling": {
+        "title": "¿Por qué usar Lightling?",
+        "content": "Existen muchas extensiones de navegador que traducen páginas web, y algunos navegadores incluso incluyen traductores integrados. Entonces, ¿por qué usar Lightling?\n\nLa mayoría de los traductores integrados y las extensiones de traducción tienen una flexibilidad limitada. Muchos dependen de un único proveedor de traducción, como Google Translate o Microsoft Bing, mientras que Firefox ofrece su propio traductor sin conexión. En la mayoría de los casos, no puedes elegir el servicio que mejor se adapte a tus necesidades.\n\nSi la calidad de la traducción no es lo suficientemente buena para lo que necesitas, o si enviar texto privado a servicios de terceros no es una opción aceptable, muchas herramientas te dejan sin una buena alternativa.\n\nAdemás, muchas herramientas se centran en una sola tarea. Algunas traducen páginas completas, mientras que otras solo traducen el texto seleccionado.\n\nAl mismo tiempo, algunas extensiones de traducción están diseñadas principalmente para la monetización. Funciones como el historial de traducción o los diccionarios personales pueden requerir una suscripción, y a veces incluso características básicas como el modo oscuro se tratan como opciones premium.\n\nLightling adopta un enfoque diferente. Está diseñado como una herramienta de traducción práctica. Puedes elegir el servicio de traducción que mejor te funcione, cambiar entre proveedores o añadir tus propios traductores personalizados.\n\nLightling también reúne todo en un solo lugar: traduce páginas web completas, texto seleccionado, subtítulos y mensajes, mientras llevas un registro de las traducciones importantes en tu historial y diccionario personal."
       },
-      "theLinguistLogo": {
-        "title": "¿Por qué el logotipo de Linguist es la Torre de Babel?",
-        "content": "El logotipo de Linguist está inspirado en la <wiki>Torre de Babel</wiki>, una de las historias más antiguas sobre el lenguaje y la comunicación.\n\nSegún la historia, las personas hablaban un mismo idioma e intentaron construir una torre que llegara al cielo. La torre nunca se terminó y la humanidad se dispersó en muchos idiomas. Desde entonces, las diferencias lingüísticas a menudo han dificultado la comunicación.\n\nLinguist fue creado para ayudar a resolver este problema.\n\nLa Torre de Babel en el logotipo es un recordatorio de esa historia: muchos idiomas, muchas culturas y el esfuerzo humano constante por entendernos. Linguist ayuda a superar esas barreras haciendo que la traducción sea sencilla, flexible y accesible directamente en tu navegador.\n\nEl logotipo también refleja el espíritu del proyecto. Linguist no es solo otra interfaz para \"Google Translate\". Está desarrollado por personas a las que les importan los idiomas, la privacidad y la tecnología abierta. La Torre de Babel representa la curiosidad, el aprendizaje y la idea de que las diferencias de idioma deben unir a las personas en lugar de separarlas."
+      "theLightlingLogo": {
+        "title": "¿Por qué el logotipo de Lightling es la Torre de Babel?",
+        "content": "El logotipo de Lightling está inspirado en la <wiki>Torre de Babel</wiki>, una de las historias más antiguas sobre el lenguaje y la comunicación.\n\nSegún la historia, las personas hablaban un mismo idioma e intentaron construir una torre que llegara al cielo. La torre nunca se terminó y la humanidad se dispersó en muchos idiomas. Desde entonces, las diferencias lingüísticas a menudo han dificultado la comunicación.\n\nLightling fue creado para ayudar a resolver este problema.\n\nLa Torre de Babel en el logotipo es un recordatorio de esa historia: muchos idiomas, muchas culturas y el esfuerzo humano constante por entendernos. Lightling ayuda a superar esas barreras haciendo que la traducción sea sencilla, flexible y accesible directamente en tu navegador.\n\nEl logotipo también refleja el espíritu del proyecto. Lightling no es solo otra interfaz para \"Google Translate\". Está desarrollado por personas a las que les importan los idiomas, la privacidad y la tecnología abierta. La Torre de Babel representa la curiosidad, el aprendizaje y la idea de que las diferencias de idioma deben unir a las personas en lugar de separarlas."
       },
       "imageTranslation": {
-        "title": "¿Por qué Linguist no traduce el texto de las imágenes?",
-        "content": "Linguist se centra en ofrecer funciones de traducción fiables y de alta calidad.\n\nHemos investigado diferentes enfoques para traducir el texto dentro de las imágenes. Por el momento, la mayoría de las soluciones disponibles no ofrecen resultados consistentes, especialmente cuando se ejecutan directamente en el navegador, lo cual es importante para mantener la privacidad del usuario.\n\nPor este motivo, Linguist no incluye actualmente la traducción de imágenes. Preferimos no lanzar funciones que no cumplan con nuestros estándares de calidad.\n\nSi en el futuro encontramos una forma fiable y respetuosa con la privacidad de implementar la traducción de imágenes, estaremos encantados de añadirla."
+        "title": "¿Por qué Lightling no traduce el texto de las imágenes?",
+        "content": "Lightling se centra en ofrecer funciones de traducción fiables y de alta calidad.\n\nHemos investigado diferentes enfoques para traducir el texto dentro de las imágenes. Por el momento, la mayoría de las soluciones disponibles no ofrecen resultados consistentes, especialmente cuando se ejecutan directamente en el navegador, lo cual es importante para mantener la privacidad del usuario.\n\nPor este motivo, Lightling no incluye actualmente la traducción de imágenes. Preferimos no lanzar funciones que no cumplan con nuestros estándares de calidad.\n\nSi en el futuro encontramos una forma fiable y respetuosa con la privacidad de implementar la traducción de imágenes, estaremos encantados de añadirla."
       },
       "howTranslatePages": {
-        "title": "¿Cómo traduce Linguist las páginas web?",
-        "content": "Linguist puede traducir páginas web completas con solo unos clics. Puedes iniciar la traducción de la página utilizando el botón de la extensión o un atajo de teclado.\n\nEl texto original siempre permanece accesible. Pasa el cursor sobre el texto traducido para ver el original."
+        "title": "¿Cómo traduce Lightling las páginas web?",
+        "content": "Lightling puede traducir páginas web completas con solo unos clics. Puedes iniciar la traducción de la página utilizando el botón de la extensión o un atajo de teclado.\n\nEl texto original siempre permanece accesible. Pasa el cursor sobre el texto traducido para ver el original."
       },
       "offlineTranslation": {
-        "title": "¿Puede Linguist traducir páginas sin conexión?",
-        "content": "Sí. Linguist incluye un traductor sin conexión integrado que te permite traducir texto sin enviar datos a través de internet.\n\nEsto ayuda a proteger tu privacidad y te permite traducir contenido incluso sin conexión a internet."
+        "title": "¿Puede Lightling traducir páginas sin conexión?",
+        "content": "Sí. Lightling incluye un traductor sin conexión integrado que te permite traducir texto sin enviar datos a través de internet.\n\nEsto ayuda a proteger tu privacidad y te permite traducir contenido incluso sin conexión a internet."
       },
       "privacy": {
-        "title": "¿Linguist es privado?",
-        "content": "Sí. Linguist está diseñado pensando en la privacidad.\n\nLa extensión no recopila ni vende los datos de los usuarios. Al utilizar el <offline-translator>traductor sin conexión</offline-translator>, las traducciones se procesan íntegramente en tu dispositivo."
+        "title": "¿Lightling es privado?",
+        "content": "Sí. Lightling está diseñado pensando en la privacidad.\n\nLa extensión no recopila ni vende los datos de los usuarios. Al utilizar el <offline-translator>traductor sin conexión</offline-translator>, las traducciones se procesan íntegramente en tu dispositivo."
       },
       "supportedBrowsers": {
-        "title": "¿Qué navegadores son compatibles con Linguist?",
-        "content": "Linguist está disponible para Chrome y Firefox. También funciona en otros navegadores basados en Chromium que admiten extensiones de Chrome.\n\nLinguist también funciona en navegadores de Android que admiten extensiones, como Firefox para Android y algunos navegadores basados en Chromium."
+        "title": "¿Qué navegadores son compatibles con Lightling?",
+        "content": "Lightling está disponible para Chrome y Firefox. También funciona en otros navegadores basados en Chromium que admiten extensiones de Chrome.\n\nLightling también funciona en navegadores de Android que admiten extensiones, como Firefox para Android y algunos navegadores basados en Chromium."
       },
       "selectedText": {
-        "title": "¿Puede Linguist traducir texto seleccionado?",
+        "title": "¿Puede Lightling traducir texto seleccionado?",
         "content": "Sí. Simplemente selecciona el texto en cualquier página web y usa el botón de traducir para hacerlo al instante.\n\nTambién puedes escuchar la traducción y guardarla en tu diccionario personal."
       },
       "customTranslators": {
         "title": "¿Puedo usar mi propio servicio de traducción?",
-        "content": "Sí. Linguist es compatible con <custom-translator>traductores personalizados</custom-translator>, lo que te permite integrar servicios de traducción adicionales.\n\nPuedes conectar API externas o sistemas de traducción locales como <libre-translate>LibreTranslate</libre-translate> u <ollama>Ollama</ollama>."
+        "content": "Sí. Lightling es compatible con <custom-translator>traductores personalizados</custom-translator>, lo que te permite integrar servicios de traducción adicionales.\n\nPuedes conectar API externas o sistemas de traducción locales como <libre-translate>LibreTranslate</libre-translate> u <ollama>Ollama</ollama>."
       },
       "isFree": {
-        "title": "¿Linguist es gratis?",
-        "content": "Sí. Linguist es completamente gratuito y de <linguist>código abierto</linguist>.\n\nEl proyecto cuenta con el respaldo de la comunidad, y de forma opcional puedes <donations>apoyarlo con una donación</donations>."
+        "title": "¿Lightling es gratis?",
+        "content": "Sí. Lightling es completamente gratuito y de <lightling>código abierto</lightling>.\n\nEl proyecto cuenta con el respaldo de la comunidad, y de forma opcional puedes <donations>apoyarlo con una donación</donations>."
       }
     }
   }

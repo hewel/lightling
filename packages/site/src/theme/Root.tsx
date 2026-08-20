@@ -1,18 +1,13 @@
-/* cspell:disable */
-import React from 'react';
+import { analyticsContext } from '../components/Analytics/useAnalyticsContext';
 
-import { AnalyticsProvider } from '../components/Analytics/AnalyticsProvider';
+const disabledAnalytics = {
+  trackEvent: () => undefined,
+};
 
 export default function Root({ children }) {
   return (
-    <AnalyticsProvider
-      googleAnalytics={{ tagId: 'G-NGGDLX42RQ' }}
-      plausible={{
-        domain: 'linguister.io',
-        apiHost: 'https://uxt.vitonsky.net',
-      }}
-    >
+    <analyticsContext.Provider value={disabledAnalytics}>
       {children}
-    </AnalyticsProvider>
+    </analyticsContext.Provider>
   );
 }

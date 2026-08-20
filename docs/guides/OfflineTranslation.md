@@ -1,10 +1,10 @@
 # Offline translation
 
-Starting from version 5.0, Linguist has a built-in offline translator called "Bergamot". To use it, simply choose this translator on the preferences page.
+Starting from version 5.0, Lightling has a built-in offline translator called "Bergamot". To use it, simply choose this translator on the preferences page.
 
-You can also use offline translation with [custom translators](../CustomTranslator.md) starting from Linguist version 4.0.
+You can also use offline translation with [custom translators](../CustomTranslator.md) starting from Lightling version 4.0.
 
-To do this, deploy any service locally for translating text and implement a JS binding for Linguist.
+To do this, deploy any service locally for translating text and implement a JS binding for Lightling.
 
 ## LibreTranslate
 
@@ -46,6 +46,6 @@ services:
 
 Once the container is built, LibreTranslate will download the models. This will take some time. You can check http://localhost:5000/ or view the Docker logs with `docker compose logs -f`. Once the models are loaded, you can use the translator.
 
-Once you have finished deployment (or if you find a trusted server), add the custom translator [LibreTranslator](https://github.com/translate-tools/linguist-translators/blob/master/translators/LibreTranslator.js) in Linguist settings. If you use a remote instance, replace the `apiPath` value with the actual URL of the LibreTranslate instance.
+Once you have finished deployment (or if you find a trusted server), add the custom translator [LibreTranslator](https://github.com/translate-tools/linguist-translators/blob/master/translators/LibreTranslator.js) in Lightling settings. If you use a remote instance, replace the `apiPath` value with the actual URL of the LibreTranslate instance.
 
 Done. You can now translate everything locally.

@@ -111,7 +111,7 @@
     "message": "Verkkosivujen käännös, tekstin käännös, sanakirja, historia, mukautetut kääntäjät, kaikki mitä tarvitset kielimuurien murtamiseen"
   },
   "ext_name": {
-    "message": "Linguist - verkkosivujen kääntäjä"
+    "message": "Lightling - verkkosivujen kääntäjä"
   },
   "history_control_selectEntry": {
     "message": "Valitse käännös joukkotoimintoa varten",

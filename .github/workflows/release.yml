@@ -32,7 +32,7 @@ jobs:
           CHROMIUM_CRX_PEM: ${{ secrets.CHROMIUM_CRX_PEM }}
         run: |
           echo "$CHROMIUM_CRX_PEM" > ./crx.pem
-          npx crx pack chromium -o linguist.crx -p ./crx.pem
+          npx crx pack chromium -o lightling.crx -p ./crx.pem
           ls -al ./
 
       - name: Build XPI file for firefox-standalone
@@ -43,7 +43,7 @@ jobs:
         run: |
           mkdir ./AMO
           npx web-ext sign --channel unlisted --api-key "$AMO_KEY" --api-secret "$AMO_SECRET" --source-dir ./firefox-standalone --artifacts-dir ./AMO
-          mv AMO/*.xpi AMO/linguist.xpi
+          mv AMO/*.xpi AMO/lightling.xpi
 
       - name: Archive build files
         uses: actions/upload-artifact@v4
@@ -65,8 +65,8 @@ jobs:
           # Use current commit hash, instead of main branch
           target_commitish: ${{ github.sha }}
           files: |
-            build/AMO/linguist.xpi
-            build/linguist.crx
+            build/AMO/lightling.xpi
+            build/lightling.crx
             build/*.zip
 
       - name: Build static files for GitHub Pages

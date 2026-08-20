@@ -14,9 +14,8 @@ import { OptionsGroup } from '../OptionsTree/OptionsTree';
 const langCodes = getLanguageCodesISO639('v1');
 
 const docsUrl = (path: string) => {
-  const url = new URL(path, 'https://linguister.io');
-  url.searchParams.set('utm_source', 'linguist');
-  return url.toString();
+  const documentPath = path.replace(/^\/docs\//, '');
+  return `https://github.com/hewel/lightling/blob/master/docs/${documentPath}.md`;
 };
 
 type Options = {

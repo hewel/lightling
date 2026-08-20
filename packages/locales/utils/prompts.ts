@@ -51,10 +51,10 @@ export const getJsonTranslationPrompt = (json: string, from: string, to: string)
 
 	You must consider next project description as context when you work on localization:
 
-	> Linguist is a browser extension for translate web pages. It is a full-featured translation solution.
-	> With Linguist user may run full page translation, translate any custom text, translate selected text.
-	> Linguist supports a custom translators, so user can add its own implementation of translator module.
-	> Linguist is a privacy focused, includes embedded modules for offline translation in user device (locally).
+	> Lightling is a browser extension for translate web pages. It is a full-featured translation solution.
+	> With Lightling user may run full page translation, translate any custom text, translate selected text.
+	> Lightling supports a custom translators, so user can add its own implementation of translator module.
+	> Lightling is a privacy focused, includes embedded modules for offline translation in user device (locally).
 
 	# Translation recommendations
 

@@ -32,7 +32,7 @@ buildThirdparty:
 buildAll:
 	mkdir -p ./build
 	chmod 777 ./build
-	${DOCKER_COMPOSE} run --rm linguist make buildFirefox buildFirefoxStandalone buildChromium buildChrome
+	${DOCKER_COMPOSE} run --rm lightling make buildFirefox buildFirefoxStandalone buildChromium buildChrome
 
 buildFirefox:
 	npm run build:variant -- firefox

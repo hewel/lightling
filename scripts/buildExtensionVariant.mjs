@@ -8,9 +8,8 @@ import { prepareExtensionAssets } from './prepareExtensionAssets.mjs';
 const scriptsDirectory = dirname(fileURLToPath(import.meta.url));
 const projectDirectory = resolve(scriptsDirectory, '..');
 const extensionBinary = resolve(projectDirectory, 'node_modules/.bin/extension');
-const chromiumUpdateUrl =
-  'https://translate-tools.github.io/linguist/chromium_updates.xml';
-const firefoxStandaloneId = '{e3fc2d33-09fc-4fe8-9331-d0a464698035}';
+const chromiumUpdateUrl = 'https://hewel.github.io/lightling/chromium_updates.xml';
+const firefoxStandaloneId = '{33b518c2-1f65-4090-8d94-e0a432ebbfd4}';
 const variantBrowsers = new Map([
   ['chrome', 'chrome'],
   ['chromium', 'chromium'],

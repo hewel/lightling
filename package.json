@@ -1,8 +1,8 @@
 {
-  "name": "browser-addon",
+  "name": "lightling",
   "version": "7.1.0",
-  "description": "Browser addon for fast translate text and pages",
-  "license": "GPL-3.0",
+  "description": "Privacy-first browser extension for translating text and web pages",
+  "license": "BSD-3-Clause",
   "author": "Vitonsky <https://github.com/vitonsky>",
   "scripts": {
     "test": "vitest",

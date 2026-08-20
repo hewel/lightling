@@ -24,7 +24,7 @@ const temporaryDirectories = [];
 const execFileAsync = promisify(execFile);
 
 async function createTemporaryProject(scriptName) {
-  const projectDirectory = await mkdtemp(join(tmpdir(), 'linguist-extension-scripts-'));
+  const projectDirectory = await mkdtemp(join(tmpdir(), 'lightling-extension-scripts-'));
   temporaryDirectories.push(projectDirectory);
 
   const projectScriptsDirectory = resolve(projectDirectory, 'scripts');
@@ -117,7 +117,7 @@ afterEach(async () => {
 describe('extension build helpers', () => {
   test('requires the neutral theme in every emitted CSS bundle', async () => {
     const projectDirectory = await mkdtemp(
-      join(tmpdir(), 'linguist-extension-theme-artifact-'),
+      join(tmpdir(), 'lightling-extension-theme-artifact-'),
     );
     temporaryDirectories.push(projectDirectory);
     const contentStylesDirectory = resolve(projectDirectory, 'content_scripts');
@@ -146,7 +146,7 @@ describe('extension build helpers', () => {
 
   test('rejects artifacts without CSS bundles', async () => {
     const projectDirectory = await mkdtemp(
-      join(tmpdir(), 'linguist-extension-empty-artifact-'),
+      join(tmpdir(), 'lightling-extension-empty-artifact-'),
     );
     temporaryDirectories.push(projectDirectory);
     await writeFile(resolve(projectDirectory, 'action.css.map'), '{}');
@@ -245,7 +245,7 @@ describe('extension build helpers', () => {
     expect(sourceBuildManifest).toEqual(sourceManifest);
     expect(variantManifest).toEqual({
       ...sourceManifest,
-      update_url: 'https://translate-tools.github.io/linguist/chromium_updates.xml',
+      update_url: 'https://hewel.github.io/lightling/chromium_updates.xml',
     });
   });
 
@@ -277,7 +277,7 @@ describe('extension build helpers', () => {
     expect(variantManifest.browser_specific_settings).toEqual({
       gecko: {
         strict_min_version: '109.0',
-        id: '{e3fc2d33-09fc-4fe8-9331-d0a464698035}',
+        id: '{33b518c2-1f65-4090-8d94-e0a432ebbfd4}',
       },
       safari: { strict_min_version: '17.0' },
     });
