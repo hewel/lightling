@@ -220,6 +220,41 @@ describe('extension build helpers', () => {
     );
     expect(syncedManifest).toBe(`${JSON.stringify(expectedManifest, null, '\t')}\n`);
   });
+  test('syncs prerelease versions into store-valid manifest versions', async () => {
+    const projectDirectory = await createTemporaryProject('syncManifestVersion.mjs');
+    const sourceManifest = {
+      manifest_version: 3,
+      name: '__MSG_appName__',
+      version: '7.1.0',
+    };
+
+    await mkdir(resolve(projectDirectory, 'src'), { recursive: true });
+    await Promise.all([
+      writeFile(
+        resolve(projectDirectory, 'package.json'),
+        JSON.stringify({ version: '7.2.0-beta.1' }),
+      ),
+      writeFile(
+        resolve(projectDirectory, 'src/manifest.json'),
+        JSON.stringify(sourceManifest),
+      ),
+    ]);
+
+    await invokeProjectExport(
+      projectDirectory,
+      'syncManifestVersion.mjs',
+      'syncManifestVersion',
+    );
+
+    const syncedManifest = JSON.parse(
+      await readFile(resolve(projectDirectory, 'src/manifest.json'), 'utf8'),
+    );
+    expect(syncedManifest).toEqual({
+      ...sourceManifest,
+      version: '7.1.65535.2',
+      version_name: '7.2.0-beta.1',
+    });
+  });
 
   test('adds the update URL only to the copied Chromium manifest', async () => {
     const sourceManifest = {
