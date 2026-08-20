@@ -38,6 +38,9 @@ MORE CLI:
   capture screenshots, or claim visual correctness. For UI changes, complete
   non-visual automated checks and report the affected surfaces and states for
   manual human review.
+- Never write tests for styles. Do not assert generated CSS class names,
+  computed styles, or pixel geometry; visual and StyleX class output are
+  build-dependent and reviewed by humans.
 
 ## Extension compatibility boundaries
 

@@ -103,12 +103,11 @@ describe('LLMProfilesFieldList', () => {
     return input;
   }
 
-  function findButton(label: string, index = 0): HTMLButtonElement {
-    const buttons = Array.from(
-      container.querySelectorAll<HTMLButtonElement>('button'),
-    ).filter((button) => button.textContent?.trim() === label);
-    const button = buttons[index];
-    if (button === undefined) throw new Error(`Expected button "${label}"`);
+  function findAction(label: string): HTMLButtonElement {
+    const button = Array.from(
+      container.querySelectorAll<HTMLButtonElement>('button[aria-label]'),
+    ).find((button) => button.getAttribute('aria-label') === label);
+    if (button === undefined) throw new Error(`Expected action "${label}"`);
     return button;
   }
 
@@ -139,14 +138,12 @@ describe('LLMProfilesFieldList', () => {
     );
     expect(
       Array.from(
-        container.querySelectorAll<HTMLButtonElement>('nav button[data-tab-value]'),
-      ).map((button) => button.dataset.tabValue),
-    ).toEqual(['0', '1']);
+        container.querySelectorAll<HTMLButtonElement>('nav button[role="tab"]'),
+      ).map((button) => button.textContent),
+    ).toEqual(['OpenAI', 'Local']);
     expect(
-      container
-        .querySelector('nav button[data-tab-value="0"]')
-        ?.getAttribute('aria-current'),
-    ).toBe('page');
+      container.querySelector('nav button[role="tab"]')?.getAttribute('aria-selected'),
+    ).toBe('true');
     expect(container.textContent).toContain('OpenAI');
     expect(container.textContent).toContain('Local');
     expect(
@@ -171,7 +168,7 @@ describe('LLMProfilesFieldList', () => {
     });
 
     const localTab = container.querySelector<HTMLButtonElement>(
-      'nav button[data-tab-value="1"]',
+      'nav .astryx-tab[data-tab-value="1"] button[role="tab"]',
     );
     if (localTab === null) throw new Error('Expected Local tab');
 
@@ -188,22 +185,31 @@ describe('LLMProfilesFieldList', () => {
       activeProfile: 'OpenAI',
       profiles: [openAIProfile()],
     });
-
     for (const label of [
       'llmProfiles_profileName',
       'settings_option_llmTranslator_apiUrl',
-      'settings_option_llmTranslator_apiKey',
-      'settings_option_llmTranslator_model',
     ]) {
       const field = findInput(label).closest('.astryx-field');
       expect(field?.parentElement?.classList.contains('astryx-stack-item')).toBe(true);
+    }
+
+    for (const input of container.querySelectorAll('.astryx-input-group input')) {
+      const group = input.closest('.astryx-input-group');
+      expect(
+        group?.closest('.astryx-stack-item') !== null ||
+          group?.parentElement?.classList.contains('astryx-stack-item'),
+      ).toBe(true);
     }
   });
 
   it('appends a preset inline and makes the first profile active', async () => {
     const onChange = await render({ activeProfile: '', profiles: [] });
 
-    await act(async () => findButton('llmProfiles_add').click());
+    const addButton = container.querySelector<HTMLButtonElement>(
+      'button[aria-label="llmProfiles_add"]',
+    );
+    if (addButton === null) throw new Error('Expected add action');
+    await act(async () => addButton.click());
 
     expect(onChange).toHaveBeenLastCalledWith({
       activeProfile: 'OpenAI',
@@ -219,13 +225,11 @@ describe('LLMProfilesFieldList', () => {
     });
     expect(findInput('llmProfiles_profileName').value).toBe('OpenAI');
     expect(
-      container
-        .querySelector('nav button[data-tab-value="0"]')
-        ?.getAttribute('aria-current'),
-    ).toBe('page');
+      container.querySelector('nav button[role="tab"]')?.getAttribute('aria-selected'),
+    ).toBe('true');
   });
 
-  it('deletes inline rows and moves the active selection to the next profile', async () => {
+  it('deletes inline rows from tab labels and moves the active selection', async () => {
     vi.spyOn(globalThis, 'confirm').mockReturnValue(true);
     const onChange = await render({
       activeProfile: 'OpenAI',
@@ -233,7 +237,7 @@ describe('LLMProfilesFieldList', () => {
     });
 
     const deleteButton = container.querySelector<HTMLButtonElement>(
-      'button[aria-label="llmProfiles_delete"]',
+      'nav .astryx-tab[data-tab-value="0"] button[aria-label="llmProfiles_delete"]',
     );
     if (deleteButton === null) throw new Error('Expected delete button');
     await act(async () => deleteButton.click());
@@ -242,6 +246,9 @@ describe('LLMProfilesFieldList', () => {
       activeProfile: 'Local',
       profiles: [customProfile()],
     });
+    expect(
+      container.querySelector('nav button[role="tab"]')?.getAttribute('aria-selected'),
+    ).toBe('true');
   });
 
   it('keeps model discovery and connection tests available per row', async () => {
@@ -250,12 +257,22 @@ describe('LLMProfilesFieldList', () => {
     const profile = openAIProfile();
     await render({ activeProfile: profile.name, profiles: [profile] });
 
+    const fetchModelsAction = findAction(
+      'settings_option_llmTranslator_fetchModelsButton',
+    );
+    const testAction = findAction('settings_option_llmTranslator_testButton');
+
+    expect(
+      fetchModelsAction.parentElement?.classList.contains('astryx-input-group'),
+    ).toBe(true);
+    expect(testAction.parentElement?.classList.contains('astryx-input-group')).toBe(true);
+
     await act(async () => {
-      findButton('settings_option_llmTranslator_fetchModelsButton').click();
+      fetchModelsAction.click();
       await Promise.resolve();
     });
     await act(async () => {
-      findButton('settings_option_llmTranslator_testButton').click();
+      testAction.click();
       await Promise.resolve();
     });
 

@@ -5,12 +5,18 @@ import { Heading } from '@astryxdesign/core/Heading';
 import { IconButton } from '@astryxdesign/core/IconButton';
 import { Selector } from '@astryxdesign/core/Selector';
 import { HStack, StackItem, VStack } from '@astryxdesign/core/Stack';
-import { Tab, TabList } from '@astryxdesign/core/TabList';
+import { TabList, useTabListContext } from '@astryxdesign/core/TabList';
 import { Text } from '@astryxdesign/core/Text';
 import { Token } from '@astryxdesign/core/Token';
 import * as stylex from '@stylexjs/stylex';
-import { IconTrash } from '@tabler/icons-react';
+import {
+  IconListSearch,
+  IconPlugConnected,
+  IconPlus,
+  IconTrash,
+} from '@tabler/icons-react';
 
+import { InputGroupAction } from '@/components/controls/InputGroupAction/InputGroupAction';
 import { Button } from '@/components/primitives/Button/Button.bundle/universal';
 import { Textinput } from '@/components/primitives/Textinput/Textinput.bundle/desktop';
 import { getMessage } from '@/lib/language';
@@ -118,10 +124,60 @@ type RowState = {
   models?: string[];
   modelsBusy?: boolean;
   testBusy?: boolean;
-  status?: FieldStatus;
+  modelsStatus?: FieldStatus;
+  testStatus?: FieldStatus;
 };
 
 const styles = stylex.create({
+  profileTab: {
+    position: 'relative',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 'var(--spacing-1)',
+    paddingInline: 'var(--spacing-3)',
+    height: 'var(--size-element-md)',
+    color: {
+      default: 'var(--color-text-secondary)',
+      ':has([aria-selected="true"])': 'var(--color-text-primary)',
+    },
+    fontSize: 'var(--text-label-size)',
+    lineHeight: 'var(--text-label-leading)',
+    whiteSpace: 'nowrap',
+    ':has(:focus-visible)': {
+      outlineWidth: 'var(--focus-outline-width)',
+      outlineStyle: 'var(--focus-outline-style)',
+      outlineColor: 'var(--focus-outline-color)',
+      outlineOffset: 'var(--focus-outline-offset)',
+    },
+  },
+  profileTabSelect: {
+    appearance: 'none',
+    borderWidth: 0,
+    borderStyle: 'none',
+    borderRadius: 'var(--radius-element)',
+    padding: 0,
+    backgroundColor: 'transparent',
+    color: 'inherit',
+    fontFamily: 'inherit',
+    fontSize: 'inherit',
+    lineHeight: 'inherit',
+    fontWeight: 'inherit',
+    cursor: 'pointer',
+    outline: 'none',
+  },
+  profileTabIndicator: {
+    position: 'absolute',
+    bottom: 'var(--_tab-indicator-bottom, -1px)',
+    insetInlineStart: 'var(--spacing-3)',
+    insetInlineEnd: 'var(--spacing-3)',
+    height: 'calc(var(--spacing-1) / 2)',
+    borderRadius: 'var(--radius-full)',
+    backgroundColor: {
+      default: 'transparent',
+      ':has([aria-selected="true"])': 'var(--color-accent)',
+    },
+    pointerEvents: 'none',
+  },
   fieldItem: {
     flexBasis: 'calc(var(--spacing-10) * 4)',
     minWidth: 0,
@@ -131,6 +187,67 @@ const styles = stylex.create({
     minWidth: 0,
   },
 });
+
+interface ProfileTabProps {
+  value: string;
+  label: string;
+  isActive: boolean;
+  onDelete: () => void;
+}
+
+/**
+ * Astryx `Tab` renders one native button, so a remove button cannot be nested
+ * inside its label. This adapter keeps TabList's roving focus contract while
+ * rendering selection and deletion as sibling controls inside one tab surface.
+ */
+const ProfileTab: FC<ProfileTabProps> = ({ value, label, isActive, onDelete }) => {
+  const tabList = useTabListContext();
+  const isSelected = tabList.value === value;
+
+  return (
+    <HStack
+      gap={1}
+      align="center"
+      className="astryx-tab"
+      xstyle={styles.profileTab}
+      data-tab-value={value}
+    >
+      <button
+        type="button"
+        role="tab"
+        aria-selected={isSelected}
+        tabIndex={isSelected ? 0 : -1}
+        onClick={() => {
+          tabList.onChange(value);
+        }}
+        {...stylex.props(styles.profileTabSelect)}
+      >
+        <Text
+          type="label"
+          color={isSelected ? 'primary' : 'secondary'}
+          weight={isSelected ? 'medium' : undefined}
+        >
+          {label}
+        </Text>
+      </button>
+      {isActive && (
+        <Token label={getMessage('llmProfiles_active')} color="green" size="sm" />
+      )}
+      <IconButton
+        label={getMessage('llmProfiles_delete')}
+        tooltip={getMessage('llmProfiles_delete')}
+        icon={<IconTrash />}
+        variant="ghost"
+        size="sm"
+        onClick={(event) => {
+          event.stopPropagation();
+          onDelete();
+        }}
+      />
+      <span aria-hidden="true" {...stylex.props(styles.profileTabIndicator)} />
+    </HStack>
+  );
+};
 
 interface LLMProfilesFieldListProps {
   label: string;
@@ -247,7 +364,7 @@ export const LLMProfilesFieldList: FC<LLMProfilesFieldListProps> = ({
       [index]: {
         ...currentStates[index],
         modelsBusy: true,
-        status: undefined,
+        modelsStatus: undefined,
       },
     }));
 
@@ -260,7 +377,7 @@ export const LLMProfilesFieldList: FC<LLMProfilesFieldListProps> = ({
           [index]: {
             ...currentStates[index],
             models: models.length === 0 ? undefined : models,
-            status: {
+            modelsStatus: {
               type: models.length === 0 ? 'warning' : 'success',
               message: getMessage(
                 models.length === 0
@@ -278,7 +395,7 @@ export const LLMProfilesFieldList: FC<LLMProfilesFieldListProps> = ({
           ...currentStates,
           [index]: {
             ...currentStates[index],
-            status: { type: 'error', message: errorMessageOf(error) },
+            modelsStatus: { type: 'error', message: errorMessageOf(error) },
           },
         }));
       })
@@ -299,7 +416,7 @@ export const LLMProfilesFieldList: FC<LLMProfilesFieldListProps> = ({
       [index]: {
         ...currentStates[index],
         testBusy: true,
-        status: undefined,
+        testStatus: undefined,
       },
     }));
 
@@ -311,7 +428,7 @@ export const LLMProfilesFieldList: FC<LLMProfilesFieldListProps> = ({
           ...currentStates,
           [index]: {
             ...currentStates[index],
-            status: {
+            testStatus: {
               type: 'success',
               message: `${getMessage('settings_message_llmTranslator_testSuccess')} "${translatedText}"`,
             },
@@ -325,7 +442,7 @@ export const LLMProfilesFieldList: FC<LLMProfilesFieldListProps> = ({
           ...currentStates,
           [index]: {
             ...currentStates[index],
-            status: { type: 'error', message: errorMessageOf(error) },
+            testStatus: { type: 'error', message: errorMessageOf(error) },
           },
         }));
       })
@@ -366,6 +483,54 @@ export const LLMProfilesFieldList: FC<LLMProfilesFieldListProps> = ({
         <Banner status="error" title={error} container="section" />
       )}
 
+      <TabList
+        value={selectedProfile === undefined ? '' : String(selectedProfileIndex)}
+        onChange={(selectedValue) => {
+          const index = Number(selectedValue);
+          if (index < value.profiles.length) selectTab(index);
+        }}
+        aria-label={label}
+        hasDivider
+      >
+        {value.profiles.map((profile, index) => (
+          <ProfileTab
+            key={index}
+            value={String(index)}
+            label={profile.name.trim() || providerLabels[profile.provider]}
+            isActive={profile.name === value.activeProfile}
+            onDelete={() => {
+              deleteProfile(index);
+            }}
+          />
+        ))}
+        <InputGroupAction
+          label={getMessage('llmProfiles_addProvider')}
+          isLabelHidden
+          control={
+            <Selector
+              label={getMessage('llmProfiles_addProvider')}
+              options={presetOptions}
+              value={preset}
+              variant="ghost"
+              size="sm"
+              onChange={(nextPreset) => {
+                if (isLLMPreset(nextPreset)) setPreset(nextPreset);
+              }}
+            />
+          }
+          action={
+            <IconButton
+              label={getMessage('llmProfiles_add')}
+              tooltip={getMessage('llmProfiles_add')}
+              icon={<IconPlus />}
+              variant="secondary"
+              size="sm"
+              onClick={addFromPreset}
+            />
+          }
+        />
+      </TabList>
+
       {profileCount === 0 || selectedProfile === undefined ? (
         <EmptyState
           isCompact
@@ -373,177 +538,145 @@ export const LLMProfilesFieldList: FC<LLMProfilesFieldListProps> = ({
           title={getMessage('llmProfiles_emptyList')}
         />
       ) : (
-        <>
-          <TabList
-            value={String(selectedProfileIndex)}
-            onChange={(selectedValue) => {
-              const index = Number(selectedValue);
-              if (index < value.profiles.length) selectTab(index);
-            }}
-            aria-label={label}
-            hasDivider
-          >
-            {value.profiles.map((profile, index) => (
-              <Tab
-                key={index}
-                value={String(index)}
-                label={profile.name.trim() || providerLabels[profile.provider]}
-                endContent={
-                  profile.name === value.activeProfile ? (
-                    <Token
-                      label={getMessage('llmProfiles_active')}
-                      color="green"
-                      size="sm"
-                    />
-                  ) : undefined
-                }
-              />
-            ))}
-          </TabList>
+        <VStack gap={3} width="100%">
+          <HStack gap={2} align="center" justify="end" wrap="wrap">
+            {!selectedIsActive && (
+              <Button
+                onPress={() => {
+                  setActiveProfile(selectedProfile.name);
+                }}
+              >
+                {getMessage('llmProfiles_setActive')}
+              </Button>
+            )}
+          </HStack>
 
-          <VStack gap={3} width="100%">
-            <HStack gap={2} align="center" justify="end" wrap="wrap">
-              {!selectedIsActive && (
-                <Button
-                  onPress={() => {
-                    setActiveProfile(selectedProfile.name);
-                  }}
-                >
-                  {getMessage('llmProfiles_setActive')}
-                </Button>
-              )}
-              <IconButton
-                label={getMessage('llmProfiles_delete')}
-                tooltip={getMessage('llmProfiles_delete')}
-                icon={<IconTrash />}
-                variant="ghost"
-                onClick={() => {
-                  deleteProfile(selectedProfileIndex);
+          <HStack gap={2} align="end" wrap="wrap" width="100%">
+            <StackItem size="fill" xstyle={styles.wideFieldItem}>
+              <Textinput
+                label={getMessage('llmProfiles_profileName')}
+                value={selectedProfile.name}
+                width="100%"
+                status={
+                  selectedNameError === undefined
+                    ? undefined
+                    : { type: 'error', message: selectedNameError }
+                }
+                onInputText={(name) => {
+                  patchProfile(selectedProfileIndex, { name });
                 }}
               />
-            </HStack>
-
-            <HStack gap={2} align="end" wrap="wrap" width="100%">
-              <StackItem size="fill" xstyle={styles.wideFieldItem}>
-                <Textinput
-                  label={getMessage('llmProfiles_profileName')}
-                  value={selectedProfile.name}
-                  width="100%"
-                  status={
-                    selectedNameError === undefined
-                      ? undefined
-                      : { type: 'error', message: selectedNameError }
+            </StackItem>
+            <StackItem size="fill" xstyle={styles.fieldItem}>
+              <Selector
+                label={getMessage('llmProfiles_provider')}
+                options={providerOptions}
+                value={selectedProfile.provider}
+                width="100%"
+                onChange={(provider) => {
+                  if (isLLMProvider(provider)) {
+                    patchProfile(selectedProfileIndex, { provider });
                   }
-                  onInputText={(name) => {
-                    patchProfile(selectedProfileIndex, { name });
-                  }}
-                />
-              </StackItem>
-              <StackItem size="fill" xstyle={styles.fieldItem}>
-                <Selector
-                  label={getMessage('llmProfiles_provider')}
-                  options={providerOptions}
-                  value={selectedProfile.provider}
-                  width="100%"
-                  onChange={(provider) => {
-                    if (isLLMProvider(provider)) {
-                      patchProfile(selectedProfileIndex, { provider });
-                    }
-                  }}
-                />
-              </StackItem>
-            </HStack>
+                }}
+              />
+            </StackItem>
+          </HStack>
 
-            <HStack gap={2} align="end" wrap="wrap" width="100%">
-              <StackItem size="fill" xstyle={styles.wideFieldItem}>
-                <Textinput
-                  label={getMessage('settings_option_llmTranslator_apiUrl')}
-                  value={selectedProfile.apiUrl}
-                  width="100%"
-                  spellCheck={false}
-                  onInputText={(apiUrl) => {
-                    patchProfile(selectedProfileIndex, { apiUrl });
-                  }}
-                />
-              </StackItem>
-              <StackItem size="fill" xstyle={styles.fieldItem}>
-                <Textinput
-                  label={getMessage('settings_option_llmTranslator_apiKey')}
-                  type="password"
-                  value={selectedProfile.apiKey}
-                  width="100%"
-                  spellCheck={false}
-                  onInputText={(apiKey) => {
-                    patchProfile(selectedProfileIndex, { apiKey });
-                  }}
-                />
-              </StackItem>
-            </HStack>
-
-            <HStack gap={2} align="end" wrap="wrap" width="100%">
-              <StackItem size="fill" xstyle={styles.wideFieldItem}>
-                {selectedRowState?.models === undefined ? (
+          <HStack gap={2} align="start" wrap="wrap" width="100%">
+            <StackItem size="fill" xstyle={styles.wideFieldItem}>
+              <Textinput
+                label={getMessage('settings_option_llmTranslator_apiUrl')}
+                value={selectedProfile.apiUrl}
+                width="100%"
+                spellCheck={false}
+                onInputText={(apiUrl) => {
+                  patchProfile(selectedProfileIndex, { apiUrl });
+                }}
+              />
+            </StackItem>
+            <StackItem size="fill" xstyle={styles.fieldItem}>
+              <InputGroupAction
+                label={getMessage('settings_option_llmTranslator_apiKey')}
+                control={
                   <Textinput
-                    label={getMessage('settings_option_llmTranslator_model')}
-                    value={selectedProfile.model}
+                    label={getMessage('settings_option_llmTranslator_apiKey')}
+                    type="password"
+                    value={selectedProfile.apiKey}
                     width="100%"
                     spellCheck={false}
-                    status={selectedRowState?.status}
-                    onInputText={(model) => {
-                      patchProfile(selectedProfileIndex, { model });
+                    status={selectedRowState?.testStatus}
+                    onInputText={(apiKey) => {
+                      patchProfile(selectedProfileIndex, { apiKey });
                     }}
                   />
-                ) : (
-                  <Selector
-                    label={getMessage('settings_option_llmTranslator_model')}
-                    options={selectedRowState.models.map((model) => ({
-                      value: model,
-                      label: model,
-                    }))}
-                    value={selectedProfile.model}
-                    width="100%"
-                    status={selectedRowState.status}
-                    onChange={(model) => {
-                      patchProfile(selectedProfileIndex, { model });
+                }
+                action={
+                  <IconButton
+                    label={getMessage('settings_option_llmTranslator_testButton')}
+                    tooltip={getMessage('settings_option_llmTranslator_testButton')}
+                    icon={<IconPlugConnected />}
+                    variant="secondary"
+                    isDisabled={selectedRowState?.testBusy}
+                    onClick={() => {
+                      testProfile(selectedProfile, selectedProfileIndex);
                     }}
                   />
-                )}
-              </StackItem>
-              <Button
-                disabled={selectedRowState?.modelsBusy}
-                onPress={() => {
-                  fetchModels(selectedProfile, selectedProfileIndex);
-                }}
-              >
-                {getMessage('settings_option_llmTranslator_fetchModelsButton')}
-              </Button>
-              <Button
-                disabled={selectedRowState?.testBusy}
-                onPress={() => {
-                  testProfile(selectedProfile, selectedProfileIndex);
-                }}
-              >
-                {getMessage('settings_option_llmTranslator_testButton')}
-              </Button>
-            </HStack>
-          </VStack>
-        </>
-      )}
+                }
+              />
+            </StackItem>
+          </HStack>
 
-      <HStack gap={2} align="end" wrap="wrap">
-        <StackItem size="fill" xstyle={styles.fieldItem}>
-          <Selector
-            label={getMessage('llmProfiles_addProvider')}
-            options={presetOptions}
-            value={preset}
-            width="100%"
-            onChange={(nextPreset) => {
-              if (isLLMPreset(nextPreset)) setPreset(nextPreset);
-            }}
-          />
-        </StackItem>
-        <Button onPress={addFromPreset}>{getMessage('llmProfiles_add')}</Button>
-      </HStack>
+          <HStack gap={2} align="end" wrap="wrap" width="100%">
+            <StackItem size="fill" xstyle={styles.wideFieldItem}>
+              <InputGroupAction
+                label={getMessage('settings_option_llmTranslator_model')}
+                control={
+                  selectedRowState?.models === undefined ? (
+                    <Textinput
+                      label={getMessage('settings_option_llmTranslator_model')}
+                      value={selectedProfile.model}
+                      width="100%"
+                      spellCheck={false}
+                      status={selectedRowState?.modelsStatus}
+                      onInputText={(model) => {
+                        patchProfile(selectedProfileIndex, { model });
+                      }}
+                    />
+                  ) : (
+                    <Selector
+                      label={getMessage('settings_option_llmTranslator_model')}
+                      options={selectedRowState.models.map((model) => ({
+                        value: model,
+                        label: model,
+                      }))}
+                      value={selectedProfile.model}
+                      width="100%"
+                      status={selectedRowState.modelsStatus}
+                      onChange={(model) => {
+                        patchProfile(selectedProfileIndex, { model });
+                      }}
+                    />
+                  )
+                }
+                action={
+                  <IconButton
+                    label={getMessage('settings_option_llmTranslator_fetchModelsButton')}
+                    tooltip={getMessage(
+                      'settings_option_llmTranslator_fetchModelsButton',
+                    )}
+                    icon={<IconListSearch />}
+                    variant="secondary"
+                    isDisabled={selectedRowState?.modelsBusy}
+                    onClick={() => {
+                      fetchModels(selectedProfile, selectedProfileIndex);
+                    }}
+                  />
+                }
+              />
+            </StackItem>
+          </HStack>
+        </VStack>
+      )}
     </VStack>
   );
 };
