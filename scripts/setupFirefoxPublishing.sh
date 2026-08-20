@@ -213,16 +213,17 @@ if confirm "Build fresh Firefox and source archives now?"; then
     make buildThirdparty
   fi
   npm run build:variant -- firefox-standalone
-  rm -f build/firefox-standalone.zip build/lightling-source.zip
-  (
-    cd build/firefox-standalone
-    zip -qr ../firefox-standalone.zip .
-  )
+  npx web-ext build \
+    --source-dir build/firefox-standalone \
+    --artifacts-dir build \
+    --filename firefox-standalone.zip \
+    --overwrite-dest
+  rm -f build/lightling-source.zip
   git archive --format=zip --output=build/lightling-source.zip HEAD
   say "Created build/firefox-standalone.zip and build/lightling-source.zip."
 else
   note "Build later with: npm run build:variant -- firefox-standalone"
-  note "Then zip build/firefox-standalone and create a source archive with git archive."
+  note "Then package it with web-ext build and create a source archive with git archive."
 fi
 pause "Confirm both ZIP files exist before continuing."
 
