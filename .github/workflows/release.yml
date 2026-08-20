@@ -13,6 +13,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      CHROMIUM_CRX_PEM: ${{ secrets.CHROMIUM_CRX_PEM }}
+
 
     steps:
       - uses: actions/checkout@v2
@@ -27,16 +30,18 @@ jobs:
           sudo chown -R $(id -u):$(id -g) ./build
 
       - name: Build CRX file for chromium
-        if: ${{ !contains(env.PROJECT_VERSION, '-') }}
+        if: ${{ !contains(env.PROJECT_VERSION, '-') && env.CHROMIUM_CRX_PEM != '' }}
         working-directory: "./build"
-        env:
-          CHROMIUM_CRX_PEM: ${{ secrets.CHROMIUM_CRX_PEM }}
         run: |
           echo "$CHROMIUM_CRX_PEM" > ./crx.pem
           npx crx pack chromium -o lightling.crx -p ./crx.pem
           ls -al ./
 
-      - name: Build XPI file for firefox-standalone
+      - name: Archive source for Firefox review
+        if: ${{ !contains(env.PROJECT_VERSION, '-') }}
+        run: git archive --format=zip --output=build/lightling-source.zip HEAD
+
+      - name: Submit listed Firefox build to AMO
         if: ${{ !contains(env.PROJECT_VERSION, '-') }}
         working-directory: "./build"
         env:
@@ -44,8 +49,7 @@ jobs:
           AMO_SECRET: ${{ secrets.AMO_SECRET }}
         run: |
           mkdir ./AMO
-          npx web-ext sign --channel unlisted --api-key "$AMO_KEY" --api-secret "$AMO_SECRET" --source-dir ./firefox-standalone --artifacts-dir ./AMO
-          mv AMO/*.xpi AMO/lightling.xpi
+          npx web-ext sign --channel listed --approval-timeout 0 --no-input --api-key "$AMO_KEY" --api-secret "$AMO_SECRET" --source-dir ./firefox-standalone --artifacts-dir ./AMO --upload-source-code ./lightling-source.zip
 
       - name: Archive build files
         uses: actions/upload-artifact@v4
@@ -69,12 +73,11 @@ jobs:
           # Use current commit hash, instead of main branch
           target_commitish: ${{ github.sha }}
           files: |
-            build/AMO/lightling.xpi
-            build/lightling.crx
+            build/*.crx
             build/*.zip
 
       - name: Build static files for GitHub Pages
-        if: ${{ !contains(env.PROJECT_VERSION, '-') }}
+        if: ${{ !contains(env.PROJECT_VERSION, '-') && env.CHROMIUM_CRX_PEM != '' }}
         working-directory: "./build"
         run: |
           mkdir ./site

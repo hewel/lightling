@@ -25,6 +25,13 @@
     "extension_pages": "default-src 'self' 'wasm-unsafe-eval'; connect-src *; style-src 'self' 'unsafe-inline' *"
   },
   "firefox:content_security_policy": "script-src 'self' 'unsafe-eval';",
+  "firefox:browser_specific_settings": {
+    "gecko": {
+      "data_collection_permissions": {
+        "required": ["none"]
+      }
+    }
+  },
   "chromium:sandbox": {
     "pages": ["../pages/offscreen-documents/translator/translator.html"]
   },

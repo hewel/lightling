@@ -19,6 +19,7 @@ debug.log
 
 # Local files
 .env
+.env.submit
 .local
 
 # extension.js local session state

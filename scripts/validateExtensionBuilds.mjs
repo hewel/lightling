@@ -196,6 +196,14 @@ function validateFirefoxManifest(problems, references, manifest) {
   if (hasOwn(manifest, 'host_permissions')) {
     problems.push('host_permissions must be absent from Firefox builds');
   }
+  const requiredDataCollectionPermissions =
+    manifest.browser_specific_settings?.gecko?.data_collection_permissions?.required;
+  expectExactArray(
+    problems,
+    requiredDataCollectionPermissions,
+    ['none'],
+    'browser_specific_settings.gecko.data_collection_permissions.required',
+  );
 
   if (!isPlainObject(manifest.background)) {
     problems.push(
