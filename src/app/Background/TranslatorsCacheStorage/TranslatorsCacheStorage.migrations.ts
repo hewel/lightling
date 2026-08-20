@@ -34,4 +34,12 @@ export const TranslatorsCacheStorageMigration = createMigrationTask([
       await IDB.deleteDB(DBName);
     },
   },
+  {
+    version: 4,
+    async migrate() {
+      // Drop table with cache, to re-create with new structure
+      const DBName = 'translatorsCache';
+      await IDB.deleteDB(DBName);
+    },
+  },
 ]);

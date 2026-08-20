@@ -1,4 +1,5 @@
 import { clearAllMocks } from '@/lib/tests';
+import { LLMScheduler } from '@/lib/translators/llm/LLMScheduler';
 import { LLMTranslator } from '@/lib/translators/llm/LLMTranslator';
 
 import { TranslatorManager } from '.';
@@ -161,5 +162,144 @@ describe('TranslatorManager consider cache preferences', () => {
 
     await scheduler2.translate('Hello world', 'en', 'de');
     expect(translateFn2).not.toBeCalled();
+  });
+});
+
+describe('TranslatorManager LLM integration', () => {
+  beforeEach(clearAllMocks);
+
+  const llmProfile1 = {
+    name: 'Profile1',
+    provider: 'openai-compatible' as const,
+    apiUrl: 'https://api.example.com/v1',
+    apiKey: 'test-key',
+    model: 'model-1',
+    contextWindowTokens: null,
+    preferredInputTokens: null,
+    maxOutputTokens: null,
+    maxConcurrentRequests: null,
+  };
+
+  const llmProfile2 = {
+    name: 'Profile2',
+    provider: 'openai-compatible' as const,
+    apiUrl: 'https://api.example.com/v1',
+    apiKey: 'test-key',
+    model: 'model-2',
+    contextWindowTokens: null,
+    preferredInputTokens: null,
+    maxOutputTokens: null,
+    maxConcurrentRequests: null,
+  };
+
+  test('LLM path instantiates LLMTranslator directly while non-LLM wraps with telemetry subclass', () => {
+    const translators = {
+      ...createTranslatorsList(),
+      LLMTranslator,
+    };
+
+    // LLM path
+    const llmManager = new TranslatorManager(
+      {
+        ...defaultConfig,
+        translatorModule: 'LLMTranslator',
+        llmTranslator: { activeProfile: 'Profile1', profiles: [llmProfile1] },
+      },
+      translators,
+    );
+    const llmTranslatorInstance = llmManager.getTranslator();
+    expect(llmTranslatorInstance.constructor).toBe(LLMTranslator);
+
+    // Non-LLM path
+    const regularManager = new TranslatorManager(
+      { ...defaultConfig, translatorModule: 'translator1' },
+      translators,
+    );
+    const regularTranslatorInstance = regularManager.getTranslator();
+    expect(regularTranslatorInstance.constructor).not.toBe(translators.translator1);
+    expect(regularTranslatorInstance).toBeInstanceOf(translators.translator1);
+  });
+
+  test('setConfig disposes previous LLMScheduler instance', () => {
+    const disposeSpy = vi.spyOn(LLMScheduler.prototype, 'dispose');
+    const llmManager = new TranslatorManager(
+      {
+        ...defaultConfig,
+        translatorModule: 'LLMTranslator',
+        llmTranslator: { activeProfile: 'Profile1', profiles: [llmProfile1] },
+      },
+      { LLMTranslator },
+    );
+
+    llmManager.getScheduler();
+    expect(disposeSpy).not.toHaveBeenCalled();
+
+    llmManager.setConfig({
+      ...defaultConfig,
+      translatorModule: 'LLMTranslator',
+      scheduler: {
+        ...defaultConfig.scheduler,
+        translatePoolDelay: 500,
+      },
+      llmTranslator: { activeProfile: 'Profile1', profiles: [llmProfile1] },
+    });
+
+    expect(disposeSpy).toHaveBeenCalledTimes(1);
+    disposeSpy.mockRestore();
+  });
+
+  test('getCacheInstance uses getLLMCacheId isolating cache between different models', async () => {
+    const mockTranslate = vi
+      .spyOn(LLMTranslator.prototype, 'translateBatchWithOptions')
+      .mockImplementation(async (texts) => texts.map((t) => `llm:${t}`));
+
+    const llmManager = new TranslatorManager(
+      {
+        ...defaultConfig,
+        translatorModule: 'LLMTranslator',
+        scheduler: {
+          ...defaultConfig.scheduler,
+          useCache: true,
+        },
+        llmTranslator: {
+          activeProfile: 'Profile1',
+          profiles: [llmProfile1, llmProfile2],
+        },
+      },
+      { LLMTranslator },
+    );
+
+    const scheduler1 = llmManager.getScheduler();
+    const res1 = await scheduler1.translate('apple', 'en', 'de');
+    expect(res1).toBe('llm:apple');
+    expect(mockTranslate).toHaveBeenCalledTimes(1);
+
+    mockTranslate.mockClear();
+
+    // Same model -> hits cache
+    const resCached = await scheduler1.translate('apple', 'en', 'de');
+    expect(resCached).toBe('llm:apple');
+    expect(mockTranslate).not.toHaveBeenCalled();
+
+    // Switch to Profile2 (different model) -> cache misses
+    llmManager.setConfig({
+      ...defaultConfig,
+      translatorModule: 'LLMTranslator',
+      scheduler: {
+        ...defaultConfig.scheduler,
+        useCache: true,
+      },
+      llmTranslator: {
+        activeProfile: 'Profile2',
+        profiles: [llmProfile1, llmProfile2],
+      },
+    });
+
+    const scheduler2 = llmManager.getScheduler();
+    const res2 = await scheduler2.translate('apple', 'en', 'de');
+    expect(res2).toBe('llm:apple');
+    expect(mockTranslate).toHaveBeenCalledTimes(1);
+
+    mockTranslate.mockRestore();
   });
 });

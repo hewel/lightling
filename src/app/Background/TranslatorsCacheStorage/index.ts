@@ -25,6 +25,10 @@ type TableName = 'tableName';
  * Manage cache by translator id
  */
 export class TranslatorsCacheStorage {
+  public static clearAll(): Promise<void> {
+    return IDB.deleteDB('translatorsCache');
+  }
+
   private dbPromise: Promise<IDB.IDBPDatabase<TranslatorDBSchema>> | null = null;
 
   private readonly tableName: string;

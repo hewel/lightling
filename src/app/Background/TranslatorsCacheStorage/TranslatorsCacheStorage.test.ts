@@ -1,7 +1,7 @@
 import { clearAllMocks } from '@/lib/tests';
+import { getLLMCacheId } from '@/lib/translators/llm/LLMTranslationEngine';
 
 import { TranslatorsCacheStorage } from '.';
-
 beforeEach(clearAllMocks);
 
 const testData = Array(10)
@@ -172,5 +172,76 @@ describe('multiple cache instances', () => {
       .then((translatedText) => {
         expect(translatedText).toBe(dataSample2.translatedText);
       });
+  });
+});
+
+describe('TranslatorsCacheStorage.clearAll', () => {
+  test('clearAll deletes all translator cache stores', async () => {
+    const storeA = new TranslatorsCacheStorage('store-A');
+    const storeB = new TranslatorsCacheStorage('store-B');
+
+    await storeA.set('hello', 'hallo', 'en', 'de');
+    await storeB.set('cat', 'Katze', 'en', 'de');
+
+    expect(await storeA.get('hello', 'en', 'de')).toBe('hallo');
+    expect(await storeB.get('cat', 'en', 'de')).toBe('Katze');
+
+    await TranslatorsCacheStorage.clearAll();
+
+    const freshA = new TranslatorsCacheStorage('store-A');
+    const freshB = new TranslatorsCacheStorage('store-B');
+
+    expect(await freshA.get('hello', 'en', 'de')).toBe(null);
+    expect(await freshB.get('cat', 'en', 'de')).toBe(null);
+  });
+});
+
+describe('LLM cache identity with TranslatorsCacheStorage', () => {
+  test('two profiles differing only in model produce different cache stores with isolated data', async () => {
+    const profileModelA = {
+      provider: 'openai-compatible' as const,
+      apiUrl: 'https://api.example.com/v1',
+      model: 'model-a',
+    };
+    const profileModelB = {
+      provider: 'openai-compatible' as const,
+      apiUrl: 'https://api.example.com/v1',
+      model: 'model-b',
+    };
+
+    const idA = getLLMCacheId(profileModelA);
+    const idB = getLLMCacheId(profileModelB);
+
+    expect(idA).not.toBe(idB);
+
+    const storeA = new TranslatorsCacheStorage(idA);
+    const storeB = new TranslatorsCacheStorage(idB);
+
+    await storeA.set('hello', 'hallo-from-A', 'en', 'de');
+
+    expect(await storeA.get('hello', 'en', 'de')).toBe('hallo-from-A');
+    expect(await storeB.get('hello', 'en', 'de')).toBe(null);
+  });
+
+  test('renaming a profile or rotating apiKey keeps the same cache id', () => {
+    const profileOriginal = {
+      name: 'Original Name',
+      apiKey: 'key-123',
+      provider: 'openai-compatible' as const,
+      apiUrl: 'https://api.example.com/v1',
+      model: 'model-a',
+    };
+    const profileRenamed = {
+      name: 'New Custom Name',
+      apiKey: 'key-456-rotated',
+      provider: 'openai-compatible' as const,
+      apiUrl: 'https://api.example.com/v1',
+      model: 'model-a',
+    };
+
+    const id1 = getLLMCacheId(profileOriginal);
+    const id2 = getLLMCacheId(profileRenamed);
+
+    expect(id1).toBe(id2);
   });
 });

@@ -2,6 +2,7 @@ import { type FC, type ReactNode, useCallback, useId } from 'react';
 import { Button } from '@astryxdesign/core/Button';
 import { CheckboxInput } from '@astryxdesign/core/CheckboxInput';
 import { Field } from '@astryxdesign/core/Field';
+import { NumberInput } from '@astryxdesign/core/NumberInput';
 import { Selector } from '@astryxdesign/core/Selector';
 import { HStack, VStack } from '@astryxdesign/core/Stack';
 import { Text } from '@astryxdesign/core/Text';
@@ -27,6 +28,9 @@ export interface OptionSelectList {
 
 export interface OptionInputNumber {
   type: 'InputNumber';
+  min?: number;
+  max?: number;
+  isIntegerOnly?: boolean;
 }
 
 export interface OptionInputText {
@@ -342,19 +346,21 @@ const OptionField: FC<OptionFieldProps> = ({ item, value, error, setOptionValue 
         richDescriptionID,
       );
     case 'InputNumber': {
-      const inputValue =
-        typeof value === 'string' || typeof value === 'number' ? value : undefined;
+      const inputValue = typeof value === 'number' ? value : undefined;
       return renderWithRichDescription(
-        <Textinput
+        <NumberInput
           label={label}
           description={stringDescription}
           status={status}
           value={inputValue}
+          min={option.min ?? null}
+          max={option.max ?? null}
+          isIntegerOnly={option.isIntegerOnly}
+          isWheelEnabled={false}
           width="100%"
-          spellCheck={false}
-          onInputText={(value) => {
-            const parsedNumber = +value;
-            setOptionValue(path, isNaN(parsedNumber) ? value : parsedNumber);
+          onChange={(newValue) => {
+            // Fires only for valid values within the configured constraints
+            setOptionValue(path, newValue);
           }}
         />,
         description,

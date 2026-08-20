@@ -6,6 +6,7 @@ import type {
   LLMProfile,
   LLMTranslatorConfig,
 } from '@/lib/translators/llm/LLMTranslator';
+import type { LLMModelInfo } from '@/lib/translators/llm/modelInfo';
 
 import {
   getLLMProfilesError,
@@ -31,12 +32,36 @@ Object.defineProperty(globalThis, 'IS_REACT_ACT_ENVIRONMENT', {
   value: true,
 });
 
+const autoExecution = {
+  contextWindowTokens: null,
+  preferredInputTokens: null,
+  maxOutputTokens: null,
+  maxConcurrentRequests: null,
+} as const;
+
+const makeModelInfo = (
+  id: string,
+  displayName = id,
+  maxOutputTokens: number | null = null,
+): LLMModelInfo => ({
+  id,
+  displayName,
+  contextWindowTokens: null,
+  maxInputTokens: null,
+  maxOutputTokens,
+  supportedParameters: null,
+  contextWindowSource: null,
+  maxInputSource: null,
+  maxOutputSource: null,
+});
+
 const openAIProfile = (name = 'OpenAI'): LLMProfile => ({
   name,
   provider: 'openai',
   apiUrl: 'https://api.openai.com/v1',
   apiKey: 'secret',
   model: 'gpt-4o-mini',
+  ...autoExecution,
 });
 
 const customProfile = (name = 'Local'): LLMProfile => ({
@@ -45,6 +70,7 @@ const customProfile = (name = 'Local'): LLMProfile => ({
   apiUrl: 'http://localhost:11434/v1',
   apiKey: '',
   model: 'local-model',
+  ...autoExecution,
 });
 
 describe('LLMProfilesFieldList', () => {
@@ -111,6 +137,14 @@ describe('LLMProfilesFieldList', () => {
     return button;
   }
 
+  function findCollapsibleTrigger(): HTMLButtonElement {
+    const trigger = container.querySelector('.astryx-collapsible-trigger');
+    if (!(trigger instanceof HTMLButtonElement)) {
+      throw new Error('Expected collapsible trigger');
+    }
+    return trigger;
+  }
+
   async function inputText(input: HTMLInputElement, value: string) {
     const valueDescriptor = Object.getOwnPropertyDescriptor(
       HTMLInputElement.prototype,
@@ -124,6 +158,19 @@ describe('LLMProfilesFieldList', () => {
       valueDescriptor.set?.call(input, value);
       input.dispatchEvent(new Event('input', { bubbles: true }));
     });
+  }
+
+  function findClearButton(input: HTMLInputElement): HTMLButtonElement {
+    const field = input.closest('.astryx-field');
+    const button = field?.querySelector('button');
+    if (!(button instanceof HTMLButtonElement)) {
+      throw new Error('Expected clear button');
+    }
+    return button;
+  }
+
+  async function clearInput(input: HTMLInputElement) {
+    await act(async () => findClearButton(input).click());
   }
 
   it('renders provider tabs with the selected profile editor', async () => {
@@ -220,6 +267,7 @@ describe('LLMProfilesFieldList', () => {
           apiUrl: 'https://api.openai.com/v1',
           apiKey: '',
           model: 'gpt-4o-mini',
+          ...autoExecution,
         },
       ],
     });
@@ -252,7 +300,7 @@ describe('LLMProfilesFieldList', () => {
   });
 
   it('keeps model discovery and connection tests available per row', async () => {
-    apiMocks.fetchLLMModels.mockResolvedValue(['gpt-next']);
+    apiMocks.fetchLLMModels.mockResolvedValue([makeModelInfo('gpt-next')]);
     apiMocks.testLLMTranslator.mockResolvedValue('Hola');
     const profile = openAIProfile();
     await render({ activeProfile: profile.name, profiles: [profile] });
@@ -278,6 +326,291 @@ describe('LLMProfilesFieldList', () => {
 
     expect(apiMocks.fetchLLMModels).toHaveBeenCalledWith(profile);
     expect(apiMocks.testLLMTranslator).toHaveBeenCalledWith(profile);
+  });
+
+  it('renders fetched models as a selector with id values and displayName labels', async () => {
+    apiMocks.fetchLLMModels.mockResolvedValue([
+      makeModelInfo('gpt-next', 'GPT Next'),
+      makeModelInfo('gpt-4o', 'GPT-4o'),
+    ]);
+    const profile = openAIProfile();
+    profile.model = 'gpt-next';
+    await render({ activeProfile: profile.name, profiles: [profile] });
+
+    const fetchModelsAction = findAction(
+      'settings_option_llmTranslator_fetchModelsButton',
+    );
+    await act(async () => {
+      fetchModelsAction.click();
+      await Promise.resolve();
+    });
+
+    expect(container.textContent).toContain('GPT Next');
+    expect(container.textContent).not.toContain('gpt-next');
+  });
+
+  it('toggles the advanced execution collapsible', async () => {
+    await render({
+      activeProfile: 'OpenAI',
+      profiles: [openAIProfile()],
+    });
+
+    const trigger = findCollapsibleTrigger();
+    expect(trigger.getAttribute('aria-expanded')).toBe('false');
+
+    await act(async () => trigger.click());
+    expect(trigger.getAttribute('aria-expanded')).toBe('true');
+  });
+
+  it('patches valid execution overrides and ignores invalid drafts', async () => {
+    const onChange = await render({
+      activeProfile: 'OpenAI',
+      profiles: [openAIProfile()],
+    });
+
+    await act(async () => findCollapsibleTrigger().click());
+
+    const concurrencyInput = findInput('llmProfiles_maxConcurrentRequests');
+    onChange.mockClear();
+    await inputText(concurrencyInput, '2');
+    expect(onChange).toHaveBeenLastCalledWith({
+      activeProfile: 'OpenAI',
+      profiles: [{ ...openAIProfile(), maxConcurrentRequests: 2 }],
+    });
+
+    onChange.mockClear();
+    await inputText(concurrencyInput, '0');
+    expect(onChange).not.toHaveBeenCalled();
+
+    onChange.mockClear();
+    await inputText(concurrencyInput, '9');
+    expect(onChange).not.toHaveBeenCalled();
+
+    onChange.mockClear();
+    await inputText(concurrencyInput, '1.5');
+    expect(onChange).not.toHaveBeenCalled();
+
+    const contextInput = findInput('llmProfiles_contextWindowTokens');
+    onChange.mockClear();
+    await inputText(contextInput, '511');
+    expect(onChange).not.toHaveBeenCalled();
+
+    onChange.mockClear();
+    await inputText(contextInput, '1024');
+    expect(onChange).toHaveBeenLastCalledWith({
+      activeProfile: 'OpenAI',
+      profiles: [
+        { ...openAIProfile(), maxConcurrentRequests: 2, contextWindowTokens: 1024 },
+      ],
+    });
+  });
+
+  it('clears an execution override to null', async () => {
+    const profile = openAIProfile();
+    profile.maxConcurrentRequests = 2;
+    const onChange = await render({
+      activeProfile: 'OpenAI',
+      profiles: [profile],
+    });
+
+    await act(async () => findCollapsibleTrigger().click());
+
+    const concurrencyInput = findInput('llmProfiles_maxConcurrentRequests');
+    onChange.mockClear();
+    await clearInput(concurrencyInput);
+    expect(onChange).toHaveBeenLastCalledWith({
+      activeProfile: 'OpenAI',
+      profiles: [{ ...openAIProfile(), maxConcurrentRequests: null }],
+    });
+  });
+
+  it('preserves fetched models and model status when editing model or overrides, but clears test status', async () => {
+    apiMocks.fetchLLMModels.mockResolvedValue([
+      makeModelInfo('gpt-next', 'GPT Next'),
+      makeModelInfo('gpt-4o', 'GPT-4o'),
+    ]);
+    apiMocks.testLLMTranslator.mockResolvedValue('Hola');
+    const profile = openAIProfile();
+    profile.model = 'gpt-next';
+    const onChange = await render({
+      activeProfile: profile.name,
+      profiles: [profile],
+    });
+
+    const fetchModelsAction = findAction(
+      'settings_option_llmTranslator_fetchModelsButton',
+    );
+    const testAction = findAction('settings_option_llmTranslator_testButton');
+
+    await act(async () => {
+      fetchModelsAction.click();
+      await Promise.resolve();
+    });
+    await act(async () => {
+      testAction.click();
+      await Promise.resolve();
+    });
+
+    expect(container.textContent).toContain(
+      'settings_message_llmTranslator_modelsLoaded',
+    );
+    expect(container.textContent).toContain(
+      'settings_message_llmTranslator_testSuccess "Hola"',
+    );
+
+    const modelSelectorTrigger = container.querySelector<HTMLButtonElement>(
+      '.astryx-selector button',
+    );
+    if (modelSelectorTrigger === null) throw new Error('Expected model selector');
+    await act(async () => {
+      modelSelectorTrigger.click();
+      await Promise.resolve();
+    });
+
+    const option = Array.from(
+      document.body.querySelectorAll<HTMLDivElement>('[role="option"]'),
+    ).find((el) => el.textContent?.trim() === 'GPT-4o');
+    if (option === undefined) throw new Error('Expected GPT-4o option');
+    await act(async () => option.click());
+
+    expect(container.textContent).toContain(
+      'settings_message_llmTranslator_modelsLoaded',
+    );
+    expect(container.textContent).not.toContain(
+      'settings_message_llmTranslator_testSuccess "Hola"',
+    );
+    expect(onChange).toHaveBeenLastCalledWith({
+      activeProfile: 'OpenAI',
+      profiles: [{ ...openAIProfile(), model: 'gpt-4o' }],
+    });
+
+    await act(async () => {
+      testAction.click();
+      await Promise.resolve();
+    });
+    expect(container.textContent).toContain(
+      'settings_message_llmTranslator_testSuccess "Hola"',
+    );
+
+    await act(async () => findCollapsibleTrigger().click());
+    const concurrencyInput = findInput('llmProfiles_maxConcurrentRequests');
+    await inputText(concurrencyInput, '3');
+
+    expect(container.textContent).toContain(
+      'settings_message_llmTranslator_modelsLoaded',
+    );
+    expect(container.textContent).not.toContain(
+      'settings_message_llmTranslator_testSuccess "Hola"',
+    );
+  });
+
+  it('clears fetched models and statuses when discovery identity changes and ignores stale fetch results', async () => {
+    const deferred: {
+      resolve: (models: LLMModelInfo[]) => void;
+      reject: (error: unknown) => void;
+    } = { resolve: () => {}, reject: () => {} };
+    const promise = new Promise<LLMModelInfo[]>((resolve, reject) => {
+      deferred.resolve = resolve;
+      deferred.reject = reject;
+    });
+    apiMocks.fetchLLMModels.mockReturnValue(promise);
+    const profile = openAIProfile();
+    profile.model = 'gpt-next';
+    const onChange = await render({
+      activeProfile: profile.name,
+      profiles: [profile],
+    });
+
+    const fetchModelsAction = findAction(
+      'settings_option_llmTranslator_fetchModelsButton',
+    );
+    await act(async () => fetchModelsAction.click());
+
+    const apiUrlInput = findInput('settings_option_llmTranslator_apiUrl');
+    await inputText(apiUrlInput, 'https://api.openai.com/v2');
+
+    deferred.resolve([makeModelInfo('gpt-next', 'GPT Next')]);
+    await act(async () => Promise.resolve());
+
+    expect(container.textContent).not.toContain(
+      'settings_message_llmTranslator_modelsLoaded',
+    );
+    const modelField = Array.from(container.querySelectorAll('.astryx-field')).find(
+      (field) => field.textContent?.includes('settings_option_llmTranslator_model'),
+    );
+    expect(modelField?.querySelector('input')).not.toBeNull();
+    expect(onChange).toHaveBeenLastCalledWith({
+      activeProfile: 'OpenAI',
+      profiles: [
+        { ...openAIProfile(), model: 'gpt-next', apiUrl: 'https://api.openai.com/v2' },
+      ],
+    });
+  });
+
+  it('shows auto output descriptions for uncapped and detected caps', async () => {
+    apiMocks.fetchLLMModels.mockResolvedValue([
+      makeModelInfo('gpt-next', 'GPT Next', 1024),
+      makeModelInfo('gpt-4o', 'GPT-4o'),
+    ]);
+    const profile = openAIProfile();
+    profile.model = 'gpt-next';
+    profile.maxOutputTokens = null;
+    await render({
+      activeProfile: profile.name,
+      profiles: [profile],
+    });
+
+    const fetchModelsAction = findAction(
+      'settings_option_llmTranslator_fetchModelsButton',
+    );
+    await act(async () => {
+      fetchModelsAction.click();
+      await Promise.resolve();
+    });
+
+    await act(async () => findCollapsibleTrigger().click());
+
+    expect(container.textContent).toContain(
+      'llmProfiles_maxOutputTokens_desc:llmProfiles_outputAutoDetected:1024',
+    );
+
+    const modelSelectorTrigger = container.querySelector<HTMLButtonElement>(
+      '.astryx-selector button',
+    );
+    if (modelSelectorTrigger === null) throw new Error('Expected model selector');
+    await act(async () => {
+      modelSelectorTrigger.click();
+      await Promise.resolve();
+    });
+
+    const option = Array.from(
+      document.body.querySelectorAll<HTMLDivElement>('[role="option"]'),
+    ).find((el) => el.textContent?.trim() === 'GPT-4o');
+    if (option === undefined) throw new Error('Expected GPT-4o option');
+    await act(async () => option.click());
+
+    expect(container.textContent).toContain(
+      'llmProfiles_maxOutputTokens_desc:llmProfiles_outputAutoUncapped',
+    );
+  });
+
+  it('keeps advanced execution fields inside stack items without nested field shells', async () => {
+    await render({
+      activeProfile: 'OpenAI',
+      profiles: [openAIProfile()],
+    });
+
+    await act(async () => findCollapsibleTrigger().click());
+
+    for (const label of [
+      'llmProfiles_contextWindowTokens',
+      'llmProfiles_preferredInputTokens',
+      'llmProfiles_maxOutputTokens',
+      'llmProfiles_maxConcurrentRequests',
+    ]) {
+      const field = findInput(label).closest('.astryx-field');
+      expect(field?.parentElement?.classList.contains('astryx-stack-item')).toBe(true);
+    }
   });
 });
 

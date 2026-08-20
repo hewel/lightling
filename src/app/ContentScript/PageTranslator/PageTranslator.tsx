@@ -9,6 +9,7 @@ import { createNodesFilter, isElementNode, isTextNode } from 'domtranslator/util
 
 import { getContentScriptStyles } from '@/lib/browser';
 import { ShadowDOMContainerManager } from '@/lib/ShadowDOMContainerManager';
+import { abortTranslation } from '@/requests/backend/abortTranslation';
 import { translate } from '@/requests/backend/translate';
 import { AppConfigType } from '@/types/runtime';
 
@@ -37,7 +38,7 @@ type PageTranslatorConfig = Partial<
 
 // TODO: rewrite to augmentation
 export class PageTranslator {
-  private translateContext = Symbol();
+  private translateContext: string = crypto.randomUUID();
 
   private pageTranslator: {
     persistentDomTranslator: PersistentDOMTranslator;
@@ -76,7 +77,7 @@ export class PageTranslator {
       throw new Error('Page already translated');
     }
 
-    this.translateContext = Symbol();
+    this.translateContext = crypto.randomUUID();
     const localContext = this.translateContext;
 
     // Create local reference to object for decrease risc mutation
@@ -89,7 +90,7 @@ export class PageTranslator {
       localTranslateState.pending++;
       this.translateStateUpdate();
 
-      return translate(text, from, to, { priority })
+      return translate(text, from, to, { priority, context: this.translateContext })
         .then((translatedText) => {
           if (localContext === this.translateContext) {
             localTranslateState.resolved++;
@@ -163,11 +164,13 @@ export class PageTranslator {
       throw new Error('Page is not translated');
     }
 
+    const previousContext = this.translateContext;
+
     this.pageTranslator.persistentDomTranslator.restore(document.documentElement);
     this.pageTranslator = null;
     this.pageTranslateDirection = null;
 
-    this.translateContext = Symbol();
+    this.translateContext = crypto.randomUUID();
     this.translateState = {
       resolved: 0,
       rejected: 0,
@@ -179,6 +182,10 @@ export class PageTranslator {
       document.removeEventListener('mouseover', this.showOriginalTextHandler);
       this.shadowRoot.unmountComponent();
     }
+
+    void abortTranslation({ context: previousContext }).catch((error) =>
+      console.warn('Failed to abort page translation', error),
+    );
   }
 
   private readonly shadowRoot = new ShadowDOMContainerManager({

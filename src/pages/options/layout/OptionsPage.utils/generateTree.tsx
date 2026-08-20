@@ -127,6 +127,8 @@ export const generateTree = ({
           path: 'scheduler.translateRetryAttemptLimit',
           optionContent: {
             type: 'InputNumber',
+            min: 0,
+            isIntegerOnly: true,
           },
         },
       ],

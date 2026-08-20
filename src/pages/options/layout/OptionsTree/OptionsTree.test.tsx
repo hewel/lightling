@@ -55,7 +55,7 @@ const tree: OptionsGroup[] = [
       {
         title: 'Retry limit',
         path: 'test.number',
-        optionContent: { type: 'InputNumber' },
+        optionContent: { type: 'InputNumber', min: 0, isIntegerOnly: true },
       },
       {
         title: 'Profile name',
@@ -155,6 +155,36 @@ describe('OptionsTree field specification', () => {
     await act(async () => label.click());
 
     expect(setOptionValue).toHaveBeenCalledWith('test.checkbox', true);
+  });
+
+  async function inputText(input: HTMLInputElement, value: string) {
+    const valueDescriptor = Object.getOwnPropertyDescriptor(
+      HTMLInputElement.prototype,
+      'value',
+    );
+    if (valueDescriptor?.set === undefined) {
+      throw new Error('Expected native input value setter');
+    }
+
+    await act(async () => {
+      valueDescriptor.set?.call(input, value);
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+  }
+
+  it('does not apply negative or fractional drafts to a constrained number option', async () => {
+    const numberLabel = findFieldLabel('Retry limit') as HTMLLabelElement;
+    const numberInput = document.getElementById(numberLabel.htmlFor);
+    if (!(numberInput instanceof HTMLInputElement)) {
+      throw new Error('Expected the number input associated with its Field label');
+    }
+
+    await inputText(numberInput, '-1');
+    await inputText(numberInput, '1.5');
+    expect(setOptionValue).not.toHaveBeenCalled();
+
+    await inputText(numberInput, '4');
+    expect(setOptionValue).toHaveBeenCalledWith('test.number', 4);
   });
 
   it('associates standard and custom Field labels with their controls', () => {

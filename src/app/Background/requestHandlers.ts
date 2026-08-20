@@ -1,3 +1,4 @@
+import { abortTranslationFactory } from '../../requests/backend/abortTranslation';
 // Request handlers
 import { addLanguagePreferencesFactory } from '../../requests/backend/autoTranslation/languagePreferences/addLanguagePreferences';
 import { deleteLanguagePreferencesFactory } from '../../requests/backend/autoTranslation/languagePreferences/deleteLanguagePreferences';
@@ -36,6 +37,7 @@ import { updateConfigFactory } from '../../requests/backend/updateConfig';
 
 export const requestHandlers = [
   translateFactory,
+  abortTranslationFactory,
   telemetryFactory,
   suggestLanguageFactory,
   getTranslatorFeaturesFactory,

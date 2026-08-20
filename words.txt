@@ -50,3 +50,8 @@ statusdot
 unstub
 lmstudio
 openrouter
+deferreds
+macrotask
+retryable
+millis
+antling

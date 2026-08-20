@@ -1,8 +1,10 @@
 import { type FC, type ReactNode, useCallback, useMemo, useRef, useState } from 'react';
 import { Banner } from '@astryxdesign/core/Banner';
+import { Collapsible } from '@astryxdesign/core/Collapsible';
 import { EmptyState } from '@astryxdesign/core/EmptyState';
 import { Heading } from '@astryxdesign/core/Heading';
 import { IconButton } from '@astryxdesign/core/IconButton';
+import { NumberInput } from '@astryxdesign/core/NumberInput';
 import { Selector } from '@astryxdesign/core/Selector';
 import { HStack, StackItem, VStack } from '@astryxdesign/core/Stack';
 import { TabList, useTabListContext } from '@astryxdesign/core/TabList';
@@ -26,6 +28,11 @@ import {
   type LLMProvider,
   type LLMTranslatorConfig,
 } from '@/lib/translators/llm/LLMTranslator';
+import {
+  type LLMModelInfo,
+  getLLMDiscoveryIdentity,
+  resolveLLMExecutionSettings,
+} from '@/lib/translators/llm/modelInfo';
 import {
   type LLMPresetId,
   llmPresetIds,
@@ -51,6 +58,7 @@ const presetLabels: Record<LLMPresetId, string> = {
   openai: 'OpenAI',
   anthropic: 'Anthropic',
   openrouter: 'OpenRouter',
+  antling: 'Ant Ling',
   ollama: 'Ollama',
   lmstudio: 'LM Studio',
   custom: getMessage('llmProvider_custom'),
@@ -121,7 +129,7 @@ type FieldStatus = {
 };
 
 type RowState = {
-  models?: string[];
+  models?: LLMModelInfo[];
   modelsBusy?: boolean;
   testBusy?: boolean;
   modelsStatus?: FieldStatus;
@@ -280,22 +288,34 @@ export const LLMProfilesFieldList: FC<LLMProfilesFieldListProps> = ({
   );
   const localError = nameErrors.find((nameError) => nameError !== undefined) ?? null;
 
-  const clearRowState = useCallback((index: number) => {
-    setRowStates((currentStates) => {
-      if (!(index in currentStates)) return currentStates;
-
-      const nextStates = { ...currentStates };
-      delete nextStates[index];
-      return nextStates;
-    });
-  }, []);
-
   const patchProfile = useCallback(
     (index: number, patch: Partial<LLMProfile>) => {
       const profile = value.profiles[index];
       if (profile === undefined) return;
 
       const nextProfile = { ...profile, ...patch };
+      const isDiscoveryChanged =
+        getLLMDiscoveryIdentity(profile) !== getLLMDiscoveryIdentity(nextProfile);
+
+      setRowStates((currentStates) => {
+        const currentState = currentStates[index];
+        if (currentState === undefined) return currentStates;
+
+        if (isDiscoveryChanged) {
+          const nextStates = { ...currentStates };
+          delete nextStates[index];
+          return nextStates;
+        }
+
+        return {
+          ...currentStates,
+          [index]: {
+            ...currentState,
+            testStatus: undefined,
+          },
+        };
+      });
+
       const profiles = value.profiles.map((currentProfile, currentIndex) =>
         currentIndex === index ? nextProfile : currentProfile,
       );
@@ -304,10 +324,9 @@ export const LLMProfilesFieldList: FC<LLMProfilesFieldListProps> = ({
           ? patch.name
           : value.activeProfile;
 
-      clearRowState(index);
       onChange({ activeProfile, profiles });
     },
-    [clearRowState, onChange, value],
+    [onChange, value],
   );
 
   const addFromPreset = useCallback(() => {
@@ -352,13 +371,27 @@ export const LLMProfilesFieldList: FC<LLMProfilesFieldListProps> = ({
 
   const setActiveProfile = useCallback(
     (name: string) => {
+      setRowStates((currentStates) => {
+        let changed = false;
+        const nextStates: Record<number, RowState> = {};
+        for (const [key, state] of Object.entries(currentStates)) {
+          const index = Number(key);
+          if (state.testStatus !== undefined) {
+            changed = true;
+            nextStates[index] = { ...state, testStatus: undefined };
+          } else {
+            nextStates[index] = state;
+          }
+        }
+        return changed ? nextStates : currentStates;
+      });
       onChange({ ...value, activeProfile: name });
     },
     [onChange, value],
   );
 
   const fetchModels = useCallback((profile: LLMProfile, index: number) => {
-    const signature = JSON.stringify(profile);
+    const discoveryIdentity = getLLMDiscoveryIdentity(profile);
     setRowStates((currentStates) => ({
       ...currentStates,
       [index]: {
@@ -370,7 +403,13 @@ export const LLMProfilesFieldList: FC<LLMProfilesFieldListProps> = ({
 
     fetchLLMModels(profile)
       .then((models) => {
-        if (JSON.stringify(currentValue.current.profiles[index]) !== signature) return;
+        const current = currentValue.current.profiles[index];
+        if (
+          current === undefined ||
+          getLLMDiscoveryIdentity(current) !== discoveryIdentity
+        ) {
+          return;
+        }
 
         setRowStates((currentStates) => ({
           ...currentStates,
@@ -389,7 +428,13 @@ export const LLMProfilesFieldList: FC<LLMProfilesFieldListProps> = ({
         }));
       })
       .catch((error: unknown) => {
-        if (JSON.stringify(currentValue.current.profiles[index]) !== signature) return;
+        const current = currentValue.current.profiles[index];
+        if (
+          current === undefined ||
+          getLLMDiscoveryIdentity(current) !== discoveryIdentity
+        ) {
+          return;
+        }
 
         setRowStates((currentStates) => ({
           ...currentStates,
@@ -400,7 +445,13 @@ export const LLMProfilesFieldList: FC<LLMProfilesFieldListProps> = ({
         }));
       })
       .finally(() => {
-        if (JSON.stringify(currentValue.current.profiles[index]) !== signature) return;
+        const current = currentValue.current.profiles[index];
+        if (
+          current === undefined ||
+          getLLMDiscoveryIdentity(current) !== discoveryIdentity
+        ) {
+          return;
+        }
 
         setRowStates((currentStates) => ({
           ...currentStates,
@@ -465,6 +516,23 @@ export const LLMProfilesFieldList: FC<LLMProfilesFieldListProps> = ({
     selectedProfileIndex >= 0 ? nameErrors[selectedProfileIndex] : undefined;
   const selectedIsActive =
     selectedProfile !== undefined && selectedProfile.name === value.activeProfile;
+  const selectedModelInfo =
+    selectedProfile !== undefined
+      ? (selectedRowState?.models?.find(
+          (modelInfo) => modelInfo.id === selectedProfile.model,
+        ) ?? null)
+      : null;
+
+  const resolvedSettings =
+    selectedProfile !== undefined
+      ? resolveLLMExecutionSettings(selectedProfile, selectedModelInfo)
+      : undefined;
+
+  const detectedOutputCap = selectedModelInfo?.maxOutputTokens ?? null;
+  const autoMaxOutputDescription =
+    detectedOutputCap !== null
+      ? getMessage('llmProfiles_outputAutoDetected', String(detectedOutputCap))
+      : getMessage('llmProfiles_outputAutoUncapped');
 
   return (
     <VStack gap={3} width="100%">
@@ -645,9 +713,9 @@ export const LLMProfilesFieldList: FC<LLMProfilesFieldListProps> = ({
                   ) : (
                     <Selector
                       label={getMessage('settings_option_llmTranslator_model')}
-                      options={selectedRowState.models.map((model) => ({
-                        value: model,
-                        label: model,
+                      options={selectedRowState.models.map((modelInfo) => ({
+                        value: modelInfo.id,
+                        label: modelInfo.displayName,
                       }))}
                       value={selectedProfile.model}
                       width="100%"
@@ -675,6 +743,97 @@ export const LLMProfilesFieldList: FC<LLMProfilesFieldListProps> = ({
               />
             </StackItem>
           </HStack>
+
+          {resolvedSettings !== undefined && (
+            <Collapsible
+              trigger={getMessage('llmProfiles_advancedExecution')}
+              defaultIsOpen={false}
+            >
+              <HStack gap={2} align="start" wrap="wrap" width="100%">
+                <StackItem size="fill" xstyle={styles.fieldItem}>
+                  <NumberInput
+                    label={getMessage('llmProfiles_contextWindowTokens')}
+                    description={getMessage(
+                      'llmProfiles_contextWindowTokens_desc',
+                      String(resolvedSettings.contextWindowTokens),
+                    )}
+                    value={selectedProfile.contextWindowTokens}
+                    placeholder={getMessage('llmProfiles_auto')}
+                    hasClear
+                    isIntegerOnly
+                    isWheelEnabled={false}
+                    units={getMessage('llmProfiles_unitTokens')}
+                    min={512}
+                    width="100%"
+                    onChange={(contextWindowTokens) => {
+                      patchProfile(selectedProfileIndex, { contextWindowTokens });
+                    }}
+                  />
+                </StackItem>
+                <StackItem size="fill" xstyle={styles.fieldItem}>
+                  <NumberInput
+                    label={getMessage('llmProfiles_preferredInputTokens')}
+                    description={getMessage(
+                      'llmProfiles_preferredInputTokens_desc',
+                      String(resolvedSettings.preferredInputTokens),
+                    )}
+                    value={selectedProfile.preferredInputTokens}
+                    placeholder={getMessage('llmProfiles_auto')}
+                    hasClear
+                    isIntegerOnly
+                    isWheelEnabled={false}
+                    units={getMessage('llmProfiles_unitTokens')}
+                    min={1}
+                    width="100%"
+                    onChange={(preferredInputTokens) => {
+                      patchProfile(selectedProfileIndex, { preferredInputTokens });
+                    }}
+                  />
+                </StackItem>
+                <StackItem size="fill" xstyle={styles.fieldItem}>
+                  <NumberInput
+                    label={getMessage('llmProfiles_maxOutputTokens')}
+                    description={getMessage(
+                      'llmProfiles_maxOutputTokens_desc',
+                      autoMaxOutputDescription,
+                    )}
+                    value={selectedProfile.maxOutputTokens}
+                    placeholder={getMessage('llmProfiles_auto')}
+                    hasClear
+                    isIntegerOnly
+                    isWheelEnabled={false}
+                    units={getMessage('llmProfiles_unitTokens')}
+                    min={1}
+                    width="100%"
+                    onChange={(maxOutputTokens) => {
+                      patchProfile(selectedProfileIndex, { maxOutputTokens });
+                    }}
+                  />
+                </StackItem>
+                <StackItem size="fill" xstyle={styles.fieldItem}>
+                  <NumberInput
+                    label={getMessage('llmProfiles_maxConcurrentRequests')}
+                    description={getMessage(
+                      'llmProfiles_maxConcurrentRequests_desc',
+                      String(resolvedSettings.maxConcurrentRequests),
+                    )}
+                    value={selectedProfile.maxConcurrentRequests}
+                    placeholder={getMessage('llmProfiles_auto')}
+                    hasClear
+                    isIntegerOnly
+                    isWheelEnabled={false}
+                    units={getMessage('llmProfiles_unitRequests')}
+                    min={1}
+                    max={8}
+                    width="100%"
+                    onChange={(maxConcurrentRequests) => {
+                      patchProfile(selectedProfileIndex, { maxConcurrentRequests });
+                    }}
+                  />
+                </StackItem>
+              </HStack>
+            </Collapsible>
+          )}
         </VStack>
       )}
     </VStack>

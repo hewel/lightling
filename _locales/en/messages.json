@@ -83,6 +83,48 @@
   "llmProfiles_duplicateName": {
     "message": "A provider with this name already exists"
   },
+  "llmProfiles_advancedExecution": {
+    "message": "Advanced execution"
+  },
+  "llmProfiles_contextWindowTokens": {
+    "message": "Context window"
+  },
+  "llmProfiles_contextWindowTokens_desc": {
+    "message": "Total model context window in tokens (minimum 512). Auto: $1 tokens"
+  },
+  "llmProfiles_preferredInputTokens": {
+    "message": "Preferred input"
+  },
+  "llmProfiles_preferredInputTokens_desc": {
+    "message": "Target prompt batch size in tokens (minimum 1). Auto: $1 tokens"
+  },
+  "llmProfiles_maxOutputTokens": {
+    "message": "Maximum output tokens"
+  },
+  "llmProfiles_maxOutputTokens_desc": {
+    "message": "Maximum tokens generated per translation request (minimum 1). Auto: $1"
+  },
+  "llmProfiles_maxConcurrentRequests": {
+    "message": "Parallel requests"
+  },
+  "llmProfiles_maxConcurrentRequests_desc": {
+    "message": "Maximum number of concurrent translation requests (1–8). Auto: $1 requests"
+  },
+  "llmProfiles_auto": {
+    "message": "Auto"
+  },
+  "llmProfiles_outputAutoUncapped": {
+    "message": "Sized per batch (minimum 256; no detected cap)"
+  },
+  "llmProfiles_outputAutoDetected": {
+    "message": "Up to $1 tokens (detected)"
+  },
+  "llmProfiles_unitTokens": {
+    "message": "tokens"
+  },
+  "llmProfiles_unitRequests": {
+    "message": "requests"
+  },
   "common_offlineTranslator": {
     "message": "$1 - Offline translator"
   },

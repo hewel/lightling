@@ -1,10 +1,11 @@
 import { isLanguageCodeISO639v1 } from 'anylang/languages';
 import { IScheduler, Scheduler, SchedulerWithCache } from 'anylang/scheduling';
-import { TranslatorConstructor } from 'anylang/translators';
 
 import { TELEMETRY_EVENT_NAME } from '@/lib/telemetry';
 import { telemetry } from '@/lib/telemetry/singleton';
-import { LLMTranslator } from '@/lib/translators/llm/LLMTranslator';
+import { LLMScheduler } from '@/lib/translators/llm/LLMScheduler';
+import { getLLMCacheId } from '@/lib/translators/llm/LLMTranslationEngine';
+import { getActiveLLMProfile, LLMTranslator } from '@/lib/translators/llm/LLMTranslator';
 import { AppConfigType } from '@/types/runtime';
 import { RecordValues } from '@/types/utils';
 
@@ -65,23 +66,54 @@ export class TranslatorManager<Translators extends TranslatorsMap = TranslatorsM
     return this.getTranslationSchedulerInstance();
   }
 
+  private llmSchedulerInstance: LLMScheduler | null = null;
   private schedulerInstance: IScheduler | null = null;
   private getTranslationSchedulerInstance(forceCreate = false) {
     if (this.schedulerInstance === null || forceCreate) {
-      const translator = this.getTranslatorInstance(true);
-
-      const { useCache, ...schedulerConfig } = this.config.scheduler;
-
-      const scheduler = new Scheduler(translator, schedulerConfig);
-
-      let schedulerInstance: IScheduler = scheduler;
-      if (useCache) {
-        // Wrap scheduler by cache
-        const cacheInstance = this.getCacheInstance();
-        schedulerInstance = new SchedulerWithCache(scheduler, cacheInstance);
+      if (this.llmSchedulerInstance !== null) {
+        this.llmSchedulerInstance.dispose();
+        this.llmSchedulerInstance = null;
       }
 
-      this.schedulerInstance = schedulerInstance;
+      const translatorClass = this.getTranslatorClass();
+      const isLLM = (translatorClass as unknown) === LLMTranslator;
+      const { useCache, ...schedulerConfig } = this.config.scheduler;
+
+      if (isLLM) {
+        const translator = this.getTranslatorInstance(true) as LLMTranslator;
+        const onFinalError = (error: unknown) => {
+          telemetry.track(TELEMETRY_EVENT_NAME.ERROR_CAPTURED, {
+            scope: 'translator',
+            error: String(error),
+            translatorName: LLMTranslator.translatorName,
+          });
+        };
+
+        const llmScheduler = new LLMScheduler(translator, schedulerConfig, onFinalError);
+        this.llmSchedulerInstance = llmScheduler;
+
+        let schedulerInstance: IScheduler = llmScheduler;
+        if (useCache) {
+          const cacheInstance = this.getCacheInstance();
+          schedulerInstance = new SchedulerWithCache(
+            llmScheduler as unknown as Scheduler,
+            cacheInstance,
+          );
+        }
+
+        this.schedulerInstance = schedulerInstance;
+      } else {
+        const translator = this.getTranslatorInstance(true);
+        const scheduler = new Scheduler(translator, schedulerConfig);
+
+        let schedulerInstance: IScheduler = scheduler;
+        if (useCache) {
+          const cacheInstance = this.getCacheInstance();
+          schedulerInstance = new SchedulerWithCache(scheduler, cacheInstance);
+        }
+
+        this.schedulerInstance = schedulerInstance;
+      }
     }
 
     return this.schedulerInstance;
@@ -93,11 +125,17 @@ export class TranslatorManager<Translators extends TranslatorsMap = TranslatorsM
 
     const translatorClass = this.getTranslatorClass();
 
-    // LLM translator needs API configuration; other translators take no constructor args
-    const constructorArgs =
-      (translatorClass as TranslatorConstructor) === LLMTranslator
-        ? [this.config.llmTranslator]
-        : [];
+    if ((translatorClass as unknown) === LLMTranslator) {
+      // LLM cancellation/replacement errors must not emit telemetry.
+      // The LLM translator is instantiated directly, and error telemetry
+      // is handled exclusively by LLMScheduler on final logical failures.
+      this.translator = new LLMTranslator(this.config.llmTranslator) as InstanceType<
+        RecordValues<Translators>
+      >;
+      return this.translator;
+    }
+
+    const constructorArgs: [] = [];
 
     this.translator = new (class extends translatorClass {
       async translate(
@@ -141,6 +179,15 @@ export class TranslatorManager<Translators extends TranslatorsMap = TranslatorsM
   }
 
   private getCacheInstance() {
+    const translatorClass = this.getTranslatorClass();
+    const isLLM = (translatorClass as unknown) === LLMTranslator;
+
+    if (isLLM) {
+      const profile = getActiveLLMProfile(this.config.llmTranslator);
+      const cacheId = getLLMCacheId(profile);
+      return new TranslatorsCacheStorage(cacheId, this.config.cache);
+    }
+
     const { translatorModule, cache } = this.config;
     return new TranslatorsCacheStorage(translatorModule, cache);
   }

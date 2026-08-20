@@ -245,6 +245,59 @@ const migrations: Migration[] = [
       await browser.storage.local.set({ [storageName]: actualData });
     },
   },
+  {
+    // Add explicit LLM execution overrides and normalize the retry limit to an integer
+    version: 12,
+    async migrate() {
+      const storageName = 'appConfig';
+
+      let { [storageName]: actualData } = await browser.storage.local.get(storageName);
+      if (
+        actualData === null ||
+        typeof actualData !== 'object' ||
+        Array.isArray(actualData)
+      ) {
+        actualData = {};
+      }
+
+      const llmTranslator = actualData.llmTranslator;
+      if (
+        llmTranslator !== null &&
+        typeof llmTranslator === 'object' &&
+        !Array.isArray(llmTranslator) &&
+        Array.isArray(llmTranslator.profiles)
+      ) {
+        // Preserve every stored field; add missing execution overrides as `null`
+        llmTranslator.profiles = llmTranslator.profiles.map((profile: unknown) =>
+          profile !== null && typeof profile === 'object' && !Array.isArray(profile)
+            ? {
+                contextWindowTokens: null,
+                preferredInputTokens: null,
+                maxOutputTokens: null,
+                maxConcurrentRequests: null,
+                ...profile,
+              }
+            : profile,
+        );
+      }
+
+      const scheduler = actualData.scheduler;
+      if (
+        scheduler !== null &&
+        typeof scheduler === 'object' &&
+        !Array.isArray(scheduler) &&
+        typeof scheduler.translateRetryAttemptLimit === 'number'
+      ) {
+        const retryLimit = scheduler.translateRetryAttemptLimit;
+        scheduler.translateRetryAttemptLimit = Number.isFinite(retryLimit)
+          ? Math.max(0, Math.floor(retryLimit))
+          : defaultConfig.scheduler.translateRetryAttemptLimit;
+      }
+
+      // Write data
+      await browser.storage.local.set({ [storageName]: actualData });
+    },
+  },
 ];
 
 export const ConfigStorageMigration = createMigrationTask(migrations, {

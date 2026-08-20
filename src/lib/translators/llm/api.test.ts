@@ -30,7 +30,7 @@ describe('fetchLLMModels', () => {
       apiKey: 'secret-key',
     });
 
-    expect(models).toEqual(['a-model', 'b-model']);
+    expect(models.map((model) => model.id)).toEqual(['a-model', 'b-model']);
     const [url, init] = fetchMock.mock.calls[0];
     expect(String(url)).toBe('https://llm.example/v1/models');
     expect(new Headers(init?.headers).get('authorization')).toBe('Bearer secret-key');
@@ -43,7 +43,7 @@ describe('fetchLLMModels', () => {
       apiKey: '',
     });
 
-    expect(models).toEqual(['a-model', 'b-model']);
+    expect(models.map((model) => model.id)).toEqual(['a-model', 'b-model']);
     const [url, init] = fetchMock.mock.calls[0];
     expect(String(url)).toBe(`${DEFAULT_LLM_API_URL}/models`);
     expect(new Headers(init?.headers).get('authorization')).toBeNull();

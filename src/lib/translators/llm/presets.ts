@@ -4,6 +4,7 @@ export type LLMPresetId =
   | 'openai'
   | 'anthropic'
   | 'openrouter'
+  | 'antling'
   | 'ollama'
   | 'lmstudio'
   | 'custom';
@@ -12,10 +13,21 @@ export const llmPresetIds: readonly LLMPresetId[] = [
   'openai',
   'anthropic',
   'openrouter',
+  'antling',
   'ollama',
   'lmstudio',
   'custom',
 ];
+
+/**
+ * Execution settings left as `null` resolve automatically at runtime
+ */
+const automaticExecution = {
+  contextWindowTokens: null,
+  preferredInputTokens: null,
+  maxOutputTokens: null,
+  maxConcurrentRequests: null,
+} as const;
 
 /**
  * Quick-fill profiles for known providers; key-less local servers leave `apiKey` empty
@@ -27,6 +39,7 @@ export const llmProviderPresets: Record<LLMPresetId, LLMProfile> = {
     apiUrl: 'https://api.openai.com/v1',
     apiKey: '',
     model: 'gpt-4o-mini',
+    ...automaticExecution,
   },
   anthropic: {
     name: 'Anthropic',
@@ -34,6 +47,7 @@ export const llmProviderPresets: Record<LLMPresetId, LLMProfile> = {
     apiUrl: 'https://api.anthropic.com',
     apiKey: '',
     model: '',
+    ...automaticExecution,
   },
   openrouter: {
     name: 'OpenRouter',
@@ -41,6 +55,15 @@ export const llmProviderPresets: Record<LLMPresetId, LLMProfile> = {
     apiUrl: 'https://openrouter.ai/api/v1',
     apiKey: '',
     model: '',
+    ...automaticExecution,
+  },
+  antling: {
+    name: 'Ant Ling',
+    provider: 'openai-compatible',
+    apiUrl: 'https://api.ant-ling.com/v1',
+    apiKey: '',
+    model: 'Ling-3.0-flash',
+    ...automaticExecution,
   },
   ollama: {
     name: 'Ollama',
@@ -48,6 +71,7 @@ export const llmProviderPresets: Record<LLMPresetId, LLMProfile> = {
     apiUrl: 'http://localhost:11434/v1',
     apiKey: '',
     model: '',
+    ...automaticExecution,
   },
   lmstudio: {
     name: 'LM Studio',
@@ -55,6 +79,7 @@ export const llmProviderPresets: Record<LLMPresetId, LLMProfile> = {
     apiUrl: 'http://localhost:1234/v1',
     apiKey: '',
     model: '',
+    ...automaticExecution,
   },
   custom: {
     name: 'Custom',
@@ -62,6 +87,7 @@ export const llmProviderPresets: Record<LLMPresetId, LLMProfile> = {
     apiUrl: '',
     apiKey: '',
     model: '',
+    ...automaticExecution,
   },
 };
 

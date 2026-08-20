@@ -16,6 +16,21 @@ export const NonNaNNumber = Schema.Number.check(
   }),
 );
 
+export const PositiveInteger = Schema.Number.check(
+  // `Number.isInteger` implies a finite value
+  Schema.makeFilter((input: number) => Number.isInteger(input) && input > 0, {
+    identifier: 'PositiveInteger',
+    expected: 'a positive integer',
+  }),
+);
+
+export const NonNegativeInteger = Schema.Number.check(
+  Schema.makeFilter((input: number) => Number.isInteger(input) && input >= 0, {
+    identifier: 'NonNegativeInteger',
+    expected: 'a non-negative integer',
+  }),
+);
+
 export type DecodeStructError = {
   key: string;
   value: unknown;

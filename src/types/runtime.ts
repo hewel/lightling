@@ -1,7 +1,7 @@
 import { isLanguageCodeISO639v1 } from 'anylang/languages';
 import { Effect, Schema } from 'effect';
 
-import { NonNaNNumber } from '../lib/types';
+import { NonNaNNumber, NonNegativeInteger, PositiveInteger } from '../lib/types';
 import { type DeepMutable } from './utils';
 
 export const ArrayOfStrings = Schema.mutable(Schema.Array(Schema.String));
@@ -31,6 +31,34 @@ const OptionalBoolean = Schema.Union([Schema.Boolean, Schema.Undefined]).pipe(
   Schema.withDecodingDefault(Effect.succeed(undefined)),
 );
 
+/**
+ * Minimum sensible LLM context window override
+ */
+const ContextWindowTokens = PositiveInteger.check(
+  Schema.makeFilter((input: number) => input >= 512, {
+    identifier: 'ContextWindowTokens',
+    expected: 'an integer of at least 512',
+  }),
+);
+
+/**
+ * Bounded parallel request limit for a single LLM profile
+ */
+const ConcurrentRequestsLimit = PositiveInteger.check(
+  Schema.makeFilter((input: number) => input <= 8, {
+    identifier: 'ConcurrentRequestsLimit',
+    expected: 'an integer between 1 and 8',
+  }),
+);
+
+/**
+ * Nullable execution override; `null` (and a missing key in legacy data) means automatic
+ */
+const withAutoDefault = <A, I, R>(schema: Schema.Codec<A, I, R>) =>
+  Schema.Union([schema, Schema.Null]).pipe(
+    Schema.withDecodingDefault(Effect.succeed(null)),
+  );
+
 export const LLMProvider = Schema.Literals([
   'openai',
   'anthropic',
@@ -44,6 +72,10 @@ export const LLMProfile = Schema.Struct({
   apiUrl: Schema.String,
   apiKey: Schema.String,
   model: Schema.String,
+  contextWindowTokens: withAutoDefault(ContextWindowTokens),
+  preferredInputTokens: withAutoDefault(PositiveInteger),
+  maxOutputTokens: withAutoDefault(PositiveInteger),
+  maxConcurrentRequests: withAutoDefault(ConcurrentRequestsLimit),
 });
 
 export const AppConfig = Schema.Struct({
@@ -65,6 +97,10 @@ export const AppConfig = Schema.Struct({
             apiUrl: 'https://api.openai.com/v1',
             apiKey: '',
             model: 'gpt-4o-mini',
+            contextWindowTokens: null,
+            preferredInputTokens: null,
+            maxOutputTokens: null,
+            maxConcurrentRequests: null,
           },
         ],
       })),
@@ -73,7 +109,7 @@ export const AppConfig = Schema.Struct({
   ttsModule: Schema.String,
   scheduler: Schema.Struct({
     useCache: Schema.Boolean,
-    translateRetryAttemptLimit: NonNaNNumber,
+    translateRetryAttemptLimit: NonNegativeInteger,
     isAllowDirectTranslateBadChunks: Schema.Boolean,
     directTranslateLength: Schema.Union([NonNaNNumber, Schema.Null]),
     translatePoolDelay: NonNaNNumber,

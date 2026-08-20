@@ -2,7 +2,14 @@ import { Effect, Schema } from 'effect';
 
 import { AppConfig } from '@/types/runtime';
 
-import { checkTypeByPath, decodeStruct, NonNaNNumber, tryDecode } from './types';
+import {
+  checkTypeByPath,
+  decodeStruct,
+  NonNaNNumber,
+  NonNegativeInteger,
+  PositiveInteger,
+  tryDecode,
+} from './types';
 
 describe('runtime type helpers', () => {
   afterEach(() => {
@@ -100,6 +107,10 @@ describe('runtime type helpers', () => {
             apiUrl: 'https://api.openai.com/v1',
             apiKey: '',
             model: 'gpt-4o-mini',
+            contextWindowTokens: null,
+            preferredInputTokens: null,
+            maxOutputTokens: null,
+            maxConcurrentRequests: null,
           },
         ],
       }),
@@ -124,5 +135,18 @@ describe('runtime type helpers', () => {
     expect(Schema.is(NonNaNNumber)(0)).toBe(true);
     expect(Schema.is(NonNaNNumber)(Infinity)).toBe(true);
     expect(Schema.is(NonNaNNumber)(NaN)).toBe(false);
+  });
+
+  test('validates positive and non-negative integers', () => {
+    expect(Schema.is(PositiveInteger)(1)).toBe(true);
+    expect(Schema.is(PositiveInteger)(0)).toBe(false);
+    expect(Schema.is(PositiveInteger)(1.5)).toBe(false);
+    expect(Schema.is(PositiveInteger)(NaN)).toBe(false);
+    expect(Schema.is(PositiveInteger)(Infinity)).toBe(false);
+
+    expect(Schema.is(NonNegativeInteger)(0)).toBe(true);
+    expect(Schema.is(NonNegativeInteger)(3)).toBe(true);
+    expect(Schema.is(NonNegativeInteger)(-1)).toBe(false);
+    expect(Schema.is(NonNegativeInteger)(0.5)).toBe(false);
   });
 });
