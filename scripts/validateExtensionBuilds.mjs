@@ -6,13 +6,12 @@ const scriptsDirectory = dirname(fileURLToPath(import.meta.url));
 const projectDirectory = resolve(scriptsDirectory, '..');
 const packagePath = resolve(projectDirectory, 'package.json');
 
-const chromiumUpdateUrl =
-  'https://translate-tools.github.io/linguist/chromium_updates.xml';
-const firefoxStandaloneId = '{e3fc2d33-09fc-4fe8-9331-d0a464698035}';
+const chromiumUpdateUrl = 'https://hewel.github.io/lightling/chromium_updates.xml';
+const firefoxStandaloneId = '{33b518c2-1f65-4090-8d94-e0a432ebbfd4}';
 const astryxThemeLayer = /@layer\s+astryx-theme\b/;
-const astryxNeutralSelector = /\[data-astryx-theme\s*=\s*(?:neutral|["']neutral["'])\]/;
-const astryxNeutralDestructiveButtonSelector =
-  /\[data-astryx-theme\s*=\s*(?:neutral|["']neutral["'])\]\s+\.astryx-button\.destructive\b/;
+const astryxVividSelector = /\[data-astryx-theme\s*=\s*(?:vivid|["']vivid["'])\]/;
+const astryxVividDestructiveButtonSelector =
+  /\[data-astryx-theme\s*=\s*(?:vivid|["']vivid["'])\]\s+\.astryx-button\.destructive\b/;
 
 const chromiumPermissions = ['storage', 'tabs', 'contextMenus', 'scripting', 'offscreen'];
 const firefoxPermissions = ['storage', 'tabs', 'contextMenus', 'scripting', '<all_urls>'];
@@ -337,7 +336,10 @@ function validateWebAccessibleResources(problems, references, manifest, family) 
     }
   }
 
-  if (!resourcePaths.some((path) => path.endsWith('.css'))) {
+  const exposesShadowStyles = resourcePaths.some(
+    (path) => path.endsWith('.css') || /\.css\.[^/]+\.txt$/.test(path),
+  );
+  if (!exposesShadowStyles) {
     problems.push(
       'web_accessible_resources must expose the generated Shadow DOM stylesheet',
     );
@@ -444,7 +446,11 @@ export async function findAstryxThemeArtifactProblems(outputDirectory) {
 
   const problems = [];
 
-  for (const cssPath of cssPaths) {
+  const nestedCssPaths = cssPaths.filter(
+    (cssPath) => dirname(cssPath) !== outputDirectory,
+  );
+
+  for (const cssPath of nestedCssPaths) {
     let css;
 
     try {
@@ -458,15 +464,13 @@ export async function findAstryxThemeArtifactProblems(outputDirectory) {
 
     const relativeCssPath = relative(outputDirectory, cssPath);
     if (!astryxThemeLayer.test(css)) {
-      problems.push(`${relativeCssPath} is missing the Astryx neutral theme layer`);
+      problems.push(`${relativeCssPath} is missing the Astryx vivid theme layer`);
     }
-    if (!astryxNeutralSelector.test(css)) {
-      problems.push(`${relativeCssPath} is missing the Astryx neutral theme selector`);
+    if (!astryxVividSelector.test(css)) {
+      problems.push(`${relativeCssPath} is missing the Astryx vivid theme selector`);
     }
-    if (!astryxNeutralDestructiveButtonSelector.test(css)) {
-      problems.push(
-        `${relativeCssPath} is missing the Astryx neutral component overrides`,
-      );
+    if (!astryxVividDestructiveButtonSelector.test(css)) {
+      problems.push(`${relativeCssPath} is missing the Astryx vivid component overrides`);
     }
   }
 
@@ -526,9 +530,10 @@ async function validateVariant(variant, packageVersion) {
     );
   }
 
-  if (manifest.version !== packageVersion) {
+  const manifestDisplayVersion = manifest.version_name ?? manifest.version;
+  if (manifestDisplayVersion !== packageVersion) {
     problems.push(
-      `manifest version must match package.json (${JSON.stringify(packageVersion)}), received ${formatValue(manifest.version)}`,
+      `manifest version must represent package.json (${JSON.stringify(packageVersion)}), received ${formatValue(manifestDisplayVersion)}`,
     );
   }
 

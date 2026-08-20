@@ -115,31 +115,36 @@ afterEach(async () => {
 });
 
 describe('extension build helpers', () => {
-  test('requires the neutral theme in every emitted CSS bundle', async () => {
+  test('requires the vivid theme in emitted UI CSS bundles', async () => {
     const projectDirectory = await mkdtemp(
       join(tmpdir(), 'lightling-extension-theme-artifact-'),
     );
     temporaryDirectories.push(projectDirectory);
+    const actionStylesDirectory = resolve(projectDirectory, 'action');
     const contentStylesDirectory = resolve(projectDirectory, 'content_scripts');
-    await mkdir(contentStylesDirectory, { recursive: true });
     await Promise.all([
+      mkdir(actionStylesDirectory, { recursive: true }),
+      mkdir(contentStylesDirectory, { recursive: true }),
+    ]);
+    await Promise.all([
+      writeFile(resolve(projectDirectory, '304.css'), '.unused-content-style{}'),
       writeFile(
-        resolve(projectDirectory, 'action.css'),
-        '@layer astryx-theme{}[data-astryx-theme=neutral]{}[data-astryx-theme=neutral] .astryx-button.destructive{}',
+        resolve(actionStylesDirectory, 'index.css'),
+        '@layer astryx-theme{}[data-astryx-theme=vivid]{}[data-astryx-theme=vivid] .astryx-button.destructive{}',
       ),
       writeFile(
         resolve(contentStylesDirectory, 'content-0.css'),
-        '@layer  astryx-theme{}[data-astryx-theme="neutral"]{}',
+        '@layer  astryx-theme{}[data-astryx-theme="vivid"]{}',
       ),
     ]);
 
     await expect(findAstryxThemeArtifactProblems(projectDirectory)).resolves.toEqual([
-      'content_scripts/content-0.css is missing the Astryx neutral component overrides',
+      'content_scripts/content-0.css is missing the Astryx vivid component overrides',
     ]);
 
     await writeFile(
       resolve(contentStylesDirectory, 'content-0.css'),
-      '@layer astryx-theme{}[data-astryx-theme="neutral"]{}[data-astryx-theme="neutral"] .astryx-button.destructive{}',
+      '@layer astryx-theme{}[data-astryx-theme="vivid"]{}[data-astryx-theme="vivid"] .astryx-button.destructive{}',
     );
     await expect(findAstryxThemeArtifactProblems(projectDirectory)).resolves.toEqual([]);
   });
