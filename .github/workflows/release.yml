@@ -27,6 +27,7 @@ jobs:
           sudo chown -R $(id -u):$(id -g) ./build
 
       - name: Build CRX file for chromium
+        if: ${{ !contains(env.PROJECT_VERSION, '-') }}
         working-directory: "./build"
         env:
           CHROMIUM_CRX_PEM: ${{ secrets.CHROMIUM_CRX_PEM }}
@@ -36,6 +37,7 @@ jobs:
           ls -al ./
 
       - name: Build XPI file for firefox-standalone
+        if: ${{ !contains(env.PROJECT_VERSION, '-') }}
         working-directory: "./build"
         env:
           AMO_KEY: ${{ secrets.AMO_KEY }}
@@ -62,6 +64,8 @@ jobs:
           # so if any changes in code been inserted, we must create another version and tag
           tag_name: v${{ env.PROJECT_VERSION }}
           name: v${{ env.PROJECT_VERSION }}
+          prerelease: ${{ contains(env.PROJECT_VERSION, '-') }}
+          generate_release_notes: true
           # Use current commit hash, instead of main branch
           target_commitish: ${{ github.sha }}
           files: |
@@ -70,6 +74,7 @@ jobs:
             build/*.zip
 
       - name: Build static files for GitHub Pages
+        if: ${{ !contains(env.PROJECT_VERSION, '-') }}
         working-directory: "./build"
         run: |
           mkdir ./site

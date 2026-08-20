@@ -143,10 +143,11 @@ export async function prepareExtensionAssets({ requireThirdparty = false } = {})
     readJson(manifestPath),
   ]);
 
-  if (packageJson.version !== manifest.version) {
+  const manifestDisplayVersion = manifest.version_name ?? manifest.version;
+  if (packageJson.version !== manifestDisplayVersion) {
     throw new Error(
       `Version mismatch: package.json is ${JSON.stringify(packageJson.version)}, ` +
-        `but src/manifest.json is ${JSON.stringify(manifest.version)}`,
+        `but src/manifest.json represents ${JSON.stringify(manifestDisplayVersion)}`,
     );
   }
 
