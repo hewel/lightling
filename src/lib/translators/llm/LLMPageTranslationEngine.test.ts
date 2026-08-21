@@ -143,6 +143,38 @@ describe('LLM webpage request contract', () => {
     expect(calls).toHaveLength(1);
   });
 
+  test('accepts preserved named entities without an isolated retry', async () => {
+    let calls = 0;
+    const engine = new LLMTranslationEngine({
+      loadSettings: () => Promise.resolve(settings),
+      fetch: () => {
+        calls++;
+        return Effect.succeed({
+          text: JSON.stringify({
+            translations: [{ id: 'brand', target: 'Noctalia' }],
+          }),
+          usage: { inputTokens: null, outputTokens: null },
+        });
+      },
+    });
+    const namedEntityRequest: PageTranslationBatchRequest = {
+      ...request,
+      targetLanguage: 'zh',
+      memory: { ...request.memory, namedEntities: ['Noctalia'] },
+      targets: [target('brand', 'Noctalia')],
+    };
+
+    await expect(
+      engine.translatePageBatch(namedEntityRequest, {
+        context: 'session',
+        priority: 4,
+        retryLimit: 0,
+        isolateInvalidBatches: true,
+      }),
+    ).resolves.toEqual([{ id: 'brand', target: 'Noctalia' }]);
+    expect(calls).toBe(1);
+  });
+
   test('returns accepted targets when another target exhausts retries', async () => {
     const responses = [
       JSON.stringify({

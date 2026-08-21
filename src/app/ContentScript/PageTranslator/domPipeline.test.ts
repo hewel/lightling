@@ -10,6 +10,7 @@ const collect = () =>
     sourceLanguage: 'en',
     targetLanguage: 'de',
     identity: { provider: 'openai', model: 'small-model' },
+    excludeSelectors: ['code', 'pre'],
   });
 
 describe('DOM page translation pipeline', () => {
@@ -74,6 +75,13 @@ describe('DOM page translation pipeline', () => {
     );
     expect(document.querySelector('code')).toBe(code);
     expect(code?.textContent).toBe('npm test');
+  });
+
+  test('skips filesystem paths that have no translatable text', () => {
+    document.body.innerHTML =
+      '<main><p>/etc/sv/wpa_supplicant/conf</p><p>/etc/dbus-1/<code>system.d</code>/<code>wpa_supplicant.conf</code></p></main>';
+
+    expect(collect().occurrences).toHaveLength(0);
   });
 
   test('deduplicates equivalent buttons but not semantically different text', () => {

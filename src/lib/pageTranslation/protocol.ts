@@ -397,14 +397,35 @@ const TARGET_SCRIPT_BY_LANGUAGE: Record<string, RegExp> = {
   zh: /\p{Script=Han}/u,
 };
 
+const comparableText = (text: string): string =>
+  normalizeTranslationText(text.replace(PLACEHOLDER_PATTERN, ''));
+
+const LIKELY_INVARIANT_SOURCE_PATTERN = /(?:[_/]|::|[a-z][A-Z]|[A-Z]{2})/u;
+const isLikelyInvariantSource = (text: string): boolean => {
+  const words = text.match(/\p{L}+/gu);
+  return (
+    words !== null && words.length <= 3 && LIKELY_INVARIANT_SOURCE_PATTERN.test(text)
+  );
+};
+
 export const isPlausibleTargetLanguage = (
   text: string,
   targetLanguage: string,
+  sourceText?: string,
+  invariantTerms: readonly string[] = [],
 ): boolean => {
   const pattern = TARGET_SCRIPT_BY_LANGUAGE[targetLanguage.toLowerCase().split('-')[0]];
   if (pattern === undefined) return true;
   const visibleText = text.replace(PLACEHOLDER_PATTERN, '').replace(/[^\p{L}]/gu, '');
-  return visibleText.length < 2 || pattern.test(visibleText);
+  if (visibleText.length < 2 || pattern.test(visibleText)) return true;
+  if (sourceText === undefined) return false;
+
+  const comparableSource = comparableText(sourceText);
+  if (comparableText(text) !== comparableSource) return false;
+  return (
+    isLikelyInvariantSource(comparableSource) ||
+    invariantTerms.some((term) => comparableText(term) === comparableSource)
+  );
 };
 
 const CODE_FENCE_PATTERN = /^```[^\n`]*\n([\s\S]*?)\n?\s*```$/u;
@@ -432,7 +453,7 @@ export interface ParsePageTranslationResponseOptions {
 export const parsePageTranslationResponse = (
   raw: string,
   targets: readonly TranslationTarget[],
-  isLanguagePlausible: (text: string) => boolean = () => true,
+  isLanguagePlausible: (text: string, source: TranslationTarget) => boolean = () => true,
   options?: ParsePageTranslationResponseOptions,
 ):
   | { translations: { id: string; target: string }[]; issues: [] }
@@ -523,7 +544,7 @@ export const parsePageTranslationResponse = (
       }
       target = repaired;
     }
-    if (!isLanguagePlausible(target)) {
+    if (!isLanguagePlausible(target, source)) {
       issues.push({ id, failure: 'language-mismatch' });
       continue;
     }

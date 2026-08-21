@@ -112,9 +112,22 @@ describe('page translation protocol', () => {
       'missing-item',
     ]);
   });
-  test('checks target scripts when the language has a deterministic signal', () => {
+  test('checks target scripts without rejecting invariant technical names', () => {
     expect(isPlausibleTargetLanguage('保存设置', 'zh-CN')).toBe(true);
-    expect(isPlausibleTargetLanguage('Save settings', 'zh-CN')).toBe(false);
+    expect(isPlausibleTargetLanguage('Save settings', 'zh-CN', 'Save settings')).toBe(
+      false,
+    );
+    expect(isPlausibleTargetLanguage('GitHub', 'zh-CN', 'GitHub')).toBe(true);
+    expect(isPlausibleTargetLanguage('Noctalia', 'zh-CN', 'Noctalia', ['Noctalia'])).toBe(
+      true,
+    );
+    expect(
+      isPlausibleTargetLanguage(
+        'Link to "How can I make the UI bigger or smaller?"',
+        'zh-CN',
+        'Link to "How can I make the UI bigger or smaller?"',
+      ),
+    ).toBe(false);
     expect(isPlausibleTargetLanguage('Speichern', 'de')).toBe(true);
   });
 

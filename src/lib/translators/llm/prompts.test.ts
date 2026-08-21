@@ -63,6 +63,7 @@ describe('translation prompt variants', () => {
       expect(first).toBe(second);
       expect(first).not.toMatch(/\[INST\]|<\|system\|>|<start_of_turn>/u);
       expect(first).toContain('Return JSON only');
+      expect(first).toContain('Translate human-readable text inside <g>');
     },
   );
 

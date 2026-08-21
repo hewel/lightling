@@ -77,7 +77,7 @@ const BLOCK_DISPLAYS = new Set([
 ]);
 const STATUS_PATTERN = /(?:status|state|availability|presence)/iu;
 const PROTECTED_TEXT_PATTERN =
-  /(?:https?:\/\/[^\s<]+|www\.[^\s<]+|\b[\w.-]+\.(?:js|ts|tsx|jsx|json|css|html|md|ya?ml|toml|ini|exe|dmg|zip|tar|gz)\b|\b[A-Za-z_$][\w$]*(?:(?:\.|::)[A-Za-z_$][\w$]*)+\b|\b\d+(?:[.,]\d+)?\s?(?:%|px|em|rem|ms|s|KB|MB|GB|KiB|MiB|GiB|Hz|kHz|MHz|GHz)\b)/giu;
+  /(?:https?:\/\/[^\s<]+|www\.[^\s<]+|(?:~\/|\/)(?:[\w.-]+\/)+[\w.-]*|\b[\w.-]+\.(?:js|ts|tsx|jsx|json|css|html|md|ya?ml|toml|ini|exe|dmg|zip|tar|gz)\b|\b[A-Za-z_$][\w$]*(?:(?:\.|::)[A-Za-z_$][\w$]*)+\b|\b\d+(?:[.,]\d+)?\s?(?:%|px|em|rem|ms|s|KB|MB|GB|KiB|MiB|GiB|Hz|kHz|MHz|GHz)\b)/giu;
 
 export interface PageTranslationIdentity {
   provider: string;
@@ -141,14 +141,28 @@ export interface CollectionOptions {
 const hasMeaningfulText = (value: string | null): value is string =>
   value !== null && normalizeTranslationText(value) !== '';
 
+const hasTranslatableText = (value: string): boolean => /[\p{L}\p{N}]/u.test(value);
+
 const isEditable = (element: Element): boolean =>
   element instanceof HTMLElement && element.isContentEditable;
 
-const isExcluded = (element: Element, options: CollectionOptions): boolean => {
+const isUnavailable = (element: Element, options: CollectionOptions): boolean => {
   if (SKIPPED_TAGS.has(element.tagName)) return true;
   if (!options.includeEditable && isEditable(element)) return true;
   if (element.hasAttribute('hidden') || element.hasAttribute('inert')) return true;
   if (element.getAttribute('aria-hidden') === 'true') return true;
+  try {
+    const style = getComputedStyle(element);
+    return style.display === 'none' || style.visibility === 'hidden';
+  } catch {
+    return false;
+  }
+};
+
+const matchesExcludeSelector = (
+  element: Element,
+  options: CollectionOptions,
+): boolean => {
   for (const selector of options.excludeSelectors ?? []) {
     if (selector === '') continue;
     try {
@@ -157,13 +171,11 @@ const isExcluded = (element: Element, options: CollectionOptions): boolean => {
       // Ignore malformed user selectors instead of aborting the page scan.
     }
   }
-  try {
-    const style = getComputedStyle(element);
-    return style.display === 'none' || style.visibility === 'hidden';
-  } catch {
-    return false;
-  }
+  return false;
 };
+
+const isExcluded = (element: Element, options: CollectionOptions): boolean =>
+  isUnavailable(element, options) || matchesExcludeSelector(element, options);
 
 const elementRole = (element: Element): string => element.getAttribute('role') ?? '';
 
@@ -284,8 +296,8 @@ const serializeSegment = (
         result += protectText(text, protectedValues, () => nextId('x'));
         continue;
       }
-      if (!(child instanceof Element) || isExcluded(child, options)) continue;
-      if (ATOMIC_TAGS.has(child.tagName)) {
+      if (!(child instanceof Element) || isUnavailable(child, options)) continue;
+      if (ATOMIC_TAGS.has(child.tagName) || matchesExcludeSelector(child, options)) {
         const id = nextId('x');
         placeholders.set(id, child);
         result += `<x id="${id}"/>`;
@@ -333,7 +345,7 @@ const collectTranslatableSegments = (
   const hasDirectTranslatableText = Array.from(root.childNodes).some(
     (node) =>
       node instanceof Text &&
-      hasMeaningfulText((node.nodeValue ?? '').replace(PROTECTED_TEXT_PATTERN, '')),
+      hasTranslatableText((node.nodeValue ?? '').replace(PROTECTED_TEXT_PATTERN, '')),
   );
   if (hasDirectTranslatableText) return [serializeSegment(root, options)];
 

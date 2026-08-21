@@ -929,6 +929,11 @@ export class LLMTranslationEngine {
       };
     };
 
+    const invariantTerms = [
+      ...request.memory.protectedTerms,
+      ...request.memory.namedEntities,
+    ];
+
     /** One translation request as an effect: fetch under the retry policy, then parse and validate. */
     const attemptEffect = (
       prepared: PreparedAttempt,
@@ -942,7 +947,13 @@ export class LLMTranslationEngine {
           parsePageTranslationResponse(
             response.text,
             prepared.targets,
-            (text) => isPlausibleTargetLanguage(text, request.targetLanguage),
+            (text, source) =>
+              isPlausibleTargetLanguage(
+                text,
+                request.targetLanguage,
+                source.sourceText,
+                invariantTerms,
+              ),
             { repairPlaceholders: true },
           ),
         ),
