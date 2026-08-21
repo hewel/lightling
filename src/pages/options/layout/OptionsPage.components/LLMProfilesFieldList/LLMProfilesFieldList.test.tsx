@@ -7,6 +7,7 @@ import type {
   LLMTranslatorConfig,
 } from '@/lib/translators/llm/LLMTranslator';
 import type { LLMModelInfo } from '@/lib/translators/llm/modelInfo';
+import { llmProviderPresets } from '@/lib/translators/llm/presets';
 
 import {
   getLLMProfilesError,
@@ -32,13 +33,6 @@ Object.defineProperty(globalThis, 'IS_REACT_ACT_ENVIRONMENT', {
   value: true,
 });
 
-const autoExecution = {
-  contextWindowTokens: null,
-  preferredInputTokens: null,
-  maxOutputTokens: null,
-  maxConcurrentRequests: null,
-} as const;
-
 const makeModelInfo = (
   id: string,
   displayName = id,
@@ -50,27 +44,23 @@ const makeModelInfo = (
   maxInputTokens: null,
   maxOutputTokens,
   supportedParameters: null,
+  tokenizerId: null,
+  supportsPrefixCaching: null,
   contextWindowSource: null,
   maxInputSource: null,
   maxOutputSource: null,
 });
 
 const openAIProfile = (name = 'OpenAI'): LLMProfile => ({
+  ...structuredClone(llmProviderPresets.openai),
   name,
-  provider: 'openai',
-  apiUrl: 'https://api.openai.com/v1',
   apiKey: 'secret',
-  model: 'gpt-4o-mini',
-  ...autoExecution,
 });
 
 const customProfile = (name = 'Local'): LLMProfile => ({
+  ...structuredClone(llmProviderPresets.ollama),
   name,
-  provider: 'openai-compatible',
-  apiUrl: 'http://localhost:11434/v1',
-  apiKey: '',
   model: 'local-model',
-  ...autoExecution,
 });
 
 describe('LLMProfilesFieldList', () => {
@@ -260,16 +250,7 @@ describe('LLMProfilesFieldList', () => {
 
     expect(onChange).toHaveBeenLastCalledWith({
       activeProfile: 'OpenAI',
-      profiles: [
-        {
-          name: 'OpenAI',
-          provider: 'openai',
-          apiUrl: 'https://api.openai.com/v1',
-          apiKey: '',
-          model: 'gpt-4o-mini',
-          ...autoExecution,
-        },
-      ],
+      profiles: [structuredClone(llmProviderPresets.openai)],
     });
     expect(findInput('llmProfiles_profileName').value).toBe('OpenAI');
     expect(

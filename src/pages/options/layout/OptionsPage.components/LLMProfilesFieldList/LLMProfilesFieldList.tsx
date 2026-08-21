@@ -34,6 +34,12 @@ import {
   resolveLLMExecutionSettings,
 } from '@/lib/translators/llm/modelInfo';
 import {
+  resolveTranslationModelProfile,
+  validateFallbackProfiles,
+  validateTranslationModelProfile,
+  type TranslationQualityMode,
+} from '@/lib/translators/llm/modelProfile';
+import {
   type LLMPresetId,
   llmPresetIds,
   llmProviderPresets,
@@ -74,6 +80,16 @@ const presetOptions = llmPresetIds.map((preset) => ({
   label: presetLabels[preset],
 }));
 
+const qualityOptions: { value: TranslationQualityMode; label: string }[] = [
+  { value: 'fast', label: getMessage('llmProfiles_quality_fast') },
+  { value: 'balanced', label: getMessage('llmProfiles_quality_balanced') },
+  { value: 'accurate', label: getMessage('llmProfiles_quality_accurate') },
+  { value: 'custom', label: getMessage('llmProvider_custom') },
+];
+
+const isTranslationQualityMode = (value: string): value is TranslationQualityMode =>
+  qualityOptions.some((option) => option.value === value);
+
 const isLLMProvider = (value: string): value is LLMProvider =>
   llmProviders.some((provider) => provider === value);
 
@@ -102,8 +118,20 @@ const getLLMProfileNameErrors = (
   });
 };
 
-export const getLLMProfilesError = (profiles: readonly LLMProfile[]): string | null =>
-  getLLMProfileNameErrors(profiles).find((error) => error !== undefined) ?? null;
+export const getLLMProfilesError = (profiles: readonly LLMProfile[]): string | null => {
+  const nameError = getLLMProfileNameErrors(profiles).find(
+    (error) => error !== undefined,
+  );
+  if (nameError !== undefined) return nameError;
+  const fallbackError = validateFallbackProfiles(profiles)[0];
+  if (fallbackError !== undefined) return fallbackError;
+  for (const profile of profiles) {
+    const resolved = resolveTranslationModelProfile(profile, null).profile;
+    const profileError = validateTranslationModelProfile(resolved)[0];
+    if (profileError !== undefined) return `${profile.name}: ${profileError}`;
+  }
+  return null;
+};
 
 export const normalizeLLMTranslatorConfig = (
   value: LLMTranslatorConfig,
@@ -740,6 +768,45 @@ export const LLMProfilesFieldList: FC<LLMProfilesFieldListProps> = ({
                     }}
                   />
                 }
+              />
+            </StackItem>
+          </HStack>
+
+          <HStack gap={2} align="start" wrap="wrap" width="100%">
+            <StackItem size="fill" xstyle={styles.fieldItem}>
+              <Selector
+                label={getMessage('llmProfiles_quality')}
+                description={getMessage('llmProfiles_quality_desc')}
+                options={qualityOptions}
+                value={selectedProfile.qualityMode}
+                width="100%"
+                onChange={(qualityMode) => {
+                  if (isTranslationQualityMode(qualityMode)) {
+                    patchProfile(selectedProfileIndex, { qualityMode });
+                  }
+                }}
+              />
+            </StackItem>
+            <StackItem size="fill" xstyle={styles.fieldItem}>
+              <Selector
+                label={getMessage('llmProfiles_fallback')}
+                description={getMessage('llmProfiles_fallback_desc')}
+                options={[
+                  { value: '', label: getMessage('llmProfiles_fallback_none') },
+                  ...value.profiles
+                    .filter((profile) => profile.name !== selectedProfile.name)
+                    .map((profile) => ({
+                      value: profile.name,
+                      label: profile.name,
+                    })),
+                ]}
+                value={selectedProfile.fallbackProfile ?? ''}
+                width="100%"
+                onChange={(fallbackProfile) => {
+                  patchProfile(selectedProfileIndex, {
+                    fallbackProfile: fallbackProfile === '' ? null : fallbackProfile,
+                  });
+                }}
               />
             </StackItem>
           </HStack>

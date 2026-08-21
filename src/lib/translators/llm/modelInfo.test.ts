@@ -1,6 +1,5 @@
 import type { LLMProfile } from './LLMTranslator';
 import {
-  buildLLMGenerationConfig,
   createLLMClientOptions,
   FALLBACK_CONTEXT_WINDOW_TOKENS,
   FALLBACK_MAX_CONCURRENT_REQUESTS,
@@ -13,21 +12,13 @@ import {
   resolveLLMProfileConnection,
   type LLMModelInfo,
 } from './modelInfo';
-
-const autoExecution = {
-  contextWindowTokens: null,
-  preferredInputTokens: null,
-  maxOutputTokens: null,
-  maxConcurrentRequests: null,
-} as const;
+import { llmProviderPresets } from './presets';
 
 const makeProfile = (overrides: Partial<LLMProfile> = {}): LLMProfile => ({
+  ...structuredClone(llmProviderPresets.custom),
   name: 'Test',
-  provider: 'openai-compatible',
   apiUrl: 'https://llm.example/v1',
-  apiKey: '',
   model: 'test-model',
-  ...autoExecution,
   ...overrides,
 });
 
@@ -85,6 +76,8 @@ describe('fetchLLMModels metadata decoding', () => {
       maxOutputTokens: 8000,
       maxOutputSource: 'provider',
       supportedParameters: ['temperature', 'tools'],
+      tokenizerId: null,
+      supportsPrefixCaching: null,
     });
   });
 
@@ -121,6 +114,8 @@ describe('fetchLLMModels metadata decoding', () => {
         maxOutputTokens: null,
         maxOutputSource: null,
         supportedParameters: null,
+        tokenizerId: null,
+        supportsPrefixCaching: null,
       },
     ]);
   });
@@ -182,7 +177,7 @@ describe('fetchLLMModels metadata decoding', () => {
     expect(models[1].maxOutputTokens).toBeNull();
   });
 
-  test('fills Ling-3.0-flash context from known-model metadata only when absent', async () => {
+  test('fills registered Ling contexts when provider metadata is absent', async () => {
     fetchMock.mockImplementationOnce(async () =>
       listResponse([
         { id: 'Ling-3.0-flash', object: 'model' },
@@ -201,11 +196,10 @@ describe('fetchLLMModels metadata decoding', () => {
       contextWindowTokens: 262144,
       contextWindowSource: 'known-model',
     });
-    // tiny stays unknown
     expect(models[1]).toMatchObject({
       id: 'Ling-3.0-tiny',
-      contextWindowTokens: null,
-      contextWindowSource: null,
+      contextWindowTokens: 262_144,
+      contextWindowSource: 'known-model',
     });
   });
 
@@ -313,72 +307,6 @@ describe('URL and discovery identity normalization', () => {
   });
 });
 
-describe('buildLLMGenerationConfig', () => {
-  test('maps Anthropic generation parameters', () => {
-    expect(
-      buildLLMGenerationConfig(
-        makeProfile({ provider: 'anthropic', apiUrl: '' }),
-        2048,
-        null,
-      ),
-    ).toEqual({ max_tokens: 2048, temperature: 0 });
-  });
-
-  test('uses OpenRouter temperature only when support is unknown or declared', () => {
-    const profile = makeProfile({ provider: 'openrouter', apiUrl: '' });
-
-    expect(buildLLMGenerationConfig(profile, 1024, null)).toEqual({
-      max_tokens: 1024,
-      temperature: 0,
-    });
-    expect(buildLLMGenerationConfig(profile, 1024, ['temperature'])).toEqual({
-      max_tokens: 1024,
-      temperature: 0,
-    });
-    expect(buildLLMGenerationConfig(profile, 1024, ['tools'])).toEqual({
-      max_tokens: 1024,
-    });
-  });
-
-  test('omits OpenAI temperature for reasoning models', () => {
-    expect(
-      buildLLMGenerationConfig(
-        makeProfile({ provider: 'openai', apiUrl: '', model: 'gpt-4.1' }),
-        4096,
-        null,
-      ),
-    ).toEqual({ max_output_tokens: 4096, temperature: 0 });
-    expect(
-      buildLLMGenerationConfig(
-        makeProfile({ provider: 'openai', apiUrl: '', model: 'o3-mini' }),
-        4096,
-        null,
-      ),
-    ).toEqual({ max_output_tokens: 4096 });
-  });
-
-  test('disables Ant Ling reasoning for Ling-3.0 models', () => {
-    expect(buildLLMGenerationConfig(makeProfile(), 512, null)).toEqual({
-      max_output_tokens: 512,
-      temperature: 0,
-    });
-    expect(
-      buildLLMGenerationConfig(
-        makeProfile({
-          apiUrl: 'https://api.ant-ling.com/v1/',
-          model: 'Ling-3.0-tiny',
-        }),
-        512,
-        null,
-      ),
-    ).toEqual({
-      max_output_tokens: 512,
-      temperature: 0,
-      thinking: { type: 'disabled' },
-    });
-  });
-});
-
 describe('resolveLLMExecutionSettings precedence', () => {
   const providerInfo = (overrides: Partial<LLMModelInfo> = {}): LLMModelInfo => ({
     id: 'test-model',
@@ -387,6 +315,8 @@ describe('resolveLLMExecutionSettings precedence', () => {
     maxInputTokens: 16384,
     maxOutputTokens: 4096,
     supportedParameters: ['temperature'],
+    tokenizerId: null,
+    supportsPrefixCaching: null,
     contextWindowSource: 'provider',
     maxInputSource: 'provider',
     maxOutputSource: 'provider',
@@ -411,13 +341,42 @@ describe('resolveLLMExecutionSettings precedence', () => {
       resolveLLMExecutionSettings(makeProfile({ model: 'Ling-3.0-flash' }), null),
     ).toMatchObject({ contextWindowTokens: 262144, contextWindowSource: 'known-model' });
 
-    // tiny is unknown and falls back to 4,096
+    // The direct and provider-qualified IDs share registered parameters.
     expect(
       resolveLLMExecutionSettings(makeProfile({ model: 'Ling-3.0-tiny' }), null),
     ).toMatchObject({
-      contextWindowTokens: FALLBACK_CONTEXT_WINDOW_TOKENS,
-      contextWindowSource: 'fallback',
+      contextWindowTokens: 262_144,
+      contextWindowSource: 'known-model',
     });
+
+    for (const model of ['inclusionai/ling-3.0-flash', 'inclusionai/ling-3.0-tiny']) {
+      expect(
+        resolveLLMExecutionSettings(
+          makeProfile({ provider: 'openrouter', apiUrl: '', model }),
+          null,
+        ),
+      ).toMatchObject({
+        contextWindowTokens: 262_144,
+        contextWindowSource: 'known-model',
+      });
+    }
+
+    const providers: LLMProfile['provider'][] = ['openrouter', 'openai-compatible'];
+    for (const provider of providers) {
+      expect(
+        resolveLLMExecutionSettings(
+          makeProfile({
+            provider,
+            apiUrl: '',
+            model: 'tencent/hy-mt2-30b-a3b',
+          }),
+          null,
+        ),
+      ).toMatchObject({
+        contextWindowTokens: 8192,
+        contextWindowSource: 'known-model',
+      });
+    }
   });
 
   test('resolves preferred input and concurrency defaults', () => {

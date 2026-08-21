@@ -1,12 +1,17 @@
-import { encode } from 'gpt-tokenizer-v4';
-
 import {
   type PageProfile,
+  type PageTranslationBatchRequest,
+  type SectionContext,
   type TranslationRequestContext,
   type TranslationTarget,
   validatePlaceholderIntegrity,
-  WEBPAGE_SYSTEM_PROMPT,
 } from '@/lib/pageTranslation/protocol';
+import {
+  budgetPageTranslationRequest,
+  type TranslationTokenBudget,
+} from '@/lib/translators/llm/budget';
+import type { TranslationModelProfile } from '@/lib/translators/llm/modelProfile';
+import type { TranslationTokenCounter } from '@/lib/translators/llm/tokenizer';
 
 import type { TranslationUnit } from './domPipeline';
 
@@ -32,37 +37,6 @@ export const calculateSourceBudget = (input: TokenBudgetInput): number => {
   return Math.floor(remaining / (1 + input.outputRatio));
 };
 
-export interface TokenCounter {
-  count(text: string): number;
-  id: string;
-}
-
-export const openAICompatibleTokenCounter: TokenCounter = {
-  id: 'o200k_base',
-  count: (text) => encode(text).length,
-};
-
-export class OutputRatioTracker {
-  private readonly ratios = new Map<string, number>();
-
-  public get(sourceLanguage: string, targetLanguage: string): number {
-    return this.ratios.get(`${sourceLanguage}>${targetLanguage}`) ?? 1.35;
-  }
-
-  public observe(
-    sourceLanguage: string,
-    targetLanguage: string,
-    sourceTokens: number,
-    targetTokens: number,
-  ): void {
-    if (sourceTokens <= 0 || targetTokens <= 0) return;
-    const key = `${sourceLanguage}>${targetLanguage}`;
-    const observed = Math.min(3, Math.max(0.5, targetTokens / sourceTokens));
-    const previous = this.ratios.get(key) ?? observed;
-    this.ratios.set(key, Math.min(3, Math.max(0.5, previous * 0.8 + observed * 0.2)));
-  }
-}
-
 export interface PlannedTarget {
   target: TranslationTarget;
   unit: TranslationUnit;
@@ -74,25 +48,28 @@ export interface PlannedBatch {
   targets: PlannedTarget[];
   sourceTokens: number;
   sourceBudget: number;
+  pageProfile: PageProfile;
+  context: TranslationRequestContext;
+  budget: TranslationTokenBudget;
+  reductions: string[];
 }
 
 export interface BatchPlanOptions {
   sourceLanguage: string;
   targetLanguage: string;
-  contextWindow: number;
-  preferredInputTokens: number;
+  modelProfile: TranslationModelProfile;
+  tokenCounter: TranslationTokenCounter;
   pageProfile: PageProfile;
+  section?: SectionContext;
   context: TranslationRequestContext;
-  maxItems?: number;
-  safetyTokens?: number;
   outputRatio: number;
-  tokenCounter?: TokenCounter;
+  preferredSourceTokens?: number;
 }
 
 const splitAtSafeSentenceBoundaries = (
   unit: TranslationUnit,
   sourceBudget: number,
-  counter: TokenCounter,
+  counter: TranslationTokenCounter,
 ): PlannedTarget[] => {
   let sentences: string[] = [];
   try {
@@ -142,34 +119,83 @@ const splitAtSafeSentenceBoundaries = (
   }));
 };
 
-const getFixedCosts = (
+const makeBudgetRequest = (
+  planned: PlannedTarget[],
   options: BatchPlanOptions,
-  counter: TokenCounter,
-): Omit<TokenBudgetInput, 'outputRatio'> => ({
-  contextWindow: options.contextWindow,
-  promptTokens: counter.count(WEBPAGE_SYSTEM_PROMPT),
-  memoryTokens: counter.count(JSON.stringify(options.pageProfile)),
-  contextTokens: counter.count(JSON.stringify(options.context)),
-  schemaTokens: 96,
-  safetyTokens: options.safetyTokens ?? 256,
+): PageTranslationBatchRequest => ({
+  sourceLanguage: options.sourceLanguage,
+  targetLanguage: options.targetLanguage,
+  sessionId: 'planning',
+  sessionSignature: 'planning',
+  memory: options.pageProfile,
+  ...(options.section === undefined ? {} : { section: options.section }),
+  context: options.context,
+  group: {
+    kind: planned[0].target.kind,
+    slot: planned[0].target.slot,
+    contextClass: planned[0].target.contextClass,
+  },
+  targets: planned.map((item) => item.target),
+  retryStage: 'initial',
 });
+
+const finalizeBatch = (
+  planned: PlannedTarget[],
+  options: BatchPlanOptions,
+  sourceBudget: number,
+): PlannedBatch[] => {
+  const budgeted = budgetPageTranslationRequest(
+    makeBudgetRequest(planned, options),
+    options.modelProfile,
+    options.tokenCounter,
+    options.outputRatio,
+  );
+  if (budgeted.overBudget) {
+    if (planned.length === 1) {
+      throw new Error(
+        `Logical segment ${planned[0].target.id} cannot fit the model profile budget`,
+      );
+    }
+    const midpoint = Math.floor(planned.length / 2);
+    return [
+      ...finalizeBatch(planned.slice(0, midpoint), options, sourceBudget),
+      ...finalizeBatch(planned.slice(midpoint), options, sourceBudget),
+    ];
+  }
+  const targetById = new Map(planned.map((item) => [item.target.id, item]));
+  const targets = budgeted.request.targets.map((target) => {
+    const plannedTarget = targetById.get(target.id);
+    if (plannedTarget === undefined) {
+      throw new Error(`Budget planning lost target ${target.id}`);
+    }
+    return { ...plannedTarget, target };
+  });
+  return [
+    {
+      targets,
+      sourceTokens: budgeted.budget.sourceTokens,
+      sourceBudget,
+      pageProfile: budgeted.request.memory,
+      context: budgeted.request.context,
+      budget: budgeted.budget,
+      reductions: budgeted.reductions,
+    },
+  ];
+};
 
 export const buildTokenAwareBatches = (
   units: TranslationUnit[],
   options: BatchPlanOptions,
 ): PlannedBatch[] => {
-  const counter = options.tokenCounter ?? openAICompatibleTokenCounter;
-  const fixed = getFixedCosts(options, counter);
-  const calculatedBudget = calculateSourceBudget({
-    ...fixed,
-    outputRatio: options.outputRatio,
-  });
+  const counter = options.tokenCounter;
   const sourceBudget = Math.max(
-    0,
-    Math.min(calculatedBudget, options.preferredInputTokens),
+    1,
+    Math.min(
+      options.preferredSourceTokens ??
+        options.modelProfile.batching.preferredSourceTokens,
+      options.modelProfile.batching.maxSourceTokens,
+    ),
   );
-  if (sourceBudget === 0)
-    throw new Error('Model context is too small for webpage translation');
 
   const planned: PlannedTarget[] = [];
   for (const unit of units) {
@@ -190,7 +216,14 @@ export const buildTokenAwareBatches = (
   const batches: PlannedBatch[] = [];
   let current: PlannedTarget[] = [];
   let currentTokens = 0;
-  const maxItems = options.maxItems ?? 48;
+  const maxItems = options.modelProfile.batching.maxItems;
+
+  const flush = (): void => {
+    if (current.length === 0) return;
+    batches.push(...finalizeBatch(current, options, sourceBudget));
+    current = [];
+    currentTokens = 0;
+  };
 
   for (const item of planned) {
     const itemTokens = counter.count(
@@ -204,19 +237,11 @@ export const buildTokenAwareBatches = (
       current.length > 0 &&
       (current.length >= maxItems || currentTokens + itemTokens > sourceBudget)
     ) {
-      batches.push({
-        targets: current,
-        sourceTokens: currentTokens,
-        sourceBudget,
-      });
-      current = [];
-      currentTokens = 0;
+      flush();
     }
     current.push(item);
     currentTokens += itemTokens;
   }
-  if (current.length > 0) {
-    batches.push({ targets: current, sourceTokens: currentTokens, sourceBudget });
-  }
+  flush();
   return batches;
 };

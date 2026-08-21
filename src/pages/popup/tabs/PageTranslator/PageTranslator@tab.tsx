@@ -15,6 +15,7 @@ import { getPageLanguage } from '@/requests/contentscript/getPageLanguage';
 import { disableTranslatePage } from '@/requests/contentscript/pageTranslation/disableTranslatePage';
 import { enableTranslatePage } from '@/requests/contentscript/pageTranslation/enableTranslatePage';
 import { getPageTranslateState } from '@/requests/contentscript/pageTranslation/getPageTranslateState';
+import { getPageTranslationLog } from '@/requests/contentscript/pageTranslation/getPageTranslationLog';
 
 import { InitFn, TabComponent } from '../../layout/PopupWindow';
 
@@ -23,6 +24,7 @@ import {
   PageTranslator,
   sitePreferenceOptions,
 } from './PageTranslator';
+import { exportPageTranslationLogFile } from './PageTranslator.utils/exportPageTranslationLog';
 import { PageTranslationStorage } from './PageTranslator.utils/PageTranslationStorage';
 import {
   getTranslatePreferencesForSite,
@@ -287,11 +289,23 @@ export const PageTranslatorTab: TabComponent<InitFn<InitData>> = ({
     },
   );
 
+  const exportLog = useCallback(async () => {
+    try {
+      const log = await getPageTranslationLog(tabId);
+      exportPageTranslationLogFile(log, hostname);
+    } catch (error) {
+      console.warn('Failed to export page translation log', error);
+    }
+  }, [hostname, tabId]);
+
   return (
     <PageTranslator
       translatorFeatures={translatorFeatures}
       showCounters={config.popupTab.pageTranslator.showCounters}
       toggleTranslate={togglePageTranslate}
+      exportLog={
+        config.pageTranslator.enableLogExport && isTranslated ? exportLog : undefined
+      }
       counters={counters}
       isTranslated={isTranslated}
       {...{

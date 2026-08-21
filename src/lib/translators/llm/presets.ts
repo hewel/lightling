@@ -1,3 +1,10 @@
+import {
+  DEFAULT_ADAPTIVE_BATCHING,
+  DEFAULT_LLM_FALLBACK_PROFILE,
+  DEFAULT_TRANSLATION_PROFILE_OVERRIDES,
+  DEFAULT_TRANSLATION_QUALITY_MODE,
+} from '@/types/runtime';
+
 import { LLMProfile } from './LLMTranslator';
 
 export type LLMPresetId =
@@ -22,12 +29,26 @@ export const llmPresetIds: readonly LLMPresetId[] = [
 /**
  * Execution settings left as `null` resolve automatically at runtime
  */
-const automaticExecution = {
+const automaticExecution = (): Pick<
+  LLMProfile,
+  | 'contextWindowTokens'
+  | 'preferredInputTokens'
+  | 'maxOutputTokens'
+  | 'maxConcurrentRequests'
+  | 'qualityMode'
+  | 'fallbackProfile'
+  | 'adaptiveBatching'
+  | 'translationProfile'
+> => ({
   contextWindowTokens: null,
   preferredInputTokens: null,
   maxOutputTokens: null,
   maxConcurrentRequests: null,
-} as const;
+  qualityMode: DEFAULT_TRANSLATION_QUALITY_MODE,
+  fallbackProfile: DEFAULT_LLM_FALLBACK_PROFILE,
+  adaptiveBatching: DEFAULT_ADAPTIVE_BATCHING,
+  translationProfile: structuredClone(DEFAULT_TRANSLATION_PROFILE_OVERRIDES),
+});
 
 /**
  * Quick-fill profiles for known providers; key-less local servers leave `apiKey` empty
@@ -39,7 +60,7 @@ export const llmProviderPresets: Record<LLMPresetId, LLMProfile> = {
     apiUrl: 'https://api.openai.com/v1',
     apiKey: '',
     model: 'gpt-4o-mini',
-    ...automaticExecution,
+    ...automaticExecution(),
   },
   anthropic: {
     name: 'Anthropic',
@@ -47,7 +68,7 @@ export const llmProviderPresets: Record<LLMPresetId, LLMProfile> = {
     apiUrl: 'https://api.anthropic.com',
     apiKey: '',
     model: '',
-    ...automaticExecution,
+    ...automaticExecution(),
   },
   openrouter: {
     name: 'OpenRouter',
@@ -55,7 +76,7 @@ export const llmProviderPresets: Record<LLMPresetId, LLMProfile> = {
     apiUrl: 'https://openrouter.ai/api/v1',
     apiKey: '',
     model: '',
-    ...automaticExecution,
+    ...automaticExecution(),
   },
   antling: {
     name: 'Ant Ling',
@@ -63,7 +84,7 @@ export const llmProviderPresets: Record<LLMPresetId, LLMProfile> = {
     apiUrl: 'https://api.ant-ling.com/v1',
     apiKey: '',
     model: 'Ling-3.0-flash',
-    ...automaticExecution,
+    ...automaticExecution(),
   },
   ollama: {
     name: 'Ollama',
@@ -71,7 +92,7 @@ export const llmProviderPresets: Record<LLMPresetId, LLMProfile> = {
     apiUrl: 'http://localhost:11434/v1',
     apiKey: '',
     model: '',
-    ...automaticExecution,
+    ...automaticExecution(),
   },
   lmstudio: {
     name: 'LM Studio',
@@ -79,7 +100,7 @@ export const llmProviderPresets: Record<LLMPresetId, LLMProfile> = {
     apiUrl: 'http://localhost:1234/v1',
     apiKey: '',
     model: '',
-    ...automaticExecution,
+    ...automaticExecution(),
   },
   custom: {
     name: 'Custom',
@@ -87,7 +108,7 @@ export const llmProviderPresets: Record<LLMPresetId, LLMProfile> = {
     apiUrl: '',
     apiKey: '',
     model: '',
-    ...automaticExecution,
+    ...automaticExecution(),
   },
 };
 

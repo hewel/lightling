@@ -28,12 +28,21 @@ describe('setConfig', () => {
 
       expect(setMock).toHaveBeenCalledTimes(1);
       const storedConfig = setMock.mock.calls[0][0];
-      expect(storedConfig.llmTranslator.profiles[0]).toEqual({
+      expect(storedConfig.llmTranslator.profiles[0]).toMatchObject({
         ...legacyProfile,
         contextWindowTokens: null,
         preferredInputTokens: null,
         maxOutputTokens: null,
         maxConcurrentRequests: null,
+        qualityMode: 'balanced',
+        fallbackProfile: null,
+        adaptiveBatching: true,
+      });
+      expect(storedConfig.llmTranslator.profiles[0].translationProfile).toMatchObject({
+        tokenizerId: null,
+        promptVariant: null,
+        structuredOutputMode: null,
+        reasoningMode: null,
       });
     } finally {
       cleanup();

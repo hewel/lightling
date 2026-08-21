@@ -1,6 +1,7 @@
 import { clearAllMocks } from '@/lib/tests';
 import { LLMScheduler } from '@/lib/translators/llm/LLMScheduler';
 import { LLMTranslator } from '@/lib/translators/llm/LLMTranslator';
+import { llmProviderPresets } from '@/lib/translators/llm/presets';
 
 import { TranslatorManager } from '.';
 
@@ -183,27 +184,19 @@ describe('TranslatorManager LLM integration', () => {
   beforeEach(clearAllMocks);
 
   const llmProfile1 = {
+    ...structuredClone(llmProviderPresets.custom),
     name: 'Profile1',
-    provider: 'openai-compatible' as const,
     apiUrl: 'https://api.example.com/v1',
     apiKey: 'test-key',
     model: 'model-1',
-    contextWindowTokens: null,
-    preferredInputTokens: null,
-    maxOutputTokens: null,
-    maxConcurrentRequests: null,
   };
 
   const llmProfile2 = {
+    ...structuredClone(llmProviderPresets.custom),
     name: 'Profile2',
-    provider: 'openai-compatible' as const,
     apiUrl: 'https://api.example.com/v1',
     apiKey: 'test-key',
     model: 'model-2',
-    contextWindowTokens: null,
-    preferredInputTokens: null,
-    maxOutputTokens: null,
-    maxConcurrentRequests: null,
   };
 
   test('setConfig disposes previous LLMScheduler instance', () => {

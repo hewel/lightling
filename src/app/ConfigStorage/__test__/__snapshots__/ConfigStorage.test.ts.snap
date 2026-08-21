@@ -12,6 +12,7 @@ exports[`config migrations > migrate config v0 to latest version 1`] = `
   "pageTranslator": {
     "detectLanguageByContent": true,
     "enableContextMenu": false,
+    "enableLogExport": false,
     "excludeSelectors": [
       "! Basic tags",
       "meta",
@@ -132,6 +133,7 @@ exports[`config migrations > race condition detection > Detection race condition
   "pageTranslator": {
     "detectLanguageByContent": true,
     "enableContextMenu": false,
+    "enableLogExport": false,
     "excludeSelectors": [
       "! Basic tags",
       "meta",
@@ -252,6 +254,7 @@ exports[`config migrations > race condition detection > Detection race condition
   "pageTranslator": {
     "detectLanguageByContent": true,
     "enableContextMenu": false,
+    "enableLogExport": false,
     "excludeSelectors": [
       "! Basic tags",
       "meta",
@@ -372,6 +375,7 @@ exports[`config migrations > race condition detection > Detection race condition
   "pageTranslator": {
     "detectLanguageByContent": true,
     "enableContextMenu": false,
+    "enableLogExport": false,
     "excludeSelectors": [
       "! Basic tags",
       "meta",
@@ -492,6 +496,7 @@ exports[`config migrations > race condition detection > Detection race condition
   "pageTranslator": {
     "detectLanguageByContent": true,
     "enableContextMenu": false,
+    "enableLogExport": false,
     "excludeSelectors": [
       "! Basic tags",
       "meta",
@@ -612,6 +617,7 @@ exports[`config migrations > race condition detection > Detection race condition
   "pageTranslator": {
     "detectLanguageByContent": true,
     "enableContextMenu": false,
+    "enableLogExport": false,
     "excludeSelectors": [
       "! Basic tags",
       "meta",

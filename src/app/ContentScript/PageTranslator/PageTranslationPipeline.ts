@@ -1,19 +1,28 @@
 import {
+  PAGE_TRANSLATION_LOG_SCHEMA_VERSION,
+  type PageTranslationLog,
+  type PageTranslationLogBatch,
+} from '@/lib/pageTranslation/log';
+import {
   type PageTranslationBatchRequest,
   type PageProfile,
   type TranslationContextItem,
   type TranslationRequestContext,
   validatePlaceholderIntegrity,
 } from '@/lib/pageTranslation/protocol';
+import {
+  OutputRatioTracker,
+  type TranslationTokenBudget,
+} from '@/lib/translators/llm/budget';
+import {
+  AdaptiveBatchTuner,
+  type TranslationModelProfile,
+} from '@/lib/translators/llm/modelProfile';
+import type { TranslationTokenCounter } from '@/lib/translators/llm/tokenizer';
 import { abortTranslation } from '@/requests/backend/abortTranslation';
 import { translatePageBatch } from '@/requests/backend/translatePageBatch';
 
-import {
-  buildTokenAwareBatches,
-  openAICompatibleTokenCounter,
-  OutputRatioTracker,
-  type PlannedTarget,
-} from './batching';
+import { buildTokenAwareBatches, type PlannedTarget } from './batching';
 import {
   applyOccurrenceTranslation,
   adoptSourceMutation,
@@ -49,9 +58,9 @@ export interface PageTranslationPipelineOptions extends CollectionOptions {
   root: Element;
   sessionId: string;
   sessionSignature: string;
-  contextWindow: number;
-  preferredInputTokens: number;
-  concurrency?: number;
+  modelProfile: TranslationModelProfile;
+  tokenCounter: TranslationTokenCounter;
+  logEnabled?: boolean;
   debug?: boolean;
   debugIncludeText?: boolean;
   onUnitStarted?: (count: number) => void;
@@ -172,8 +181,9 @@ export class PageTranslationPipeline {
   private readonly accepted: AcceptedTranslation[] = [];
   private readonly terminology = new TerminologyMemory();
   private readonly ratioTracker = new OutputRatioTracker();
+  private readonly adaptiveTuner = new AdaptiveBatchTuner();
   private readonly retriever: TranslationContextRetriever;
-  private readonly metrics = createMetrics();
+  private metrics = createMetrics();
   private occurrences: TextOccurrence[] = [];
   private observer: MutationObserver | null = null;
   private generation = 0;
@@ -181,6 +191,10 @@ export class PageTranslationPipeline {
   private currentUrl = location.href;
   private runtimeSessionId: string;
   private runtimeSignature: string;
+  private readonly logBatches: PageTranslationLogBatch[] | null;
+  private droppedLogBatches = 0;
+  private logBatchSerial = 0;
+  private sessionStartedAt = Date.now();
 
   constructor(
     private readonly options: PageTranslationPipelineOptions,
@@ -190,6 +204,7 @@ export class PageTranslationPipeline {
     this.pageProfile = buildPageProfile(options.root);
     this.runtimeSessionId = options.sessionId;
     this.runtimeSignature = options.sessionSignature;
+    this.logBatches = options.logEnabled ? [] : null;
   }
 
   public start(): void {
@@ -222,6 +237,28 @@ export class PageTranslationPipeline {
   }
   public getSessionId(): string {
     return this.runtimeSessionId;
+  }
+  public getLog(): PageTranslationLog | null {
+    if (this.logBatches === null) return null;
+    return {
+      schemaVersion: PAGE_TRANSLATION_LOG_SCHEMA_VERSION,
+      exportedAt: Date.now(),
+      session: {
+        id: this.runtimeSessionId,
+        signature: this.runtimeSignature,
+        url: this.currentUrl,
+        documentTitle: document.title,
+        sourceLanguage: this.options.sourceLanguage,
+        targetLanguage: this.options.targetLanguage,
+        provider: this.options.identity.provider,
+        model: this.options.identity.model,
+        startedAt: this.sessionStartedAt,
+      },
+      pageProfile: structuredClone(this.pageProfile),
+      metrics: { ...this.metrics },
+      batches: structuredClone(this.logBatches),
+      droppedBatches: this.droppedLogBatches,
+    };
   }
 
   public getOriginalText(element: Element): string {
@@ -282,13 +319,91 @@ export class PageTranslationPipeline {
     for (const child of Array.from(node.childNodes)) this.markAppliedNode(child);
   }
 
+  private appendLogBatch(batch: PageTranslationLogBatch): void {
+    if (this.logBatches === null) return;
+    const maximumBatches = 200;
+    if (this.logBatches.length >= maximumBatches) {
+      this.logBatches.shift();
+      this.droppedLogBatches++;
+    }
+    this.logBatches.push(batch);
+  }
+
+  private recordPageMemoryHit(unit: TranslationUnit, translatedText: string): void {
+    if (this.logBatches === null) return;
+    const now = Date.now();
+    const sourceTokens = this.options.tokenCounter.count(unit.sourceText);
+    this.appendLogBatch({
+      batchId: ++this.logBatchSerial,
+      queuedAt: now,
+      completedAt: now,
+      sourceTokens,
+      sourceBudget: this.options.modelProfile.batching.preferredSourceTokens,
+      group: {
+        kind: unit.kind,
+        slot: unit.slot,
+        contextClass: unit.contextClass,
+      },
+      context: {
+        headingPath: unit.section.headingPath,
+        previous: [],
+        following: [],
+        retrieved: [],
+      },
+      targets: [
+        {
+          id: unit.id,
+          semanticKey: unit.semanticKey,
+          sourceText: unit.sourceText,
+          translatedText,
+          kind: unit.kind,
+          slot: unit.slot,
+          contextClass: unit.contextClass,
+          sectionId: unit.sectionId,
+          componentId: unit.componentId,
+          priority: unit.priority,
+          cacheHit: true,
+          status: 'translated',
+        },
+      ],
+      retryCount: 0,
+      validationFailures: 0,
+      profile: {
+        id: this.options.modelProfile.id,
+        profileVersion: this.options.modelProfile.profileVersion,
+        promptVersion: this.options.modelProfile.promptVersion,
+        tokenizerId: this.options.tokenCounter.id,
+        promptVariant: this.options.modelProfile.promptVariant,
+        structuredOutput: this.options.modelProfile.structuredOutputMode,
+        reasoning: this.options.modelProfile.reasoningMode,
+      },
+      tokenBudget: {
+        contextWindow: this.options.modelProfile.contextWindow,
+        fixedPromptTokens: 0,
+        pageMemoryTokens: 0,
+        sectionMemoryTokens: 0,
+        localContextTokens: 0,
+        retrievedContextTokens: 0,
+        sourceTokens,
+        schemaTokens: 0,
+        reservedOutputTokens: 0,
+        safetyReserveTokens: 0,
+        totalEstimatedTokens: sourceTokens,
+      },
+      reductions: [],
+    });
+  }
+
   private buildContext(
     unit: TranslationUnit,
     orderedUnits: TranslationUnit[],
   ): TranslationRequestContext {
+    const variant = this.options.modelProfile.promptVariant;
+    const previousLimit = variant === 'compact' ? 1 : variant === 'advanced' ? 3 : 2;
+    const retrievedLimit = variant === 'compact' ? 0 : variant === 'advanced' ? 3 : 2;
     const previous = this.accepted
       .filter((item) => item.sectionId === unit.sectionId)
-      .slice(-2)
+      .slice(-previousLimit)
       .map((item) => ({ source: item.source, translation: item.translation }));
     const index = orderedUnits.indexOf(unit);
     const followingUnit = index >= 0 ? orderedUnits[index + 1] : undefined;
@@ -297,7 +412,7 @@ export class PageTranslationPipeline {
       previous,
       following:
         followingUnit === undefined ? [] : [{ source: followingUnit.sourceText }],
-      retrieved: this.retriever.retrieve(unit, this.accepted, 3),
+      retrieved: this.retriever.retrieve(unit, this.accepted, retrievedLimit),
     };
   }
 
@@ -336,6 +451,7 @@ export class PageTranslationPipeline {
       const cached = this.pageMemory.get(unit.semanticKey);
       if (cached !== undefined) {
         this.metrics.memoryHits++;
+        this.recordPageMemoryHit(unit, cached);
         if (this.isCurrent(generation)) this.applyUnit(unit, cached);
       } else {
         this.metrics.memoryMisses++;
@@ -358,28 +474,53 @@ export class PageTranslationPipeline {
     const jobs: (() => Promise<void>)[] = [];
     for (const group of groups.values()) {
       const context = this.buildContext(group[0], units);
+      const contentClass = group[0].contextClass;
+      const outputRatio = this.ratioTracker.get(
+        this.options.modelProfile,
+        this.options.sourceLanguage,
+        this.options.targetLanguage,
+        contentClass,
+      );
+      const preferredSourceTokens = this.adaptiveTuner.get(
+        this.options.modelProfile,
+        this.options.sourceLanguage,
+        this.options.targetLanguage,
+        contentClass,
+      );
       const batches = buildTokenAwareBatches(group, {
         sourceLanguage: this.options.sourceLanguage,
         targetLanguage: this.options.targetLanguage,
-        contextWindow: this.options.contextWindow,
-        preferredInputTokens: this.options.preferredInputTokens,
-        pageProfile: this.pageProfile,
+        modelProfile: this.options.modelProfile,
+        tokenCounter: this.options.tokenCounter,
+        pageProfile: {
+          ...this.pageProfile,
+          glossary: this.terminology.glossary(24),
+        },
+        section: group[0].section,
         context,
-        outputRatio: this.ratioTracker.get(
-          this.options.sourceLanguage,
-          this.options.targetLanguage,
-        ),
+        outputRatio,
+        preferredSourceTokens,
       });
       for (const batch of batches) {
         this.metrics.batches++;
         this.metrics.sourceTokens += batch.sourceTokens;
-        this.metrics.contextTokens += openAICompatibleTokenCounter.count(
-          JSON.stringify(context),
+        this.metrics.contextTokens +=
+          batch.budget.localContextTokens + batch.budget.retrievedContextTokens;
+        jobs.push(() =>
+          this.translateBatch(
+            batch.targets,
+            batch.pageProfile,
+            batch.context,
+            generation,
+            batch.sourceTokens,
+            batch.sourceBudget,
+            batch.budget,
+            batch.reductions,
+          ),
         );
-        jobs.push(() => this.translateBatch(batch.targets, context, generation));
       }
     }
-    await this.runLimited(jobs, this.options.concurrency ?? 2);
+    await this.runLimited(jobs, this.options.modelProfile.batching.concurrency);
     this.emitMetrics();
   }
 
@@ -398,8 +539,13 @@ export class PageTranslationPipeline {
 
   private async translateBatch(
     planned: PlannedTarget[],
+    pageProfile: PageProfile,
     context: TranslationRequestContext,
     generation: number,
+    sourceTokens: number,
+    sourceBudget: number,
+    tokenBudget: TranslationTokenBudget,
+    reductions: string[],
   ): Promise<void> {
     const fresh = planned.filter((item) => !this.inFlight.has(item.target.id));
     if (fresh.length === 0) {
@@ -416,16 +562,66 @@ export class PageTranslationPipeline {
       return;
     }
 
+    const logBatch: PageTranslationLogBatch | null =
+      this.logBatches === null
+        ? null
+        : {
+            batchId: ++this.logBatchSerial,
+            queuedAt: Date.now(),
+            sourceTokens,
+            sourceBudget,
+            group: {
+              kind: fresh[0].unit.kind,
+              slot: fresh[0].unit.slot,
+              contextClass: fresh[0].unit.contextClass,
+            },
+            context: structuredClone(context),
+            targets: fresh.map((item) => ({
+              id: item.target.id,
+              semanticKey: item.unit.semanticKey,
+              sourceText: item.target.sourceText,
+              kind: item.target.kind,
+              slot: item.target.slot,
+              contextClass: item.target.contextClass,
+              sectionId: item.target.sectionId,
+              componentId: item.target.componentId,
+              priority: item.target.priority,
+              status: 'pending',
+            })),
+            retryCount: 0,
+            validationFailures: 0,
+            profile: {
+              id: this.options.modelProfile.id,
+              profileVersion: this.options.modelProfile.profileVersion,
+              promptVersion: this.options.modelProfile.promptVersion,
+              tokenizerId: this.options.tokenCounter.id,
+              promptVariant: this.options.modelProfile.promptVariant,
+              structuredOutput: this.options.modelProfile.structuredOutputMode,
+              reasoning: this.options.modelProfile.reasoningMode,
+            },
+            tokenBudget: {
+              contextWindow: tokenBudget.contextWindow,
+              fixedPromptTokens: tokenBudget.fixedPromptTokens,
+              pageMemoryTokens: tokenBudget.pageMemoryTokens,
+              sectionMemoryTokens: tokenBudget.sectionMemoryTokens,
+              localContextTokens: tokenBudget.localContextTokens,
+              retrievedContextTokens: tokenBudget.retrievedContextTokens,
+              sourceTokens: tokenBudget.sourceTokens,
+              schemaTokens: tokenBudget.schemaTokens,
+              reservedOutputTokens: tokenBudget.reservedOutputTokens,
+              safetyReserveTokens: tokenBudget.safetyReserveTokens,
+              totalEstimatedTokens: tokenBudget.totalEstimatedTokens,
+            },
+            reductions: [...reductions],
+          };
+    if (logBatch !== null) this.appendLogBatch(logBatch);
     this.options.onUnitStarted?.(fresh.length);
     const request: PageTranslationBatchRequest = {
       sourceLanguage: this.options.sourceLanguage,
       targetLanguage: this.options.targetLanguage,
       sessionId: this.runtimeSessionId,
       sessionSignature: this.runtimeSignature,
-      memory: {
-        ...this.pageProfile,
-        glossary: this.terminology.glossary(24),
-      },
+      memory: pageProfile,
       section: fresh[0].unit.section,
       context,
       group: {
@@ -438,32 +634,52 @@ export class PageTranslationPipeline {
     };
     if (this.options.debug) {
       console.debug('[page-translation] batch', {
-        session: this.runtimeSessionId,
-        group: request.group,
-        contextTokens: openAICompatibleTokenCounter.count(JSON.stringify(context)),
-        targets: fresh.map((item) => ({
-          id: item.target.id,
-          kind: item.target.kind,
-          slot: item.target.slot,
-          contextClass: item.target.contextClass,
-          tokens: openAICompatibleTokenCounter.count(item.target.sourceText),
-          ...(this.options.debugIncludeText
-            ? { sourceText: item.target.sourceText }
-            : {}),
-        })),
+        profile: this.options.modelProfile.id,
+        profileVersion: this.options.modelProfile.profileVersion,
+        promptVersion: this.options.modelProfile.promptVersion,
+        provider: this.options.identity.provider,
+        model: this.options.identity.model,
+        tokenizer: this.options.tokenCounter.id,
+        tokenizerAccuracy: this.options.tokenCounter.accuracy,
+        promptVariant: this.options.modelProfile.promptVariant,
+        structuredOutput: this.options.modelProfile.structuredOutputMode,
+        reasoning: this.options.modelProfile.reasoningMode,
+        items: fresh.length,
+        sourceTokens: tokenBudget.sourceTokens,
+        memoryTokens: tokenBudget.pageMemoryTokens + tokenBudget.sectionMemoryTokens,
+        contextTokens:
+          tokenBudget.localContextTokens + tokenBudget.retrievedContextTokens,
+        reservedOutputTokens: tokenBudget.reservedOutputTokens,
+        totalEstimatedTokens: tokenBudget.totalEstimatedTokens,
+        contextWindow: tokenBudget.contextWindow,
+        temperature: this.options.modelProfile.generation.temperature,
+        topP: this.options.modelProfile.generation.topP,
+        reductions,
+        ...(this.options.debugIncludeText
+          ? {
+              targets: fresh.map((item) => ({
+                id: item.target.id,
+                sourceText: item.target.sourceText,
+              })),
+            }
+          : {}),
       });
     }
 
+    const batchStartedAt = performance.now();
     const batchPromise = translatePageBatch(request);
     for (const item of fresh) {
-      const promise = batchPromise.then((response) => {
-        const matching = response.translations.find(
-          (translation) => translation.id === item.target.id,
-        );
-        if (matching === undefined)
-          throw new Error(`Missing translation ${item.target.id}`);
-        return matching.target;
-      });
+      const promise = batchPromise
+        .then((response) => {
+          const matching = response.translations.find(
+            (translation) => translation.id === item.target.id,
+          );
+          if (matching === undefined) {
+            throw new Error(`Missing translation ${item.target.id}`);
+          }
+          return matching.target;
+        })
+        .catch(() => '');
       this.inFlight.set(item.target.id, promise);
     }
 
@@ -472,6 +688,12 @@ export class PageTranslationPipeline {
       if (response.metrics !== undefined) {
         this.metrics.retries += response.metrics.retryCount;
         this.metrics.validationFailures += response.metrics.validationFailures;
+        if (logBatch !== null) {
+          logBatch.retryCount = response.metrics.retryCount;
+          logBatch.validationFailures = response.metrics.validationFailures;
+          logBatch.acceptedProfileId = response.metrics.acceptedProfileId;
+          logBatch.acceptedRetryStage = response.metrics.acceptedRetryStage;
+        }
       }
       const completedUnits = new Set<string>();
       for (const item of fresh) {
@@ -490,6 +712,16 @@ export class PageTranslationPipeline {
         }
         assembly.values[item.partIndex] = matching.target;
         if (matching.cacheHit) this.metrics.memoryHits++;
+        if (logBatch !== null) {
+          const loggedTarget = logBatch.targets.find(
+            (target) => target.id === item.target.id,
+          );
+          if (loggedTarget !== undefined) {
+            loggedTarget.translatedText = matching.target;
+            loggedTarget.cacheHit = matching.cacheHit;
+            loggedTarget.status = 'translated';
+          }
+        }
       }
 
       for (const item of fresh) {
@@ -510,10 +742,12 @@ export class PageTranslationPipeline {
         }
         this.pageMemory.set(item.unit.semanticKey, translated);
         this.ratioTracker.observe(
+          this.options.modelProfile.id,
           this.options.sourceLanguage,
           this.options.targetLanguage,
-          openAICompatibleTokenCounter.count(item.unit.sourceText),
-          openAICompatibleTokenCounter.count(translated),
+          item.unit.contextClass,
+          this.options.tokenCounter.count(item.unit.sourceText),
+          this.options.tokenCounter.count(translated),
         );
         this.observeAccepted(item.unit, translated);
         if (this.isCurrent(generation)) {
@@ -521,12 +755,51 @@ export class PageTranslationPipeline {
           this.options.onUnitResolved?.(assembly.values.length);
         } else {
           this.metrics.staleCancellations++;
+          if (logBatch !== null) {
+            for (const target of logBatch.targets) {
+              if (target.semanticKey === item.unit.semanticKey) target.status = 'stale';
+            }
+          }
         }
       }
+      this.adaptiveTuner.observe(
+        this.options.modelProfile,
+        this.options.sourceLanguage,
+        this.options.targetLanguage,
+        fresh[0].unit.contextClass,
+        {
+          valid: true,
+          truncated: false,
+          timedOut: false,
+          latencyMs: performance.now() - batchStartedAt,
+        },
+      );
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.adaptiveTuner.observe(
+        this.options.modelProfile,
+        this.options.sourceLanguage,
+        this.options.targetLanguage,
+        fresh[0].unit.contextClass,
+        {
+          valid: false,
+          truncated: /truncate|truncated|truncation|length|context/iu.test(errorMessage),
+          timedOut: /timeout|timed out/iu.test(errorMessage),
+          latencyMs: performance.now() - batchStartedAt,
+        },
+      );
+      if (logBatch !== null) {
+        const normalizedError =
+          error instanceof Error
+            ? { name: error.name, message: error.message }
+            : { name: 'UnknownError', message: String(error) };
+        logBatch.error = normalizedError;
+        for (const target of logBatch.targets) target.status = 'failed';
+      }
       this.options.onUnitRejected?.(fresh.length);
       if (this.options.debug) console.warn('[page-translation] batch failed', error);
     } finally {
+      if (logBatch !== null) logBatch.completedAt = Date.now();
       for (const item of fresh) this.inFlight.delete(item.target.id);
     }
   }
@@ -576,6 +849,11 @@ export class PageTranslationPipeline {
       await abortTranslation({ context: previousSession }).catch(() => undefined);
       for (const occurrence of this.occurrences.slice().reverse())
         restoreOccurrence(occurrence);
+      this.metrics = createMetrics();
+      this.logBatches?.splice(0);
+      this.droppedLogBatches = 0;
+      this.logBatchSerial = 0;
+      this.sessionStartedAt = Date.now();
       this.occurrences = [];
       this.pageMemory.clear();
       this.inFlight.clear();

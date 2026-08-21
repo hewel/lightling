@@ -1,6 +1,13 @@
 import { Result, Schema } from 'effect';
 
-import type { LLMProfile, LLMProvider } from './LLMTranslator';
+import {
+  getRegisteredTranslationModelPatch,
+  resolveTranslationModelProfile,
+  type ConfiguredLLMProfile,
+  type LLMProvider,
+  type TranslationModelProfile,
+} from './modelProfile';
+import { resolveTranslationTokenizer, type TranslationTokenCounter } from './tokenizer';
 
 export const DEFAULT_LLM_API_URL = 'https://api.openai.com/v1';
 
@@ -53,6 +60,8 @@ export interface LLMModelInfo {
   maxInputTokens: number | null;
   maxOutputTokens: number | null;
   supportedParameters: readonly string[] | null;
+  tokenizerId: string | null;
+  supportsPrefixCaching: boolean | null;
   contextWindowSource: 'provider' | 'known-model' | null;
   maxInputSource: 'provider' | null;
   maxOutputSource: 'provider' | 'known-model' | null;
@@ -70,16 +79,10 @@ export interface ResolvedLLMExecutionSettings {
   maxConcurrentRequests: number;
   concurrencySource: 'override' | 'fallback';
   supportedParameters: readonly string[] | null;
+  translationProfile: TranslationModelProfile;
+  tokenCounter: TranslationTokenCounter;
+  profileWarnings: readonly string[];
 }
-
-/**
- * Capabilities verified in official provider documentation, keyed by exact model ID.
- * Only fields absent from provider metadata are filled from here.
- */
-const knownModels: Record<string, { contextWindowTokens?: number }> = {
-  // https://developer.ant-ling.com/en/docs/models/ling/ — 256K context window
-  'Ling-3.0-flash': { contextWindowTokens: 262144 },
-};
 
 const nonEmptyString = (value: unknown): string | null =>
   typeof value === 'string' && value !== '' ? value : null;
@@ -105,6 +108,22 @@ const stringRecord = (value: unknown): Record<string, unknown> | null =>
     ? (value as Record<string, unknown>)
     : null;
 
+const supportedParameterList = (value: unknown): readonly string[] | null =>
+  Array.isArray(value)
+    ? value.filter((parameter): parameter is string => typeof parameter === 'string')
+    : null;
+
+const tokenizerIdentifier = (...values: unknown[]): string | null => {
+  const supported = new Set(['o200k_base', 'cl100k_base', 'p50k_base', 'r50k_base']);
+  for (const value of values) {
+    if (typeof value === 'string' && supported.has(value)) return value;
+  }
+  return null;
+};
+
+const optionalBoolean = (value: unknown): boolean | null =>
+  typeof value === 'boolean' ? value : null;
+
 const ModelListEnvelope = Schema.Struct({ data: Schema.Array(Schema.Unknown) });
 
 const OpenRouterModelEntry = Schema.Struct({
@@ -114,11 +133,16 @@ const OpenRouterModelEntry = Schema.Struct({
   per_request_limits: Schema.optional(Schema.Unknown),
   top_provider: Schema.optional(Schema.Unknown),
   supported_parameters: Schema.optional(Schema.Unknown),
+  architecture: Schema.optional(Schema.Unknown),
+  supports_implicit_caching: Schema.optional(Schema.Unknown),
 });
 
 const AnthropicModelEntry = Schema.Struct({
   id: Schema.String,
   display_name: Schema.optional(Schema.Unknown),
+  supported_parameters: Schema.optional(Schema.Unknown),
+  tokenizer: Schema.optional(Schema.Unknown),
+  tokenizer_id: Schema.optional(Schema.Unknown),
 });
 
 const OpenAiModelEntry = Schema.Struct({
@@ -129,6 +153,9 @@ const OpenAiModelEntry = Schema.Struct({
   max_input_tokens: Schema.optional(Schema.Unknown),
   max_completion_tokens: Schema.optional(Schema.Unknown),
   max_output_tokens: Schema.optional(Schema.Unknown),
+  supported_parameters: Schema.optional(Schema.Unknown),
+  tokenizer: Schema.optional(Schema.Unknown),
+  tokenizer_id: Schema.optional(Schema.Unknown),
 });
 
 /**
@@ -144,11 +171,8 @@ const decodeModelEntry = (provider: LLMProvider, entry: unknown): LLMModelInfo |
       const model = result.success;
       const perRequestLimits = stringRecord(model.per_request_limits);
       const topProvider = stringRecord(model.top_provider);
-      const supportedParameters = Array.isArray(model.supported_parameters)
-        ? model.supported_parameters.filter(
-            (parameter): parameter is string => typeof parameter === 'string',
-          )
-        : null;
+      const architecture = stringRecord(model.architecture);
+      const supportedParameters = supportedParameterList(model.supported_parameters);
 
       return {
         id: model.id,
@@ -163,6 +187,8 @@ const decodeModelEntry = (provider: LLMProvider, entry: unknown): LLMModelInfo |
           positiveTokenCount(topProvider?.max_completion_tokens),
         ),
         supportedParameters,
+        tokenizerId: tokenizerIdentifier(architecture?.tokenizer),
+        supportsPrefixCaching: optionalBoolean(model.supports_implicit_caching),
         contextWindowSource: null,
         maxInputSource: null,
         maxOutputSource: null,
@@ -179,7 +205,9 @@ const decodeModelEntry = (provider: LLMProvider, entry: unknown): LLMModelInfo |
         contextWindowTokens: null,
         maxInputTokens: null,
         maxOutputTokens: null,
-        supportedParameters: null,
+        supportedParameters: supportedParameterList(model.supported_parameters),
+        tokenizerId: tokenizerIdentifier(model.tokenizer_id, model.tokenizer),
+        supportsPrefixCaching: null,
         contextWindowSource: null,
         maxInputSource: null,
         maxOutputSource: null,
@@ -201,7 +229,9 @@ const decodeModelEntry = (provider: LLMProvider, entry: unknown): LLMModelInfo |
           positiveTokenCount(model.max_completion_tokens),
           positiveTokenCount(model.max_output_tokens),
         ),
-        supportedParameters: null,
+        supportedParameters: supportedParameterList(model.supported_parameters),
+        tokenizerId: tokenizerIdentifier(model.tokenizer_id, model.tokenizer),
+        supportsPrefixCaching: null,
         contextWindowSource: null,
         maxInputSource: null,
         maxOutputSource: null,
@@ -214,13 +244,17 @@ const decodeModelEntry = (provider: LLMProvider, entry: unknown): LLMModelInfo |
  * Fill capability fields the provider did not report from exact known-model metadata
  */
 const applyKnownModel = (info: LLMModelInfo): LLMModelInfo => {
-  const known = knownModels[info.id];
-  if (known === undefined) return info;
+  const known = getRegisteredTranslationModelPatch(info.id);
+  if (known === null) return info;
 
   const result = { ...info };
-  if (result.contextWindowTokens === null && known.contextWindowTokens !== undefined) {
-    result.contextWindowTokens = known.contextWindowTokens;
+  if (result.contextWindowTokens === null && known.contextWindow !== undefined) {
+    result.contextWindowTokens = known.contextWindow;
     result.contextWindowSource = 'known-model';
+  }
+  if (result.maxOutputTokens === null && known.maximumOutputTokens !== undefined) {
+    result.maxOutputTokens = known.maximumOutputTokens;
+    result.maxOutputSource = 'known-model';
   }
   return result;
 };
@@ -236,7 +270,7 @@ const withProviderSources = (info: LLMModelInfo): LLMModelInfo => ({
  * Effective API base URL: provider default for an empty value, without trailing slashes
  */
 export const getEffectiveLLMApiUrl = (
-  profile: Pick<LLMProfile, 'provider' | 'apiUrl'>,
+  profile: Pick<ConfiguredLLMProfile, 'provider' | 'apiUrl'>,
 ): string =>
   (profile.apiUrl === ''
     ? providerDefaults[profile.provider].apiUrl
@@ -247,26 +281,26 @@ export const getEffectiveLLMApiUrl = (
  * Identity of a discovery result; any change invalidates fetched model metadata
  */
 export const getLLMDiscoveryIdentity = (
-  profile: Pick<LLMProfile, 'provider' | 'apiUrl' | 'apiKey'>,
+  profile: Pick<ConfiguredLLMProfile, 'provider' | 'apiUrl' | 'apiKey'>,
 ): string =>
   JSON.stringify([profile.provider, getEffectiveLLMApiUrl(profile), profile.apiKey]);
 
 export type LLMResolvedProfile = {
-  provider: LLMProfile['provider'];
+  provider: ConfiguredLLMProfile['provider'];
   apiUrl: string | undefined;
   apiKey: string | undefined;
-  model: LLMProfile['model'];
+  model: ConfiguredLLMProfile['model'];
 };
 
 export const createLLMClientOptions = (
-  profile: Pick<LLMProfile, 'provider' | 'apiUrl' | 'apiKey'>,
+  profile: Pick<ConfiguredLLMProfile, 'provider' | 'apiUrl' | 'apiKey'>,
 ): { apiUrl?: string; apiKey?: string } => ({
   ...(profile.apiUrl === '' ? {} : { apiUrl: profile.apiUrl }),
   ...(profile.apiKey === '' ? {} : { apiKey: profile.apiKey }),
 });
 
 export const resolveLLMProfileConnection = (
-  profile: Pick<LLMProfile, 'provider' | 'apiUrl' | 'apiKey' | 'model'>,
+  profile: Pick<ConfiguredLLMProfile, 'provider' | 'apiUrl' | 'apiKey' | 'model'>,
 ): LLMResolvedProfile => {
   const clientOptions = createLLMClientOptions(profile);
 
@@ -279,67 +313,13 @@ export const resolveLLMProfileConnection = (
   };
 };
 
-const isOpenAiTemperatureOmittedModel = (model: string): boolean => {
-  if (model.startsWith('o1')) return true;
-  if (model.startsWith('o3')) return true;
-  if (model.startsWith('o4-mini')) return true;
-  if (model.startsWith('codex-mini')) return true;
-  if (model.startsWith('computer-use-preview')) return true;
-  if (model.startsWith('gpt-5') && !model.includes('chat')) return true;
-  return false;
-};
-
-export const buildLLMGenerationConfig = (
-  profile: Pick<LLMProfile, 'provider' | 'apiUrl' | 'model'>,
-  maxOutputTokens: number,
-  supportedParameters: readonly string[] | null,
-): Record<string, unknown> => {
-  switch (profile.provider) {
-    case 'anthropic':
-      return { max_tokens: maxOutputTokens, temperature: 0 };
-    case 'openrouter': {
-      const config: Record<string, unknown> = { max_tokens: maxOutputTokens };
-      if (supportedParameters === null || supportedParameters.includes('temperature')) {
-        config.temperature = 0;
-      }
-      return config;
-    }
-    case 'openai': {
-      const config: Record<string, unknown> = {
-        max_output_tokens: maxOutputTokens,
-      };
-      if (!isOpenAiTemperatureOmittedModel(profile.model)) {
-        config.temperature = 0;
-      }
-      return config;
-    }
-    case 'openai-compatible': {
-      const config: Record<string, unknown> = {
-        max_output_tokens: maxOutputTokens,
-        temperature: 0,
-      };
-      // Ling-3.0 models are hybrid reasoning models; Ant Ling burns the whole
-      // output budget on the reasoning chain when thinking is left enabled,
-      // so the JSON array never materializes (finish_reason 'length'). The
-      // docs scope `thinking` to flash, but tiny honors it too (verified).
-      if (
-        getEffectiveLLMApiUrl(profile) === 'https://api.ant-ling.com/v1' &&
-        profile.model.startsWith('Ling-3.0-')
-      ) {
-        config.thinking = { type: 'disabled' };
-      }
-      return config;
-    }
-  }
-};
-
 /**
  * Fetch metadata of models available at the profile's API, sorted by ID.
  * Every supported provider exposes an OpenAI-style `GET {apiUrl}/models` listing;
  * only the base URL, auth header, and entry shape differ.
  */
 export const fetchLLMModels = async (
-  profile: Pick<LLMProfile, 'provider' | 'apiUrl' | 'apiKey'>,
+  profile: Pick<ConfiguredLLMProfile, 'provider' | 'apiUrl' | 'apiKey'>,
 ): Promise<LLMModelInfo[]> => {
   const defaults = providerDefaults[profile.provider];
   const baseUrl = getEffectiveLLMApiUrl(profile);
@@ -372,10 +352,10 @@ export const fetchLLMModels = async (
  * metadata, then conservative fallbacks.
  */
 export const resolveLLMExecutionSettings = (
-  profile: LLMProfile,
+  profile: ConfiguredLLMProfile,
   modelInfo: LLMModelInfo | null,
 ): ResolvedLLMExecutionSettings => {
-  const known = knownModels[profile.model];
+  const known = getRegisteredTranslationModelPatch(profile.model);
 
   const contextWindow = ((): Pick<
     ResolvedLLMExecutionSettings,
@@ -393,9 +373,9 @@ export const resolveLLMExecutionSettings = (
         contextWindowSource: modelInfo.contextWindowSource ?? 'provider',
       };
     }
-    if (known?.contextWindowTokens !== undefined) {
+    if (known?.contextWindow !== undefined) {
       return {
-        contextWindowTokens: known.contextWindowTokens,
+        contextWindowTokens: known.contextWindow,
         contextWindowSource: 'known-model',
       };
     }
@@ -422,12 +402,44 @@ export const resolveLLMExecutionSettings = (
         source: modelInfo.maxOutputSource ?? 'provider',
       });
     }
+    if (known?.maximumOutputTokens !== undefined) {
+      candidates.push({
+        value: known.maximumOutputTokens,
+        source: 'known-model',
+      });
+    }
     if (candidates.length === 0) {
       return { maxOutputTokens: null, maxOutputSource: null };
     }
     const winner = candidates.reduce((a, b) => (b.value < a.value ? b : a));
     return { maxOutputTokens: winner.value, maxOutputSource: winner.source };
   })();
+
+  const metadata =
+    modelInfo === null
+      ? null
+      : {
+          contextWindowTokens: modelInfo.contextWindowTokens,
+          maxOutputTokens: modelInfo.maxOutputTokens,
+          tokenizerId: modelInfo.tokenizerId,
+          supportedParameters: modelInfo.supportedParameters,
+          supportsPrefixCaching: modelInfo.supportsPrefixCaching,
+        };
+  const profileResolution = resolveTranslationModelProfile(profile, metadata);
+  const tokenizerResolution = resolveTranslationTokenizer(profile, metadata);
+  const translationProfile = {
+    ...profileResolution.profile,
+    tokenizerId: tokenizerResolution.counter.id,
+    tokenizerSource: tokenizerResolution.source,
+    safetyReserveTokens:
+      tokenizerResolution.counter.accuracy === 'estimate'
+        ? Math.max(profileResolution.profile.safetyReserveTokens, 640)
+        : profileResolution.profile.safetyReserveTokens,
+  };
+  const profileWarnings = [
+    ...profileResolution.warnings,
+    ...(tokenizerResolution.warning === undefined ? [] : [tokenizerResolution.warning]),
+  ];
 
   return {
     ...contextWindow,
@@ -441,6 +453,9 @@ export const resolveLLMExecutionSettings = (
       profile.maxConcurrentRequests ?? FALLBACK_MAX_CONCURRENT_REQUESTS,
     concurrencySource: profile.maxConcurrentRequests !== null ? 'override' : 'fallback',
     supportedParameters: modelInfo?.supportedParameters ?? null,
+    translationProfile,
+    tokenCounter: tokenizerResolution.counter,
+    profileWarnings: Array.from(new Set(profileWarnings)),
   };
 };
 
@@ -451,7 +466,7 @@ export const resolveLLMExecutionSettings = (
  * request. Discovery failure never rejects.
  */
 export const loadLLMExecutionSettings = async (
-  profile: LLMProfile,
+  profile: ConfiguredLLMProfile,
 ): Promise<ResolvedLLMExecutionSettings> => {
   const isDiscoverable =
     profile.provider === 'openrouter' || profile.provider === 'openai-compatible';

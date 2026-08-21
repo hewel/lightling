@@ -9,7 +9,7 @@ import { ConfigStorageMigration } from '../ConfigStorage.migrations';
 import configVersion1 from './config-v1.json';
 import configVersion3 from './config-v3.json';
 
-const latestVersion = 12;
+const latestVersion = 13;
 
 describe('config migrations', () => {
   beforeAll(clearAllMocks);
@@ -108,6 +108,27 @@ describe('config migrations', () => {
     expect(appConfig.scheduler.translateRetryAttemptLimit).toBe(2);
 
     // Keep the shared storage clean for the following snapshot test
+    await browser.storage.local.clear();
+    localStorage.clear();
+  });
+
+  test('migrate config v12 to v13 with translation log export disabled', async () => {
+    await browser.storage.local.set({
+      appConfig: {
+        pageTranslator: {
+          lazyTranslate: true,
+        },
+      },
+    });
+
+    await ConfigStorageMigration.migrate(12, 13);
+
+    const { appConfig } = await browser.storage.local.get('appConfig');
+    expect(appConfig.pageTranslator).toEqual({
+      lazyTranslate: true,
+      enableLogExport: false,
+    });
+
     await browser.storage.local.clear();
     localStorage.clear();
   });

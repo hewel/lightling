@@ -83,6 +83,30 @@
   "llmProfiles_duplicateName": {
     "message": "A provider with this name already exists"
   },
+  "llmProfiles_quality": {
+    "message": "Translation quality"
+  },
+  "llmProfiles_quality_desc": {
+    "message": "Controls prompt depth, context use, batch size, and retries."
+  },
+  "llmProfiles_quality_fast": {
+    "message": "Fast"
+  },
+  "llmProfiles_quality_balanced": {
+    "message": "Balanced"
+  },
+  "llmProfiles_quality_accurate": {
+    "message": "Accurate"
+  },
+  "llmProfiles_fallback": {
+    "message": "Fallback model profile"
+  },
+  "llmProfiles_fallback_desc": {
+    "message": "Used only after repeated structural validation failures."
+  },
+  "llmProfiles_fallback_none": {
+    "message": "No fallback"
+  },
   "llmProfiles_advancedExecution": {
     "message": "Advanced execution"
   },
@@ -291,6 +315,9 @@
   "pageTranslator_commonPreferences_title": {
     "message": "Common preferences for this language"
   },
+  "pageTranslator_exportLog": {
+    "message": "Export translation log"
+  },
   "pageTranslator_option_autoTranslate": {
     "message": "Auto-translate"
   },
@@ -485,6 +512,12 @@
   },
   "settings_option_pageTranslation_enableContextMenu_desc": {
     "message": "Add a button to toggle page translation in the page context menu"
+  },
+  "settings_option_pageTranslation_enableLogExport": {
+    "message": "Enable translation log export"
+  },
+  "settings_option_pageTranslation_enableLogExport_desc": {
+    "message": "Allow the active page translation session to retain source text, translated text, model diagnostics, and errors in memory for manual JSON export. Logs are never persisted and may contain sensitive page content"
   },
   "settings_option_pageTranslation_excludeSelectors": {
     "message": "Selectors to exclude from translation"

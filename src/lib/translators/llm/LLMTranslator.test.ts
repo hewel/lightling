@@ -1,4 +1,11 @@
 import {
+  DEFAULT_ADAPTIVE_BATCHING,
+  DEFAULT_LLM_FALLBACK_PROFILE,
+  DEFAULT_TRANSLATION_PROFILE_OVERRIDES,
+  DEFAULT_TRANSLATION_QUALITY_MODE,
+} from '@/types/runtime';
+
+import {
   getActiveLLMProfile,
   LLMProfile,
   LLMTranslator,
@@ -10,7 +17,11 @@ const autoExecution = {
   preferredInputTokens: null,
   maxOutputTokens: null,
   maxConcurrentRequests: null,
-} as const;
+  qualityMode: DEFAULT_TRANSLATION_QUALITY_MODE,
+  fallbackProfile: DEFAULT_LLM_FALLBACK_PROFILE,
+  adaptiveBatching: DEFAULT_ADAPTIVE_BATCHING,
+  translationProfile: structuredClone(DEFAULT_TRANSLATION_PROFILE_OVERRIDES),
+};
 
 const profileConfig = (profile: LLMProfile): LLMTranslatorConfig => ({
   activeProfile: profile.name,
@@ -195,7 +206,7 @@ describe('LLMTranslator', () => {
     const body = JSON.parse(decodeBody(init?.body));
     expect(body.model).toBe('test-model');
     expect(body.max_tokens).toBeGreaterThan(0);
-    expect(body.temperature).toBe(0);
+    expect(body.temperature).toBe(0.1);
     // messages[0] is the fixed system prompt; the user message carries the texts
     expect(body.messages[0].content).toContain('Translate faithfully');
     expect(body.messages[1].content).toContain('Hello world');
@@ -246,7 +257,7 @@ describe('LLMTranslator', () => {
     const body = JSON.parse(decodeBody(init?.body));
     expect(body.model).toBe('gpt-4o-mini');
     expect(body.max_output_tokens).toBeGreaterThan(0);
-    expect(body.temperature).toBe(0);
+    expect(body.temperature).toBe(0.1);
   });
 
   test('translates via Anthropic provider with x-api-key auth', async () => {
@@ -272,7 +283,7 @@ describe('LLMTranslator', () => {
     const body = JSON.parse(decodeBody(init?.body));
     expect(body.model).toBe('claude-test');
     expect(body.max_tokens).toBeGreaterThan(0);
-    expect(body.temperature).toBe(0);
+    expect(body.temperature).toBe(0.1);
   });
 
   test('translates via OpenRouter provider with its default URL', async () => {
@@ -305,10 +316,10 @@ describe('LLMTranslator', () => {
     const body = JSON.parse(decodeBody(init?.body));
     expect(body.model).toBe('openai/gpt-4o-mini');
     expect(body.max_tokens).toBeGreaterThan(0);
-    expect(body.temperature).toBe(0);
+    expect(body.temperature).toBe(0.1);
   });
 
-  test('Ant Ling flash disables thinking and sends temperature 0', async () => {
+  test('Ant Ling flash disables thinking with translation-safe sampling', async () => {
     currentHandler = (input) => {
       if (String(input).endsWith('/models')) {
         return modelsResponse([{ id: 'Ling-3.0-flash' }]);
@@ -334,7 +345,7 @@ describe('LLMTranslator', () => {
     expect(String(url)).toBe('https://api.ant-ling.com/v1/chat/completions');
     const body = JSON.parse(decodeBody(init?.body));
     expect(body.max_tokens).toBeGreaterThan(0);
-    expect(body.temperature).toBe(0);
+    expect(body.temperature).toBe(0.1);
     expect(body.thinking).toEqual({ type: 'disabled' });
   });
 

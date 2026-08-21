@@ -49,12 +49,21 @@ describe('runtime schemas', () => {
       llmTranslator: { activeProfile: 'Legacy', profiles: [legacyProfile] },
     });
 
-    expect(config.llmTranslator.profiles[0]).toEqual({
+    expect(config.llmTranslator.profiles[0]).toMatchObject({
       ...legacyProfile,
       contextWindowTokens: null,
       preferredInputTokens: null,
       maxOutputTokens: null,
       maxConcurrentRequests: null,
+      qualityMode: 'balanced',
+      fallbackProfile: null,
+      adaptiveBatching: true,
+    });
+    expect(config.llmTranslator.profiles[0].translationProfile).toMatchObject({
+      tokenizerId: null,
+      promptVariant: null,
+      structuredOutputMode: null,
+      reasoningMode: null,
     });
   });
 

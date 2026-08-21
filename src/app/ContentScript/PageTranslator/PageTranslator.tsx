@@ -1,13 +1,17 @@
 import { getContentScriptStyles } from '@/lib/browser';
+import type { PageTranslationLog } from '@/lib/pageTranslation/log';
 import { ShadowDOMContainerManager } from '@/lib/ShadowDOMContainerManager';
 import { getActiveLLMProfile } from '@/lib/translators/llm/LLMTranslator';
 import {
-  FALLBACK_CONTEXT_WINDOW_TOKENS,
-  FALLBACK_MAX_CONCURRENT_REQUESTS,
-  FALLBACK_PREFERRED_INPUT_TOKENS,
-} from '@/lib/translators/llm/modelInfo';
+  createConservativeTranslationModelProfile,
+  resolveTranslationModelProfile,
+} from '@/lib/translators/llm/modelProfile';
+import {
+  conservativeTokenCounter,
+  resolveTranslationTokenizer,
+} from '@/lib/translators/llm/tokenizer';
 import { abortTranslation } from '@/requests/backend/abortTranslation';
-import { AppConfigType } from '@/types/runtime';
+import type { AppConfigType } from '@/types/runtime';
 
 import { OriginalTextPopup } from './components/OriginalTextPopup/OriginalTextPopup';
 import { PageTranslationPipeline } from './PageTranslationPipeline';
@@ -22,7 +26,11 @@ export type PageTranslatorStats = {
 export type PageTranslatorConfig = Partial<
   Pick<
     AppConfigType['pageTranslator'],
-    'originalTextPopup' | 'translatableAttributes' | 'excludeSelectors' | 'lazyTranslate'
+    | 'originalTextPopup'
+    | 'translatableAttributes'
+    | 'excludeSelectors'
+    | 'lazyTranslate'
+    | 'enableLogExport'
   >
 > &
   Partial<Pick<AppConfigType, 'translatorModule' | 'llmTranslator'>>;
@@ -66,13 +74,35 @@ export class PageTranslator {
 
     this.translateContext = crypto.randomUUID();
     const localContext = this.translateContext;
-    const profile =
+    const configuredProfile =
       this.config.translatorModule === 'LLMTranslator' &&
       this.config.llmTranslator !== undefined
         ? getActiveLLMProfile(this.config.llmTranslator)
         : null;
-    const provider = profile?.provider ?? this.config.translatorModule ?? 'unknown';
-    const model = profile?.model ?? this.config.translatorModule ?? 'unknown';
+    const provider =
+      configuredProfile?.provider ?? this.config.translatorModule ?? 'unknown';
+    const model = configuredProfile?.model ?? this.config.translatorModule ?? 'unknown';
+    const profileResolution =
+      configuredProfile === null
+        ? null
+        : resolveTranslationModelProfile(configuredProfile, null);
+    const tokenizerResolution =
+      configuredProfile === null
+        ? null
+        : resolveTranslationTokenizer(configuredProfile, null);
+    const modelProfile =
+      profileResolution === null || tokenizerResolution === null
+        ? createConservativeTranslationModelProfile(model)
+        : {
+            ...profileResolution.profile,
+            tokenizerId: tokenizerResolution.counter.id,
+            tokenizerSource: tokenizerResolution.source,
+            safetyReserveTokens:
+              tokenizerResolution.counter.accuracy === 'estimate'
+                ? Math.max(profileResolution.profile.safetyReserveTokens, 640)
+                : profileResolution.profile.safetyReserveTokens,
+          };
+    const tokenCounter = tokenizerResolution?.counter ?? conservativeTokenCounter;
     const signature = [
       location.href,
       this.documentIdentity,
@@ -80,6 +110,8 @@ export class PageTranslator {
       to,
       provider,
       model,
+      modelProfile.profileVersion,
+      modelProfile.promptVersion,
       this.config.lazyTranslate ? 'lazy' : 'eager',
     ].join('\u0000');
 
@@ -88,13 +120,20 @@ export class PageTranslator {
       root: document.documentElement,
       sourceLanguage: from,
       targetLanguage: to,
-      identity: { provider, model },
+      identity: {
+        provider,
+        model,
+        promptVersion: modelProfile.promptVersion,
+        profileVersion: modelProfile.profileVersion,
+      },
       sessionId: localContext,
       sessionSignature: signature,
-      contextWindow: profile?.contextWindowTokens ?? FALLBACK_CONTEXT_WINDOW_TOKENS,
-      preferredInputTokens:
-        profile?.preferredInputTokens ?? FALLBACK_PREFERRED_INPUT_TOKENS,
-      concurrency: profile?.maxConcurrentRequests ?? FALLBACK_MAX_CONCURRENT_REQUESTS,
+      modelProfile,
+      tokenCounter,
+      logEnabled: this.config.enableLogExport === true,
+      debug:
+        this.config.enableLogExport === true ||
+        configuredProfile?.translationProfile?.debug === true,
       translatableAttributes: this.config.translatableAttributes,
       excludeSelectors: (this.config.excludeSelectors ?? []).filter(
         (selector) => !selector.startsWith('!') && selector.trim() !== '',
@@ -122,6 +161,10 @@ export class PageTranslator {
     if (this.config.originalTextPopup) {
       document.addEventListener('mouseover', this.showOriginalTextHandler);
     }
+  }
+
+  public getTranslationLog(): PageTranslationLog | null {
+    return this.pageTranslator?.getLog() ?? null;
   }
 
   public stop() {

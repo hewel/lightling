@@ -255,6 +255,14 @@ export const generateTree = ({
           },
         },
         {
+          path: 'pageTranslator.enableLogExport',
+          description: getMessage('settings_option_pageTranslation_enableLogExport_desc'),
+          optionContent: {
+            type: 'Checkbox',
+            text: getMessage('settings_option_pageTranslation_enableLogExport'),
+          },
+        },
+        {
           title: getMessage('settings_option_pageTranslation_translatableAttributes'),
           description: getLocalizedNode({
             messageName: 'settings_option_pageTranslation_translatableAttributes_desc',

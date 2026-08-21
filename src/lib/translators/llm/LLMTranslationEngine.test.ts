@@ -9,7 +9,6 @@ import {
   LLMTranslationEngine,
   LLM_TRANSLATION_PROMPT_VERSION,
   MAX_BATCH_ITEMS,
-  MIN_OUTPUT_TOKENS,
   parseLLMResponse,
   SYSTEM_PROMPT,
   TranslationAbortedError,
@@ -18,6 +17,12 @@ import {
   type LLMRequestEffect,
   type LLMResponse,
 } from './LLMTranslationEngine';
+import {
+  createConservativeTranslationModelProfile,
+  TRANSLATION_MODEL_PROFILE_VERSION,
+  TRANSLATION_PAGE_PROMPT_VERSION,
+} from './modelProfile';
+import { conservativeTokenCounter } from './tokenizer';
 
 const makeResponse = (text: string): LLMResponse => ({
   text,
@@ -33,20 +38,44 @@ const makeSettings = (
     maxConcurrentRequests: number;
     supportedParameters: readonly string[] | null;
   }> = {},
-) => ({
-  contextWindowTokens: 4096,
-  contextWindowSource: 'fallback' as const,
-  preferredInputTokens: 1200,
-  preferredInputSource: 'fallback' as const,
-  maxInputTokens: null as number | null,
-  maxInputSource: null as 'provider' | null,
-  maxOutputTokens: null as number | null,
-  maxOutputSource: null as 'override' | 'provider' | 'known-model' | null,
-  maxConcurrentRequests: 2,
-  concurrencySource: 'fallback' as const,
-  supportedParameters: null as readonly string[] | null,
-  ...overrides,
-});
+) => {
+  const base = {
+    contextWindowTokens: 4096,
+    contextWindowSource: 'fallback' as const,
+    preferredInputTokens: 1200,
+    preferredInputSource: 'fallback' as const,
+    maxInputTokens: null as number | null,
+    maxInputSource: null as 'provider' | null,
+    maxOutputTokens: null as number | null,
+    maxOutputSource: null as 'override' | 'provider' | 'known-model' | null,
+    maxConcurrentRequests: 2,
+    concurrencySource: 'fallback' as const,
+    supportedParameters: null as readonly string[] | null,
+    ...overrides,
+  };
+  const profile = createConservativeTranslationModelProfile('test-model');
+  return {
+    ...base,
+    translationProfile: {
+      ...profile,
+      contextWindow: base.contextWindowTokens,
+      safetyReserveTokens: 64,
+      schemaReserveTokens: 32,
+      ...(base.maxOutputTokens === null
+        ? {}
+        : { maximumOutputTokens: base.maxOutputTokens }),
+      batching: {
+        ...profile.batching,
+        maxItems: MAX_BATCH_ITEMS,
+        preferredSourceTokens: base.preferredInputTokens,
+        maxSourceTokens: base.preferredInputTokens,
+        concurrency: base.maxConcurrentRequests,
+      },
+    },
+    tokenCounter: conservativeTokenCounter,
+    profileWarnings: [],
+  };
+};
 
 const makeAiError = (reason: AiError.AiErrorReason): AiError.AiError =>
   AiError.make({ module: 'test', method: 'generateText', reason });
@@ -73,7 +102,7 @@ const successResponse = (texts: string[]): LLMRequestEffect =>
  */
 const userMessageOf = (request: LLMRequest): string => {
   // RawInput may be an iterable of messages; the second message carries texts
-  const messages = Array.from(request.prompt as Iterable<{ content: string }>).map(
+  const messages = Array.from(request.messages as Iterable<{ content: string }>).map(
     (message) => message.content,
   );
   return messages.at(-1) ?? '';
@@ -155,9 +184,15 @@ describe('LLMTranslationEngine', () => {
       expect(JSON.parse(id)).toEqual([
         'LLMTranslator',
         LLM_TRANSLATION_PROMPT_VERSION,
+        TRANSLATION_MODEL_PROFILE_VERSION,
+        TRANSLATION_PAGE_PROMPT_VERSION,
         'openai-compatible',
         'https://llm.example/v1',
         'test-model',
+        null,
+        null,
+        null,
+        null,
       ]);
     });
 
@@ -220,7 +255,7 @@ describe('LLMTranslationEngine', () => {
       await engine.translateBatch(['Hello'], 'en', 'es', batchOptions());
 
       expect(requests).toHaveLength(1);
-      const prompt = requests[0].prompt as Iterable<{ role: string; content: string }>;
+      const prompt = requests[0].messages as Iterable<{ role: string; content: string }>;
       const messages = Array.from(prompt);
       expect(messages[0]).toEqual({ role: 'system', content: SYSTEM_PROMPT });
       expect(messages[1].content).toContain('Source: English');
@@ -306,7 +341,10 @@ describe('LLMTranslationEngine', () => {
       expect(result[1]).toBe('tr:another short');
       expect(result[2]).toContain('tr:');
 
-      const usableContext = Math.floor(settings.contextWindowTokens * 0.9);
+      const usableContext =
+        settings.translationProfile.contextWindow -
+        settings.translationProfile.safetyReserveTokens -
+        settings.translationProfile.schemaReserveTokens;
       expect(requests.length).toBeGreaterThanOrEqual(2);
       for (const request of requests) {
         const texts = textsOf(request);
@@ -320,10 +358,6 @@ describe('LLMTranslationEngine', () => {
           (sum, text) => sum + getUtf8ByteLength(JSON.stringify(text)),
           0,
         );
-        const outputReserve = Math.min(
-          Math.max(MIN_OUTPUT_TOKENS, Math.ceil(textsEst * 2)),
-          256,
-        );
         const framingBytes = getUtf8ByteLength(
           userMessageOf(request).split('Texts: ')[0],
         );
@@ -331,10 +365,13 @@ describe('LLMTranslationEngine', () => {
           Math.ceil((getUtf8ByteLength(SYSTEM_PROMPT) + framingBytes) / 3) +
           FRAMING_TOKENS;
 
-        // Estimated-target check within 90% of the resolved context
-        expect(baseEst + textsEst + outputReserve).toBeLessThanOrEqual(usableContext);
-        // Upper-bound hard guard within 90% of the resolved context
-        expect(baseEst + textsUpper + outputReserve).toBeLessThanOrEqual(usableContext);
+        // Estimated and conservative upper-bound checks include the dynamic output reserve.
+        expect(baseEst + textsEst + request.maxOutputTokens).toBeLessThanOrEqual(
+          usableContext,
+        );
+        expect(baseEst + textsUpper + request.maxOutputTokens).toBeLessThanOrEqual(
+          usableContext,
+        );
         // Provider input cap on both measures
         expect(baseEst + textsEst).toBeLessThanOrEqual(settings.maxInputTokens as number);
         expect(baseEst + textsUpper).toBeLessThanOrEqual(

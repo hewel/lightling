@@ -56,6 +56,7 @@ export interface PageTranslatorProps
   isTranslated: boolean;
 
   toggleTranslate: () => void;
+  exportLog?: () => void;
 
   counters: PageTranslatorStats;
 
@@ -78,6 +79,7 @@ export const PageTranslator: FC<PageTranslatorProps> = ({
   setLanguagePreferences,
   showCounters,
   toggleTranslate,
+  exportLog,
   isTranslated,
   counters,
 
@@ -211,6 +213,11 @@ export const PageTranslator: FC<PageTranslatorProps> = ({
               />
             </HStack>
           </VStack>
+          {exportLog !== undefined && (
+            <Button view="default" onPress={exportLog}>
+              {getMessage('pageTranslator_exportLog')}
+            </Button>
+          )}
         </VStack>
       </Collapsible>
 

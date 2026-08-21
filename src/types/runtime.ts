@@ -66,6 +66,246 @@ export const LLMProvider = Schema.Literals([
   'openai-compatible',
 ]);
 
+export const TranslationQualityMode = Schema.Literals([
+  'fast',
+  'balanced',
+  'accurate',
+  'custom',
+]);
+
+export const TranslationPromptVariant = Schema.Literals([
+  'compact',
+  'standard',
+  'advanced',
+]);
+
+export const TranslationStructuredOutputMode = Schema.Literals([
+  'json-schema',
+  'grammar',
+  'tool-call',
+  'json-object',
+  'prompt-only',
+]);
+
+export const TranslationReasoningMode = Schema.Literals([
+  'disabled',
+  'minimal',
+  'normal',
+]);
+
+export const TranslationReasoningControl = Schema.Literals([
+  'reasoning-effort',
+  'enable-thinking',
+  'thinking-object',
+]);
+
+const Temperature = NonNaNNumber.check(
+  Schema.makeFilter((input: number) => input >= 0 && input <= 2, {
+    identifier: 'Temperature',
+    expected: 'a number between 0 and 2',
+  }),
+);
+
+const Probability = NonNaNNumber.check(
+  Schema.makeFilter((input: number) => input >= 0 && input <= 1, {
+    identifier: 'Probability',
+    expected: 'a number between 0 and 1',
+  }),
+);
+
+const RepetitionPenalty = NonNaNNumber.check(
+  Schema.makeFilter((input: number) => input >= 0.5 && input <= 2, {
+    identifier: 'RepetitionPenalty',
+    expected: 'a number between 0.5 and 2',
+  }),
+);
+
+const SignedPenalty = NonNaNNumber.check(
+  Schema.makeFilter((input: number) => input >= -2 && input <= 2, {
+    identifier: 'SignedPenalty',
+    expected: 'a number between -2 and 2',
+  }),
+);
+
+const CapabilityOverrides = Schema.Struct({
+  supportsJsonSchema: withAutoDefault(Schema.Boolean),
+  supportsGrammar: withAutoDefault(Schema.Boolean),
+  supportsToolCalling: withAutoDefault(Schema.Boolean),
+  supportsJsonObjectMode: withAutoDefault(Schema.Boolean),
+  supportsSeed: withAutoDefault(Schema.Boolean),
+  supportsStopSequences: withAutoDefault(Schema.Boolean),
+  supportsReasoningControl: withAutoDefault(Schema.Boolean),
+  supportsPrefixCaching: withAutoDefault(Schema.Boolean),
+  supportsCancellation: withAutoDefault(Schema.Boolean),
+  reportsPromptTokens: withAutoDefault(Schema.Boolean),
+  reportsCompletionTokens: withAutoDefault(Schema.Boolean),
+  reportsContextWindow: withAutoDefault(Schema.Boolean),
+}).pipe(
+  Schema.withDecodingDefault(
+    Effect.sync(() => ({
+      supportsJsonSchema: null,
+      supportsGrammar: null,
+      supportsToolCalling: null,
+      supportsJsonObjectMode: null,
+      supportsSeed: null,
+      supportsStopSequences: null,
+      supportsReasoningControl: null,
+      supportsPrefixCaching: null,
+      supportsCancellation: null,
+      reportsPromptTokens: null,
+      reportsCompletionTokens: null,
+      reportsContextWindow: null,
+    })),
+  ),
+);
+
+const TranslationGenerationOverrides = Schema.Struct({
+  temperature: withAutoDefault(Temperature),
+  topP: withAutoDefault(Probability),
+  topK: withAutoDefault(PositiveInteger),
+  repetitionPenalty: withAutoDefault(RepetitionPenalty),
+  presencePenalty: withAutoDefault(SignedPenalty),
+  frequencyPenalty: withAutoDefault(SignedPenalty),
+  seed: withAutoDefault(NonNegativeInteger),
+}).pipe(
+  Schema.withDecodingDefault(
+    Effect.sync(() => ({
+      temperature: null,
+      topP: null,
+      topK: null,
+      repetitionPenalty: null,
+      presencePenalty: null,
+      frequencyPenalty: null,
+      seed: null,
+    })),
+  ),
+);
+
+const TranslationBatchOverrides = Schema.Struct({
+  maxItems: withAutoDefault(PositiveInteger),
+  maxSourceTokens: withAutoDefault(PositiveInteger),
+  maxContextTokens: withAutoDefault(PositiveInteger),
+  maxMemoryTokens: withAutoDefault(PositiveInteger),
+  preferredSourceTokens: withAutoDefault(PositiveInteger),
+  preferredItems: withAutoDefault(PositiveInteger),
+}).pipe(
+  Schema.withDecodingDefault(
+    Effect.sync(() => ({
+      maxItems: null,
+      maxSourceTokens: null,
+      maxContextTokens: null,
+      maxMemoryTokens: null,
+      preferredSourceTokens: null,
+      preferredItems: null,
+    })),
+  ),
+);
+
+const TranslationRetryOverrides = Schema.Struct({
+  maxRetries: withAutoDefault(NonNegativeInteger),
+  retryWithSmallerBatch: withAutoDefault(Schema.Boolean),
+  retryWithoutRetrievedContext: withAutoDefault(Schema.Boolean),
+  retryWithRicherLocalContext: withAutoDefault(Schema.Boolean),
+}).pipe(
+  Schema.withDecodingDefault(
+    Effect.sync(() => ({
+      maxRetries: null,
+      retryWithSmallerBatch: null,
+      retryWithoutRetrievedContext: null,
+      retryWithRicherLocalContext: null,
+    })),
+  ),
+);
+
+const TranslationProfileOverrides = Schema.Struct({
+  tokenizerId: withAutoDefault(Schema.String),
+  promptVariant: withAutoDefault(TranslationPromptVariant),
+  structuredOutputMode: withAutoDefault(TranslationStructuredOutputMode),
+  reasoningMode: withAutoDefault(TranslationReasoningMode),
+  reasoningControl: withAutoDefault(TranslationReasoningControl),
+  safetyReserveTokens: withAutoDefault(PositiveInteger),
+  schemaReserveTokens: withAutoDefault(PositiveInteger),
+  adaptiveBatching: withAutoDefault(Schema.Boolean),
+  debug: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(false))),
+  generation: TranslationGenerationOverrides,
+  batching: TranslationBatchOverrides,
+  retry: TranslationRetryOverrides,
+  capabilities: CapabilityOverrides,
+}).pipe(
+  Schema.withDecodingDefault(
+    Effect.sync(() => ({
+      tokenizerId: null,
+      promptVariant: null,
+      structuredOutputMode: null,
+      reasoningMode: null,
+      reasoningControl: null,
+      safetyReserveTokens: null,
+      schemaReserveTokens: null,
+      adaptiveBatching: null,
+      debug: false,
+      generation: {
+        temperature: null,
+        topP: null,
+        topK: null,
+        repetitionPenalty: null,
+        presencePenalty: null,
+        frequencyPenalty: null,
+        seed: null,
+      },
+      batching: {
+        maxItems: null,
+        maxSourceTokens: null,
+        maxContextTokens: null,
+        maxMemoryTokens: null,
+        preferredSourceTokens: null,
+        preferredItems: null,
+      },
+      retry: {
+        maxRetries: null,
+        retryWithSmallerBatch: null,
+        retryWithoutRetrievedContext: null,
+        retryWithRicherLocalContext: null,
+      },
+      capabilities: {
+        supportsJsonSchema: null,
+        supportsGrammar: null,
+        supportsToolCalling: null,
+        supportsJsonObjectMode: null,
+        supportsSeed: null,
+        supportsStopSequences: null,
+        supportsReasoningControl: null,
+        supportsPrefixCaching: null,
+        supportsCancellation: null,
+        reportsPromptTokens: null,
+        reportsCompletionTokens: null,
+        reportsContextWindow: null,
+      },
+    })),
+  ),
+);
+
+export const DEFAULT_TRANSLATION_PROFILE_OVERRIDES = Schema.decodeUnknownSync(
+  TranslationProfileOverrides,
+)({});
+
+export const DEFAULT_TRANSLATION_QUALITY_MODE = 'balanced' as const;
+
+export const DEFAULT_ADAPTIVE_BATCHING = true;
+
+export const DEFAULT_LLM_FALLBACK_PROFILE = null;
+
+const TranslationQualityModeWithDefault = TranslationQualityMode.pipe(
+  Schema.withDecodingDefault(Effect.succeed(DEFAULT_TRANSLATION_QUALITY_MODE)),
+);
+
+const AdaptiveBatchingWithDefault = Schema.Boolean.pipe(
+  Schema.withDecodingDefault(Effect.succeed(DEFAULT_ADAPTIVE_BATCHING)),
+);
+
+const FallbackProfileWithDefault = Schema.Union([Schema.String, Schema.Null]).pipe(
+  Schema.withDecodingDefault(Effect.succeed(DEFAULT_LLM_FALLBACK_PROFILE)),
+);
+
 export const LLMProfile = Schema.Struct({
   name: Schema.String,
   provider: LLMProvider,
@@ -76,6 +316,10 @@ export const LLMProfile = Schema.Struct({
   preferredInputTokens: withAutoDefault(PositiveInteger),
   maxOutputTokens: withAutoDefault(PositiveInteger),
   maxConcurrentRequests: withAutoDefault(ConcurrentRequestsLimit),
+  qualityMode: TranslationQualityModeWithDefault,
+  fallbackProfile: FallbackProfileWithDefault,
+  adaptiveBatching: AdaptiveBatchingWithDefault,
+  translationProfile: TranslationProfileOverrides,
 });
 
 export const AppConfig = Schema.Struct({
@@ -101,6 +345,10 @@ export const AppConfig = Schema.Struct({
             preferredInputTokens: null,
             maxOutputTokens: null,
             maxConcurrentRequests: null,
+            qualityMode: DEFAULT_TRANSLATION_QUALITY_MODE,
+            fallbackProfile: DEFAULT_LLM_FALLBACK_PROFILE,
+            adaptiveBatching: DEFAULT_ADAPTIVE_BATCHING,
+            translationProfile: structuredClone(DEFAULT_TRANSLATION_PROFILE_OVERRIDES),
           },
         ],
       })),
@@ -152,6 +400,7 @@ export const AppConfig = Schema.Struct({
     lazyTranslate: Schema.Boolean,
     detectLanguageByContent: Schema.Boolean,
     originalTextPopup: Schema.Boolean,
+    enableLogExport: Schema.Boolean,
     enableContextMenu: Schema.Boolean,
     toggleTranslationHotkey: Schema.Union([Schema.Null, Schema.String]),
   }),

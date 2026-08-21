@@ -1,6 +1,6 @@
 import { getLanguageCodesISO639 } from 'anylang/languages';
 import type { TranslatorInstanceMembers } from 'anylang/translators';
-import { Effect, Redacted } from 'effect';
+import { Effect, Redacted, Schema } from 'effect';
 import { LanguageModel } from 'effect/unstable/ai';
 import { FetchHttpClient } from 'effect/unstable/http';
 import { AnthropicClient, AnthropicLanguageModel } from '@effect/ai-anthropic';
@@ -11,26 +11,37 @@ import {
 } from '@effect/ai-openai-compat';
 import { OpenRouterClient, OpenRouterLanguageModel } from '@effect/ai-openrouter';
 
-import type { PageTranslationBatchRequest } from '@/lib/pageTranslation/protocol';
-import { AppConfigType } from '@/types/runtime';
+import type {
+  PageTranslationAttemptMetrics,
+  PageTranslationBatchRequest,
+} from '@/lib/pageTranslation/protocol';
+import {
+  DEFAULT_ADAPTIVE_BATCHING,
+  DEFAULT_LLM_FALLBACK_PROFILE,
+  DEFAULT_TRANSLATION_PROFILE_OVERRIDES,
+  DEFAULT_TRANSLATION_QUALITY_MODE,
+  type AppConfigType,
+} from '@/types/runtime';
 
 import { getMessage } from '../../language';
 
+import { mapTranslationInferenceRequest } from './inference';
 import type { LLMBatchRequestOptions } from './LLMBatchTranslator';
 import {
+  InvalidLLMResponseError,
   LLMTranslationEngine,
   type LLMRequest,
   type LLMRequestEffect,
 } from './LLMTranslationEngine';
 import {
-  buildLLMGenerationConfig,
   loadLLMExecutionSettings,
   resolveLLMProfileConnection,
   type ResolvedLLMExecutionSettings,
 } from './modelInfo';
+import { validateFallbackProfiles, type ConfiguredLLMProfile } from './modelProfile';
 
 export type LLMTranslatorConfig = AppConfigType['llmTranslator'];
-export type LLMProfile = LLMTranslatorConfig['profiles'][number];
+export type LLMProfile = ConfiguredLLMProfile;
 export type LLMProvider = LLMProfile['provider'];
 
 /**
@@ -46,6 +57,10 @@ const emptyProfile: LLMProfile = {
   preferredInputTokens: null,
   maxOutputTokens: null,
   maxConcurrentRequests: null,
+  qualityMode: DEFAULT_TRANSLATION_QUALITY_MODE,
+  fallbackProfile: DEFAULT_LLM_FALLBACK_PROFILE,
+  adaptiveBatching: DEFAULT_ADAPTIVE_BATCHING,
+  translationProfile: structuredClone(DEFAULT_TRANSLATION_PROFILE_OVERRIDES),
 };
 
 /**
@@ -72,6 +87,10 @@ export class LLMTranslator implements TranslatorInstanceMembers {
   private readonly profile: LLMProfile;
   private readonly engine: LLMTranslationEngine;
   private resolvedSettings: ResolvedLLMExecutionSettings | null = null;
+  private readonly config: LLMTranslatorConfig;
+  private readonly translatorOptions: {
+    onTokenUsage?: (usage: { inputTokens: number; outputTokens: number }) => void;
+  };
 
   constructor(
     config: LLMTranslatorConfig,
@@ -79,9 +98,32 @@ export class LLMTranslator implements TranslatorInstanceMembers {
       onTokenUsage?: (usage: { inputTokens: number; outputTokens: number }) => void;
     } = {},
   ) {
-    this.profile = getActiveLLMProfile(config);
+    this.config = config;
+    this.translatorOptions = options;
+    const selectedProfile = getActiveLLMProfile(config);
+    const configurationWarnings = validateFallbackProfiles(config.profiles);
+    this.profile =
+      configurationWarnings.length > 0 &&
+      selectedProfile.fallbackProfile !== undefined &&
+      selectedProfile.fallbackProfile !== null
+        ? { ...selectedProfile, fallbackProfile: null }
+        : selectedProfile;
+    if (configurationWarnings.length > 0) {
+      console.warn('[llm-translation-profile] invalid fallback configuration', {
+        profile: selectedProfile.name,
+        warnings: configurationWarnings,
+      });
+    }
     const settingsPromise = loadLLMExecutionSettings(this.profile).then((settings) => {
       this.resolvedSettings = settings;
+      if (this.profile.translationProfile?.debug && settings.profileWarnings.length > 0) {
+        console.debug('[llm-translation-profile]', {
+          profile: settings.translationProfile.id,
+          provider: settings.translationProfile.providerId,
+          model: settings.translationProfile.modelId,
+          warnings: settings.profileWarnings,
+        });
+      }
       return settings;
     });
     this.engine = new LLMTranslationEngine({
@@ -128,22 +170,45 @@ export class LLMTranslator implements TranslatorInstanceMembers {
     });
   }
 
-  public translatePageBatch(
+  public async translatePageBatch(
     request: PageTranslationBatchRequest,
     options: LLMBatchRequestOptions,
-    onMetrics?: (metrics: { retryCount: number; validationFailures: number }) => void,
+    onMetrics?: (metrics: PageTranslationAttemptMetrics) => void,
   ): Promise<{ id: string; target: string }[]> {
     if (this.profile.model === '') {
-      return Promise.reject(new Error('LLM translator model is not configured'));
+      throw new Error('LLM translator model is not configured');
     }
-    return this.engine.translatePageBatch(
-      request,
-      {
-        ...options,
-        isolateInvalidBatches: true,
-      },
-      onMetrics,
-    );
+    try {
+      return await this.engine.translatePageBatch(
+        request,
+        {
+          ...options,
+          isolateInvalidBatches: true,
+        },
+        onMetrics,
+      );
+    } catch (error) {
+      if (!Schema.is(InvalidLLMResponseError)(error)) throw error;
+      const fallbackName = this.profile.fallbackProfile;
+      if (fallbackName === null || fallbackName === this.profile.name) throw error;
+      const fallback = this.config.profiles.find(
+        (candidate) => candidate.name === fallbackName,
+      );
+      if (fallback === undefined) throw error;
+      onMetrics?.({ retryCount: 1, validationFailures: 0 });
+      const fallbackTranslator = new LLMTranslator(
+        {
+          activeProfile: fallback.name,
+          profiles: [{ ...fallback, fallbackProfile: null }],
+        },
+        this.translatorOptions,
+      );
+      try {
+        return await fallbackTranslator.translatePageBatch(request, options, onMetrics);
+      } finally {
+        fallbackTranslator.dispose();
+      }
+    }
   }
 
   public abort(context: string): void {
@@ -173,24 +238,46 @@ export class LLMTranslator implements TranslatorInstanceMembers {
       apiKey: apiKey === undefined ? undefined : Redacted.make(apiKey),
     };
 
-    const baseEffect = LanguageModel.generateText({
-      prompt: request.prompt,
-      toolChoice: 'none',
-    }).pipe(
-      Effect.map((response) => ({
-        text: response.text,
-        usage: {
-          inputTokens: response.usage.inputTokens.total ?? null,
-          outputTokens: response.usage.outputTokens.total ?? null,
-        },
-      })),
+    const settings = this.resolvedSettings;
+    if (settings === null) {
+      return Effect.die(new Error('LLM execution settings are not loaded'));
+    }
+    const mapping = mapTranslationInferenceRequest(
+      provider,
+      settings.translationProfile,
+      request,
+      settings.supportedParameters,
     );
+    const baseEffect =
+      mapping.structuredGeneration && request.responseSchema !== undefined
+        ? LanguageModel.generateObject({
+            prompt: request.messages,
+            schema: request.responseSchema,
+            objectName: 'page_translations',
+            toolChoice: 'none',
+          }).pipe(
+            Effect.map((response) => ({
+              text: JSON.stringify(response.value),
+              usage: {
+                inputTokens: response.usage.inputTokens.total ?? null,
+                outputTokens: response.usage.outputTokens.total ?? null,
+              },
+            })),
+          )
+        : LanguageModel.generateText({
+            prompt: request.messages,
+            toolChoice: 'none',
+          }).pipe(
+            Effect.map((response) => ({
+              text: response.text,
+              usage: {
+                inputTokens: response.usage.inputTokens.total ?? null,
+                outputTokens: response.usage.outputTokens.total ?? null,
+              },
+            })),
+          );
 
-    const config = buildLLMGenerationConfig(
-      this.profile,
-      request.maxOutputTokens,
-      this.resolvedSettings?.supportedParameters ?? null,
-    );
+    const config = mapping.generationConfig;
 
     const modelEffect = (() => {
       switch (provider) {

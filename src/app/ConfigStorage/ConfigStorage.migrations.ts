@@ -298,6 +298,30 @@ const migrations: Migration[] = [
       await browser.storage.local.set({ [storageName]: actualData });
     },
   },
+  {
+    // Translation logs contain page text, so the export feature is explicitly opt-in.
+    version: 13,
+    async migrate() {
+      const storageName = 'appConfig';
+      const { [storageName]: actualData } = await browser.storage.local.get(storageName);
+      if (
+        actualData === null ||
+        typeof actualData !== 'object' ||
+        Array.isArray(actualData)
+      ) {
+        return;
+      }
+      const pageTranslator = actualData.pageTranslator;
+      if (
+        pageTranslator !== null &&
+        typeof pageTranslator === 'object' &&
+        !Array.isArray(pageTranslator)
+      ) {
+        pageTranslator.enableLogExport = false;
+        await browser.storage.local.set({ [storageName]: actualData });
+      }
+    },
+  },
 ];
 
 export const ConfigStorageMigration = createMigrationTask(migrations, {

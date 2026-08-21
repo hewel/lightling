@@ -1,5 +1,6 @@
 import { Effect, Schema } from 'effect';
 
+import { defaultConfig } from '@/config';
 import { AppConfig } from '@/types/runtime';
 
 import {
@@ -100,19 +101,7 @@ describe('runtime type helpers', () => {
     expect(
       checkTypeByPath(AppConfig, ['llmTranslator'], {
         activeProfile: 'OpenAI',
-        profiles: [
-          {
-            name: 'OpenAI',
-            provider: 'openai',
-            apiUrl: 'https://api.openai.com/v1',
-            apiKey: '',
-            model: 'gpt-4o-mini',
-            contextWindowTokens: null,
-            preferredInputTokens: null,
-            maxOutputTokens: null,
-            maxConcurrentRequests: null,
-          },
-        ],
+        profiles: [structuredClone(defaultConfig.llmTranslator.profiles[0])],
       }),
     ).toBe(true);
     expect(

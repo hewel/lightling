@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 
 import { LLMTranslator } from './LLMTranslator';
+import { llmProviderPresets } from './presets';
 
 /**
  * Real-network smoke test against Ant Ling.
@@ -25,22 +26,17 @@ const readEnvKey = (key: string): string => {
 const apiKey = readEnvKey('ANT_LING_API_KEY');
 const runIfKey = apiKey === '' ? test.skip : test;
 
-const antlingProfile = (model: string) => ({
-  activeProfile: 'Ant Ling',
-  profiles: [
-    {
-      name: 'Ant Ling',
-      provider: 'openai-compatible' as const,
-      apiUrl: 'https://api.ant-ling.com/v1',
-      apiKey,
-      model,
-      contextWindowTokens: null,
-      preferredInputTokens: null,
-      maxOutputTokens: null,
-      maxConcurrentRequests: null,
-    },
-  ],
-});
+const antlingProfile = (model: string) => {
+  const profile = structuredClone(llmProviderPresets.antling);
+  profile.apiKey = apiKey;
+  profile.model = model;
+  profile.translationProfile.reasoningControl = 'thinking-object';
+  profile.translationProfile.capabilities.supportsReasoningControl = true;
+  return {
+    activeProfile: profile.name,
+    profiles: [profile],
+  };
+};
 
 describe('Ant Ling real API', () => {
   runIfKey(

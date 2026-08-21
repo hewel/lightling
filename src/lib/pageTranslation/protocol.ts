@@ -98,6 +98,13 @@ export interface PageTranslationBatchRequest {
   retryStage?: 'initial' | 'isolated' | 'simplified-context' | 'rich-context';
 }
 
+export interface PageTranslationAttemptMetrics {
+  retryCount: number;
+  validationFailures: number;
+  acceptedProfileId?: string;
+  acceptedRetryStage?: PageTranslationBatchRequest['retryStage'];
+}
+
 export interface PageTranslationResult {
   id: string;
   target: string;
@@ -107,10 +114,7 @@ export interface PageTranslationResult {
 
 export interface PageTranslationBatchResponse {
   translations: PageTranslationResult[];
-  metrics?: {
-    retryCount: number;
-    validationFailures: number;
-  };
+  metrics?: PageTranslationAttemptMetrics;
 }
 
 export interface TranslationMemoryEntry {
@@ -126,6 +130,7 @@ export interface TranslationMemoryEntry {
   model: string;
   glossaryVersion: string;
   promptVersion: string;
+  profileVersion: string;
   normalizationVersion: string;
   createdAt: number;
   lastUsedAt: number;
@@ -142,6 +147,7 @@ export interface SemanticKeyInput {
   model: string;
   glossaryVersion: string;
   promptVersion: string;
+  profileVersion: string;
   normalizationVersion?: string;
 }
 
@@ -172,6 +178,7 @@ export const createSemanticKey = (input: SemanticKeyInput): string => {
     input.model,
     input.glossaryVersion,
     input.promptVersion,
+    input.profileVersion,
     input.normalizationVersion ?? WEBPAGE_NORMALIZATION_VERSION,
   ]);
   return `ptm:${hashString(canonical)}`;
@@ -295,44 +302,56 @@ export const parsePageTranslationResponse = (
   const issues: TranslationValidationIssue[] = [];
 
   for (const item of translations) {
+    let id: string;
+    let target: string;
     if (
-      typeof item !== 'object' ||
-      item === null ||
-      !('id' in item) ||
-      !('target' in item) ||
-      typeof item.id !== 'string' ||
-      typeof item.target !== 'string'
+      Array.isArray(item) &&
+      item.length === 2 &&
+      typeof item[0] === 'string' &&
+      typeof item[1] === 'string'
     ) {
+      [id, target] = item;
+    } else if (
+      typeof item === 'object' &&
+      item !== null &&
+      'id' in item &&
+      'target' in item &&
+      typeof item.id === 'string' &&
+      typeof item.target === 'string'
+    ) {
+      id = item.id;
+      target = item.target;
+    } else {
       issues.push({ failure: 'invalid-json' });
       continue;
     }
-    if (seen.has(item.id)) {
-      issues.push({ id: item.id, failure: 'duplicate-item' });
+    if (seen.has(id)) {
+      issues.push({ id, failure: 'duplicate-item' });
       continue;
     }
-    seen.add(item.id);
-    const source = requested.get(item.id);
+    seen.add(id);
+    const source = requested.get(id);
     if (source === undefined) {
-      issues.push({ id: item.id, failure: 'extra-item' });
+      issues.push({ id, failure: 'extra-item' });
       continue;
     }
-    if (source.sourceText !== '' && item.target.trim() === '') {
-      issues.push({ id: item.id, failure: 'empty-translation' });
+    if (source.sourceText !== '' && target.trim() === '') {
+      issues.push({ id, failure: 'empty-translation' });
       continue;
     }
-    if (item.target.length > Math.max(256, source.sourceText.length * 8)) {
-      issues.push({ id: item.id, failure: 'truncation' });
+    if (target.length > Math.max(256, source.sourceText.length * 8)) {
+      issues.push({ id, failure: 'truncation' });
       continue;
     }
-    if (!validatePlaceholderIntegrity(source.sourceText, item.target)) {
-      issues.push({ id: item.id, failure: 'placeholder-corruption' });
+    if (!validatePlaceholderIntegrity(source.sourceText, target)) {
+      issues.push({ id, failure: 'placeholder-corruption' });
       continue;
     }
-    if (!isLanguagePlausible(item.target)) {
-      issues.push({ id: item.id, failure: 'language-mismatch' });
+    if (!isLanguagePlausible(target)) {
+      issues.push({ id, failure: 'language-mismatch' });
       continue;
     }
-    accepted.push({ id: item.id, target: item.target });
+    accepted.push({ id, target });
   }
 
   for (const target of targets) {

@@ -1,26 +1,23 @@
 import { Effect } from 'effect';
 
-import type { PageTranslationBatchRequest } from '@/lib/pageTranslation/protocol';
+import type {
+  PageTranslationAttemptMetrics,
+  PageTranslationBatchRequest,
+} from '@/lib/pageTranslation/protocol';
 
 import {
   LLMTranslationEngine,
   type LLMRequest,
   type LLMResponse,
 } from './LLMTranslationEngine';
+import { resolveLLMExecutionSettings } from './modelInfo';
+import { llmProviderPresets } from './presets';
 
-const settings = {
-  contextWindowTokens: 4096,
-  contextWindowSource: 'fallback' as const,
-  preferredInputTokens: 1200,
-  preferredInputSource: 'fallback' as const,
-  maxInputTokens: null,
-  maxInputSource: null,
-  maxOutputTokens: null,
-  maxOutputSource: null,
-  maxConcurrentRequests: 1,
-  concurrencySource: 'fallback' as const,
-  supportedParameters: null,
-};
+const configuredProfile = structuredClone(llmProviderPresets.custom);
+configuredProfile.name = 'Test';
+configuredProfile.model = 'test-model';
+configuredProfile.maxConcurrentRequests = 1;
+const settings = resolveLLMExecutionSettings(configuredProfile, null);
 
 const target = (id: string, sourceText: string) => ({
   id,
@@ -79,7 +76,7 @@ describe('LLM webpage request contract', () => {
         return Effect.succeed(response);
       },
     });
-    const metrics: { retryCount: number; validationFailures: number }[] = [];
+    const metrics: PageTranslationAttemptMetrics[] = [];
 
     await expect(
       engine.translatePageBatch(
@@ -98,11 +95,17 @@ describe('LLM webpage request contract', () => {
     ]);
 
     expect(calls).toHaveLength(2);
-    expect(JSON.stringify(calls[1].prompt)).not.toContain('u1');
-    expect(JSON.stringify(calls[1].prompt)).toContain('u2');
+    expect(JSON.stringify(calls[1].messages)).not.toContain('u1');
+    expect(JSON.stringify(calls[1].messages)).toContain('u2');
     expect(metrics).toEqual([
       { retryCount: 0, validationFailures: 1 },
       { retryCount: 1, validationFailures: 0 },
+      {
+        retryCount: 0,
+        validationFailures: 0,
+        acceptedProfileId: settings.translationProfile.id,
+        acceptedRetryStage: 'isolated',
+      },
     ]);
   });
 });

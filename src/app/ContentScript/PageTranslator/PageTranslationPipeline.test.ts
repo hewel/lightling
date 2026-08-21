@@ -2,6 +2,8 @@ import type {
   PageTranslationBatchRequest,
   PageTranslationBatchResponse,
 } from '@/lib/pageTranslation/protocol';
+import { createConservativeTranslationModelProfile } from '@/lib/translators/llm/modelProfile';
+import { conservativeTokenCounter } from '@/lib/translators/llm/tokenizer';
 import { abortTranslation } from '@/requests/backend/abortTranslation';
 import { translatePageBatch } from '@/requests/backend/translatePageBatch';
 
@@ -25,7 +27,12 @@ const responseFor = (
   })),
 });
 
-const createPipeline = (root: Element) =>
+const baseModelProfile = createConservativeTranslationModelProfile('small-model');
+const modelProfile = {
+  ...baseModelProfile,
+  batching: { ...baseModelProfile.batching, concurrency: 1 },
+};
+const createPipeline = (root: Element, logEnabled = false) =>
   new PageTranslationPipeline({
     root,
     sourceLanguage: 'en',
@@ -33,9 +40,9 @@ const createPipeline = (root: Element) =>
     identity: { provider: 'openai', model: 'small-model' },
     sessionId: crypto.randomUUID(),
     sessionSignature: crypto.randomUUID(),
-    contextWindow: 4096,
-    preferredInputTokens: 1200,
-    concurrency: 1,
+    modelProfile,
+    tokenCounter: conservativeTokenCounter,
+    logEnabled,
   });
 
 describe('PageTranslationPipeline dynamic lifecycle', () => {
@@ -105,5 +112,94 @@ describe('PageTranslationPipeline dynamic lifecycle', () => {
     await Promise.resolve();
     expect(main.querySelector('button')?.textContent).toBe('Save');
     expect(abortTranslation).not.toHaveBeenCalled();
+  });
+  test('retains no exportable log while the setting is disabled', async () => {
+    const main = document.querySelector('main');
+    if (main === null) throw new Error('fixture main missing');
+    const pipeline = createPipeline(main);
+    pipeline.start();
+    await vi.waitFor(() =>
+      expect(main.querySelector('button')?.textContent).toBe('Speichern'),
+    );
+
+    expect(pipeline.getLog()).toBeNull();
+    pipeline.stop();
+  });
+
+  test('exports an isolated agent-readable snapshot when logging is enabled', async () => {
+    const main = document.querySelector('main');
+    if (main === null) throw new Error('fixture main missing');
+    const pipeline = createPipeline(main, true);
+    pipeline.start();
+    await vi.waitFor(() =>
+      expect(main.querySelector('button')?.textContent).toBe('Speichern'),
+    );
+    const repeated = document.createElement('button');
+    repeated.textContent = 'Save';
+    main.append(repeated);
+    await vi.waitFor(() => expect(repeated.textContent).toBe('Speichern'));
+
+    const log = pipeline.getLog();
+    expect(log).not.toBeNull();
+    expect(log).toMatchObject({
+      schemaVersion: 'lightling.page-translation-log.v2',
+      session: {
+        sourceLanguage: 'en',
+        targetLanguage: 'de',
+        provider: 'openai',
+        model: 'small-model',
+      },
+      droppedBatches: 0,
+    });
+    expect(log?.batches[0]).toMatchObject({
+      retryCount: 0,
+      validationFailures: 0,
+      targets: [
+        {
+          sourceText: 'Save',
+          translatedText: 'Speichern',
+          kind: 'button',
+          status: 'translated',
+          cacheHit: false,
+        },
+      ],
+    });
+    expect(log?.batches[1]).toMatchObject({
+      targets: [
+        {
+          sourceText: 'Save',
+          translatedText: 'Speichern',
+          status: 'translated',
+          cacheHit: true,
+        },
+      ],
+    });
+
+    if (log !== null) log.batches[0].targets[0].sourceText = 'mutated export';
+    expect(pipeline.getLog()?.batches[0].targets[0].sourceText).toBe('Save');
+    pipeline.stop();
+  });
+
+  test('records provider failures without stack traces', async () => {
+    vi.mocked(translatePageBatch).mockRejectedValueOnce(
+      new Error('provider unavailable'),
+    );
+    const main = document.querySelector('main');
+    if (main === null) throw new Error('fixture main missing');
+    const pipeline = createPipeline(main, true);
+    pipeline.start();
+    await vi.waitFor(() =>
+      expect(pipeline.getLog()?.batches[0].completedAt).toEqual(expect.any(Number)),
+    );
+
+    expect(pipeline.getLog()?.batches[0]).toMatchObject({
+      error: {
+        name: 'Error',
+        message: 'provider unavailable',
+      },
+      targets: [{ status: 'failed' }],
+    });
+    expect(JSON.stringify(pipeline.getLog())).not.toContain('stack');
+    pipeline.stop();
   });
 });

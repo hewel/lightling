@@ -5,17 +5,18 @@ import {
   createSemanticKey,
   DEFAULT_GLOSSARY_VERSION,
   type PageTranslationBatchRequest,
+  type PageTranslationAttemptMetrics,
   type PageTranslationBatchResponse,
   type PageTranslationResult,
   validatePlaceholderIntegrity,
   WEBPAGE_NORMALIZATION_VERSION,
-  WEBPAGE_TRANSLATION_PROMPT_VERSION,
 } from '@/lib/pageTranslation/protocol';
 import { TELEMETRY_EVENT_NAME } from '@/lib/telemetry';
 import { telemetry } from '@/lib/telemetry/singleton';
 import { LLMScheduler } from '@/lib/translators/llm/LLMScheduler';
 import { getLLMCacheId } from '@/lib/translators/llm/LLMTranslationEngine';
 import { getActiveLLMProfile, LLMTranslator } from '@/lib/translators/llm/LLMTranslator';
+import { resolveTranslationModelProfile } from '@/lib/translators/llm/modelProfile';
 import { AppConfigType } from '@/types/runtime';
 import { RecordValues } from '@/types/utils';
 
@@ -104,12 +105,16 @@ export class TranslatorManager<Translators extends TranslatorsMap = TranslatorsM
         provider: identity.provider,
         model: identity.model,
         glossaryVersion: DEFAULT_GLOSSARY_VERSION,
-        promptVersion: WEBPAGE_TRANSLATION_PROMPT_VERSION,
+        promptVersion: identity.promptVersion,
+        profileVersion: identity.profileVersion,
       }),
     }));
     const results = new Map<string, PageTranslationResult>();
-    const misses = [];
-    const metrics = { retryCount: 0, validationFailures: 0 };
+    const misses: typeof targets = [];
+    const metrics: PageTranslationAttemptMetrics = {
+      retryCount: 0,
+      validationFailures: 0,
+    };
 
     for (const target of targets) {
       const entry = await this.pageTranslationMemory.get(target.semanticKey);
@@ -138,6 +143,12 @@ export class TranslatorManager<Translators extends TranslatorsMap = TranslatorsM
               },
               (increment) => {
                 metrics.retryCount += increment.retryCount;
+                if (increment.acceptedProfileId !== undefined) {
+                  metrics.acceptedProfileId = increment.acceptedProfileId;
+                }
+                if (increment.acceptedRetryStage !== undefined) {
+                  metrics.acceptedRetryStage = increment.acceptedRetryStage;
+                }
                 metrics.validationFailures += increment.validationFailures;
               },
             )
@@ -175,7 +186,8 @@ export class TranslatorManager<Translators extends TranslatorsMap = TranslatorsM
           provider: identity.provider,
           model: identity.model,
           glossaryVersion: DEFAULT_GLOSSARY_VERSION,
-          promptVersion: WEBPAGE_TRANSLATION_PROMPT_VERSION,
+          promptVersion: identity.promptVersion,
+          profileVersion: identity.profileVersion,
           normalizationVersion: WEBPAGE_NORMALIZATION_VERSION,
           createdAt: now,
           lastUsedAt: now,
@@ -328,14 +340,27 @@ export class TranslatorManager<Translators extends TranslatorsMap = TranslatorsM
     return new TranslatorsCacheStorage(translatorModule, cache);
   }
 
-  private getPageTranslationIdentity(): { provider: string; model: string } {
+  private getPageTranslationIdentity(): {
+    provider: string;
+    model: string;
+    promptVersion: string;
+    profileVersion: string;
+  } {
     if ((this.getTranslatorClass() as unknown) === LLMTranslator) {
       const profile = getActiveLLMProfile(this.config.llmTranslator);
-      return { provider: profile.provider, model: profile.model };
+      const resolved = resolveTranslationModelProfile(profile, null).profile;
+      return {
+        provider: profile.provider,
+        model: profile.model,
+        promptVersion: resolved.promptVersion,
+        profileVersion: getLLMCacheId(profile),
+      };
     }
     return {
       provider: this.config.translatorModule,
       model: this.config.translatorModule,
+      promptVersion: 'non-llm-page-v1',
+      profileVersion: 'non-llm-translator-v1',
     };
   }
 

@@ -1,6 +1,12 @@
 import { isMobileBrowser } from '../lib/browser';
 import { getUserLanguage } from '../lib/language';
-import { AppConfigType } from '../types/runtime';
+import {
+  DEFAULT_ADAPTIVE_BATCHING,
+  DEFAULT_LLM_FALLBACK_PROFILE,
+  DEFAULT_TRANSLATION_PROFILE_OVERRIDES,
+  DEFAULT_TRANSLATION_QUALITY_MODE,
+  type AppConfigType,
+} from '../types/runtime';
 import noTranslateSelectors from './no-translate-selectors';
 
 export const DEFAULT_TRANSLATOR = 'AutoTranslator';
@@ -22,6 +28,10 @@ export const defaultConfig: AppConfigType = {
         preferredInputTokens: null,
         maxOutputTokens: null,
         maxConcurrentRequests: null,
+        qualityMode: DEFAULT_TRANSLATION_QUALITY_MODE,
+        fallbackProfile: DEFAULT_LLM_FALLBACK_PROFILE,
+        adaptiveBatching: DEFAULT_ADAPTIVE_BATCHING,
+        translationProfile: structuredClone(DEFAULT_TRANSLATION_PROFILE_OVERRIDES),
       },
     ],
   },
@@ -45,6 +55,7 @@ export const defaultConfig: AppConfigType = {
     lazyTranslate: isMobileBrowser() ? false : true,
     detectLanguageByContent: true,
     originalTextPopup: false,
+    enableLogExport: false,
     enableContextMenu: true,
     toggleTranslationHotkey: null,
   },

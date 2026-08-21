@@ -56,6 +56,11 @@ export class PageTranslatorController {
     };
   }
 
+  public async getTranslationLog() {
+    const manager = await this.getManager();
+    return manager.getDomTranslator().getTranslationLog();
+  }
+
   private async notifyState() {
     pageTranslatorStateUpdated(await this.getStatus());
   }

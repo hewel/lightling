@@ -83,6 +83,8 @@ export interface PageTranslationIdentity {
   provider: string;
   model: string;
   glossaryVersion?: string;
+  promptVersion?: string;
+  profileVersion?: string;
 }
 
 interface SegmentBinding {
@@ -427,7 +429,8 @@ export const collectPageOccurrences = (
       provider: options.identity.provider,
       model: options.identity.model,
       glossaryVersion: options.identity.glossaryVersion ?? DEFAULT_GLOSSARY_VERSION,
-      promptVersion: WEBPAGE_TRANSLATION_PROMPT_VERSION,
+      promptVersion: options.identity.promptVersion ?? WEBPAGE_TRANSLATION_PROMPT_VERSION,
+      profileVersion: options.identity.profileVersion ?? 'legacy-profile-v1',
     });
     const occurrenceId = `o-${++occurrenceSerial}`;
     occurrences.push({

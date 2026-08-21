@@ -15,6 +15,7 @@ const entry = (key: string, model = 'small-model'): TranslationMemoryEntry => ({
   model,
   glossaryVersion: 'none',
   promptVersion: 'page-v1',
+  profileVersion: 'profile-v1',
   normalizationVersion: 'nfc-whitespace-v1',
   createdAt: 1,
   lastUsedAt: 1,

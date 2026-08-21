@@ -36,12 +36,16 @@ describe('page translation protocol', () => {
       model: 'small-model',
       glossaryVersion: 'none',
       promptVersion: WEBPAGE_TRANSLATION_PROMPT_VERSION,
+      profileVersion: 'profile-v1',
     };
     expect(createSemanticKey(base)).not.toBe(
       createSemanticKey({ ...base, contextClass: 'store:status', kind: 'status' }),
     );
     expect(createSemanticKey(base)).not.toBe(
       createSemanticKey({ ...base, model: 'other-model' }),
+    );
+    expect(createSemanticKey(base)).not.toBe(
+      createSemanticKey({ ...base, profileVersion: 'profile-v2' }),
     );
   });
 
