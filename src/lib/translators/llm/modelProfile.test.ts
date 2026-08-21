@@ -27,7 +27,7 @@ describe('translation model profile resolution', () => {
     });
 
     expect(merged.promptVariant).toBe('compact');
-    expect(merged.responseShape).toBe('pairs');
+    expect(merged.responseShape).toBe('array');
     expect(merged.generation).toMatchObject({
       temperature: 0,
       topP: 0.95,

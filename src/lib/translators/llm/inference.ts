@@ -21,9 +21,14 @@ export const TranslationPairResponseSchema = Schema.Struct({
   translations: Schema.Array(Schema.Tuple([Schema.String, Schema.String])),
 });
 
+export const TranslationArrayResponseSchema = Schema.Struct({
+  translations: Schema.Array(Schema.String),
+});
+
 export type TranslationResponseSchema =
   | typeof TranslationObjectResponseSchema
-  | typeof TranslationPairResponseSchema;
+  | typeof TranslationPairResponseSchema
+  | typeof TranslationArrayResponseSchema;
 
 export interface TranslationInferenceRequest {
   modelProfileId: string;

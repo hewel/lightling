@@ -3,6 +3,7 @@ import {
   isPlausibleTargetLanguage,
   normalizeTranslationText,
   parsePageTranslationResponse,
+  repairPlaceholderIntegrity,
   validatePlaceholderIntegrity,
   WEBPAGE_TRANSLATION_PROMPT_VERSION,
 } from './protocol';
@@ -115,5 +116,154 @@ describe('page translation protocol', () => {
     expect(isPlausibleTargetLanguage('保存设置', 'zh-CN')).toBe(true);
     expect(isPlausibleTargetLanguage('Save settings', 'zh-CN')).toBe(false);
     expect(isPlausibleTargetLanguage('Speichern', 'de')).toBe(true);
+  });
+
+  test('repairs renamed placeholder ids when structure is preserved', () => {
+    expect(
+      repairPlaceholderIntegrity('Use <x id="code-1"/>.', 'Verwende <x id="wrong"/>.'),
+    ).toBe('Verwende <x id="code-1"/>.');
+    expect(
+      repairPlaceholderIntegrity(
+        'Click <g id="inline-1">Save</g> or <g id="inline-2">Cancel</g>.',
+        'Klicken Sie auf <g id="1">Speichern</g> oder <g id="2">Abbrechen</g>.',
+      ),
+    ).toBe(
+      'Klicken Sie auf <g id="inline-1">Speichern</g> oder <g id="inline-2">Abbrechen</g>.',
+    );
+  });
+
+  test('canonicalizes lenient tag formatting during repair', () => {
+    expect(
+      repairPlaceholderIntegrity('Use <x id="code-1"/>.', "Verwende <x id='code-1'>."),
+    ).toBe('Verwende <x id="code-1"/>.');
+    expect(
+      repairPlaceholderIntegrity(
+        '<g id="inline-1">Save</g> now',
+        '<g id=inline-1>Speichern</g> jetzt',
+      ),
+    ).toBe('<g id="inline-1">Speichern</g> jetzt');
+  });
+
+  test('appends missing trailing closes only when the source ends with them', () => {
+    expect(
+      repairPlaceholderIntegrity(
+        '<g id="inline-1"><g id="inline-2">Noctalia</g> quiet by design</g>',
+        '<g id="inline-1"><g id="inline-2">Noctalia</g> 安静的设计',
+      ),
+    ).toBe('<g id="inline-1"><g id="inline-2">Noctalia</g> 安静的设计</g>');
+    // Source has text after the final close: appending at the end would
+    // misplace the trailing text inside the group, so repair must refuse.
+    expect(
+      repairPlaceholderIntegrity(
+        '<g id="inline-1">Save</g> to continue.',
+        '<g id="inline-1">Speichern um fortzufahren.',
+      ),
+    ).toBeNull();
+  });
+
+  test('refuses repair when tokens are dropped or added', () => {
+    expect(
+      repairPlaceholderIntegrity('Use <x id="code-1"/>.', 'Verwende den Code.'),
+    ).toBeNull();
+    expect(
+      repairPlaceholderIntegrity(
+        '<g id="inline-1">Save</g>',
+        '<g id="inline-1">Speichern</g> <g id="inline-1">Speichern</g>',
+      ),
+    ).toBeNull();
+  });
+
+  test('parse accepts repaired placeholders only when repair is enabled', () => {
+    const second = {
+      ...target,
+      id: 'u2',
+      sourceText: 'Use <x id="code-1"/>.',
+    };
+    const raw = JSON.stringify({
+      translations: [{ id: 'u2', target: 'Verwenden Sie <x id="wrong"/>.' }],
+    });
+    const strict = parsePageTranslationResponse(raw, [second]);
+    expect(strict.translations).toEqual([]);
+    expect(strict.issues).toContainEqual({ id: 'u2', failure: 'placeholder-corruption' });
+
+    const repaired = parsePageTranslationResponse(raw, [second], () => true, {
+      repairPlaceholders: true,
+    });
+    expect(repaired).toEqual({
+      translations: [{ id: 'u2', target: 'Verwenden Sie <x id="code-1"/>.' }],
+      issues: [],
+    });
+  });
+
+  test('parses JSON wrapped in a Markdown code fence', () => {
+    const fenced =
+      '```json\n' +
+      JSON.stringify({
+        translations: [{ id: 'u1', target: target.sourceText }],
+      }) +
+      '\n```';
+    const result = parsePageTranslationResponse(fenced, [target]);
+    expect(result).toEqual({
+      translations: [{ id: 'u1', target: target.sourceText }],
+      issues: [],
+    });
+  });
+
+  test('maps bare string arrays positionally and validates each item', () => {
+    const second = {
+      ...target,
+      id: 'u2',
+      sourceText: 'Use <x id="code-1"/>.',
+    };
+    const result = parsePageTranslationResponse(
+      JSON.stringify({
+        translations: [
+          'Klicken Sie zum Fortfahren auf <g id="inline-1">Speichern</g>.',
+          'Verwenden Sie <x id="code-1"/>.',
+        ],
+      }),
+      [target, second],
+    );
+    expect(result).toEqual({
+      translations: [
+        {
+          id: 'u1',
+          target: 'Klicken Sie zum Fortfahren auf <g id="inline-1">Speichern</g>.',
+        },
+        { id: 'u2', target: 'Verwenden Sie <x id="code-1"/>.' },
+      ],
+      issues: [],
+    });
+  });
+
+  test('rejects a positional response whose count does not match the targets', () => {
+    const second = { ...target, id: 'u2' };
+    const result = parsePageTranslationResponse(
+      JSON.stringify({ translations: ['only one'] }),
+      [target, second],
+    );
+    expect(result).toEqual({
+      translations: [],
+      issues: [{ failure: 'count-mismatch' }],
+    });
+  });
+
+  test('still validates placeholder integrity per item in positional mode', () => {
+    const second = {
+      ...target,
+      id: 'u2',
+      sourceText: 'Use <x id="code-1"/>.',
+    };
+    const result = parsePageTranslationResponse(
+      JSON.stringify({
+        translations: [
+          'Klicken Sie zum Fortfahren auf <g id="inline-1">Speichern</g>.',
+          'Verwenden Sie den Code.',
+        ],
+      }),
+      [target, second],
+    );
+    expect(result.translations).toHaveLength(1);
+    expect(result.issues).toContainEqual({ id: 'u2', failure: 'placeholder-corruption' });
   });
 });

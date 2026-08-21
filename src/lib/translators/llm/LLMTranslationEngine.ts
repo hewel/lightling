@@ -59,8 +59,10 @@ export class InvalidLLMResponseError extends Schema.TaggedError<InvalidLLMRespon
     message: Schema.String,
   },
 ) {
-  constructor(args?: { message?: string }) {
-    super({ message: args?.message ?? 'Invalid response from LLM' });
+  static new(args?: { message?: string }): InvalidLLMResponseError {
+    return new InvalidLLMResponseError({
+      message: args?.message ?? 'Invalid response from LLM',
+    });
   }
 }
 
@@ -70,8 +72,10 @@ export class TranslationAbortedError extends Schema.TaggedError<TranslationAbort
     message: Schema.String,
   },
 ) {
-  constructor(args?: { message?: string }) {
-    super({ message: args?.message ?? 'Translation is aborted in scheduler' });
+  static new(args?: { message?: string }): TranslationAbortedError {
+    return new TranslationAbortedError({
+      message: args?.message ?? 'Translation is aborted in scheduler',
+    });
   }
 }
 
@@ -81,8 +85,8 @@ export class TranslationSchedulerReplacedError extends Schema.TaggedError<Transl
     message: Schema.String,
   },
 ) {
-  constructor(args?: { message?: string }) {
-    super({
+  static new(args?: { message?: string }): TranslationSchedulerReplacedError {
+    return new TranslationSchedulerReplacedError({
       message: args?.message ?? 'Translation scheduler was replaced',
     });
   }
@@ -337,11 +341,11 @@ export class LLMTranslationEngine {
     const waiters = this.contextWaiters.get(context);
     if (waiters) {
       this.contextWaiters.delete(context);
-      const error = new TranslationAbortedError();
+      const error = TranslationAbortedError.new();
       for (const waiter of waiters) waiter(error);
     }
 
-    const error = new TranslationAbortedError();
+    const error = TranslationAbortedError.new();
     for (let i = this.queue.length - 1; i >= 0; i--) {
       if (this.queue[i].context === context) {
         const [job] = this.queue.splice(i, 1);
@@ -362,7 +366,7 @@ export class LLMTranslationEngine {
     if (this.isDisposed) return;
     this.isDisposed = true;
 
-    const error = new TranslationSchedulerReplacedError();
+    const error = TranslationSchedulerReplacedError.new();
 
     for (const waiters of this.contextWaiters.values()) {
       for (const waiter of waiters) waiter(error);
@@ -386,13 +390,13 @@ export class LLMTranslationEngine {
     options: TranslateBatchOptions,
     onMetrics?: (metrics: PageTranslationAttemptMetrics) => void,
   ): Promise<{ id: string; target: string }[]> {
-    if (this.isDisposed) throw new TranslationSchedulerReplacedError();
-    if (this.abortedContexts.has(options.context)) throw new TranslationAbortedError();
+    if (this.isDisposed) throw TranslationSchedulerReplacedError.new();
+    if (this.abortedContexts.has(options.context)) throw TranslationAbortedError.new();
     if (request.targets.length === 0) return [];
 
     const settings = await this.getSettings();
-    if (this.isDisposed) throw new TranslationSchedulerReplacedError();
-    if (this.abortedContexts.has(options.context)) throw new TranslationAbortedError();
+    if (this.isDisposed) throw TranslationSchedulerReplacedError.new();
+    if (this.abortedContexts.has(options.context)) throw TranslationAbortedError.new();
 
     const deferred = createDeferred<{ id: string; target: string }[]>();
     const sourceBytes = request.targets.reduce(
@@ -432,8 +436,8 @@ export class LLMTranslationEngine {
     to: string,
     options: TranslateBatchOptions,
   ): Promise<string[]> {
-    if (this.isDisposed) throw new TranslationSchedulerReplacedError();
-    if (this.abortedContexts.has(options.context)) throw new TranslationAbortedError();
+    if (this.isDisposed) throw TranslationSchedulerReplacedError.new();
+    if (this.abortedContexts.has(options.context)) throw TranslationAbortedError.new();
     if (texts.length === 0) return [];
 
     // Register an abort waiter for this context BEFORE awaiting shared
@@ -463,8 +467,8 @@ export class LLMTranslationEngine {
       }
     }
 
-    if (this.isDisposed) throw new TranslationSchedulerReplacedError();
-    if (this.abortedContexts.has(options.context)) throw new TranslationAbortedError();
+    if (this.isDisposed) throw TranslationSchedulerReplacedError.new();
+    if (this.abortedContexts.has(options.context)) throw TranslationAbortedError.new();
 
     const framingPrefix = `Source: ${getLanguageDisplayName(from)}\nTarget: ${getLanguageDisplayName(to)}\nTexts: `;
     const baseEst =
@@ -818,8 +822,8 @@ export class LLMTranslationEngine {
     settings: ResolvedLLMExecutionSettings,
     onMetrics?: (metrics: PageTranslationAttemptMetrics) => void,
   ): Promise<{ id: string; target: string }[]> {
-    if (this.isDisposed) throw new TranslationSchedulerReplacedError();
-    if (this.abortedContexts.has(options.context)) throw new TranslationAbortedError();
+    if (this.isDisposed) throw TranslationSchedulerReplacedError.new();
+    if (this.abortedContexts.has(options.context)) throw TranslationAbortedError.new();
 
     const profile = settings.translationProfile;
     const outputRatio =
@@ -868,11 +872,23 @@ export class LLMTranslationEngine {
     const accepted = new Map<string, string>();
     let acceptedRetryStage: PageTranslationBatchRequest['retryStage'] =
       request.retryStage ?? 'initial';
-    const requestAttempt = async (
+
+    type AttemptParseResult = ReturnType<typeof parsePageTranslationResponse>;
+    interface PreparedAttempt {
+      readonly targets: TranslationTarget[];
+      readonly inferenceRequest: LLMRequest;
+      readonly retryLimit: number;
+    }
+
+    /**
+     * Synchronous attempt planning. Throws TOO_SMALL_MESSAGE before any
+     * effect is constructed, preserving the existing error contract.
+     */
+    const prepareAttempt = (
       targets: TranslationTarget[],
       retryStage: PageTranslationBatchRequest['retryStage'],
       contextMode: 'normal' | 'without-retrieved' | 'rich',
-    ) => {
+    ): PreparedAttempt => {
       const attemptRequest: PageTranslationBatchRequest = {
         ...request,
         retryStage,
@@ -882,9 +898,13 @@ export class LLMTranslationEngine {
             ? { ...request.context, retrieved: [] }
             : request.context,
       };
+      // Id-based shapes degrade to 'pairs' for isolated retries; 'array'
+      // stays as-is since a single-item array is already the simplest shape.
       const attemptProfile: TranslationModelProfile =
         retryStage === 'isolated' || retryStage === 'simplified-context'
-          ? { ...profile, responseShape: 'pairs' }
+          ? profile.responseShape === 'objects'
+            ? { ...profile, responseShape: 'pairs' }
+            : profile
           : profile;
       const budgeted = budgetPageTranslationRequest(
         attemptRequest,
@@ -894,33 +914,96 @@ export class LLMTranslationEngine {
       );
       if (budgeted.overBudget) throw new Error(TOO_SMALL_MESSAGE);
       const prompt = buildPageTranslationPrompt(budgeted.request, attemptProfile);
-      const inferenceRequest = this.makeInferenceRequest(
-        prompt.messages,
-        budgeted.budget.reservedOutputTokens,
-        controller.signal,
-        settings,
-        attemptProfile.structuredOutputMode,
-        prompt.responseSchema,
-        getTranslationJsonGrammar(attemptProfile),
-      );
-      const response = await Effect.runPromise(
-        this.buildRetryPolicy(
-          () => this.options.fetch(inferenceRequest),
-          Math.min(options.retryLimit, attemptProfile.retry.maxRetries),
+      return {
+        targets,
+        inferenceRequest: this.makeInferenceRequest(
+          prompt.messages,
+          budgeted.budget.reservedOutputTokens,
+          controller.signal,
+          settings,
+          attemptProfile.structuredOutputMode,
+          prompt.responseSchema,
+          getTranslationJsonGrammar(attemptProfile),
         ),
-        { signal: controller.signal },
+        retryLimit: Math.min(options.retryLimit, attemptProfile.retry.maxRetries),
+      };
+    };
+
+    /** One translation request as an effect: fetch under the retry policy, then parse and validate. */
+    const attemptEffect = (
+      prepared: PreparedAttempt,
+    ): Effect.Effect<AttemptParseResult, AiError.AiError> =>
+      this.buildRetryPolicy(
+        () => this.options.fetch(prepared.inferenceRequest),
+        prepared.retryLimit,
+      ).pipe(
+        Effect.tap((response) => Effect.sync(() => this.reportUsage(response.usage))),
+        Effect.map((response) =>
+          parsePageTranslationResponse(
+            response.text,
+            prepared.targets,
+            (text) => isPlausibleTargetLanguage(text, request.targetLanguage),
+            { repairPlaceholders: true },
+          ),
+        ),
       );
-      this.reportUsage(response.usage);
-      return parsePageTranslationResponse(response.text, targets, (text) =>
-        isPlausibleTargetLanguage(text, request.targetLanguage),
-      );
+
+    interface IsolatedRetryPlan {
+      readonly target: TranslationTarget;
+      readonly stages: readonly {
+        stage: PageTranslationBatchRequest['retryStage'];
+        contextMode: 'normal' | 'without-retrieved' | 'rich';
+      }[];
+    }
+
+    interface IsolatedRetryOutcome {
+      readonly id: string;
+      readonly translation?: string;
+      readonly stage?: PageTranslationBatchRequest['retryStage'];
+    }
+
+    /** Walks the stage ladder for one failed unit until a translation validates. */
+    const isolatedRetryEffect = (
+      plan: IsolatedRetryPlan,
+    ): Effect.Effect<IsolatedRetryOutcome, AiError.AiError> => {
+      const loop = (
+        index: number,
+      ): Effect.Effect<IsolatedRetryOutcome, AiError.AiError> => {
+        const retry = plan.stages[index];
+        if (retry === undefined) return Effect.succeed({ id: plan.target.id });
+        return Effect.suspend(() => {
+          onMetrics?.({ retryCount: 1, validationFailures: 0 });
+          return attemptEffect(
+            prepareAttempt([plan.target], retry.stage, retry.contextMode),
+          );
+        }).pipe(
+          Effect.flatMap((parsed) => {
+            if (parsed.issues.length > 0) {
+              onMetrics?.({ retryCount: 0, validationFailures: parsed.issues.length });
+            }
+            const translation = parsed.translations[0];
+            if (translation === undefined) return loop(index + 1);
+            return Effect.succeed({
+              id: plan.target.id,
+              translation: translation.target,
+              stage: retry.stage,
+            });
+          }),
+        );
+      };
+      return loop(0);
     };
 
     try {
-      const initial = await requestAttempt(
-        initialBudget.request.targets,
-        request.retryStage ?? 'initial',
-        'normal',
+      const initial = await Effect.runPromise(
+        attemptEffect(
+          prepareAttempt(
+            initialBudget.request.targets,
+            request.retryStage ?? 'initial',
+            'normal',
+          ),
+        ),
+        { signal: controller.signal },
       );
       if (initial.issues.length > 0) {
         onMetrics?.({
@@ -954,6 +1037,7 @@ export class LLMTranslationEngine {
         }
       }
 
+      const plans: IsolatedRetryPlan[] = [];
       for (const id of failedIds) {
         const target = request.targets.find((candidate) => candidate.id === id);
         if (target === undefined) continue;
@@ -981,23 +1065,24 @@ export class LLMTranslationEngine {
             stages.push({ stage: 'rich-context', contextMode: 'rich' });
           }
         }
+        plans.push({ target, stages: stages.slice(0, profile.retry.maxRetries) });
+      }
 
-        for (const retry of stages.slice(0, profile.retry.maxRetries)) {
-          onMetrics?.({ retryCount: 1, validationFailures: 0 });
-          const isolated = await requestAttempt([target], retry.stage, retry.contextMode);
-          if (isolated.issues.length > 0) {
-            onMetrics?.({
-              retryCount: 0,
-              validationFailures: isolated.issues.length,
-            });
-          }
-          const translation = isolated.translations[0];
-          if (translation !== undefined) {
-            accepted.set(id, translation.target);
-            acceptedRetryStage = retry.stage;
-            break;
-          }
-        }
+      // Isolated retries are independent single-unit requests; run them in
+      // parallel, capped at the profile's batch concurrency. The first hard
+      // error (auth, quota) interrupts the rest, matching the previous
+      // sequential fail-fast behavior.
+      const outcomes = await Effect.runPromise(
+        Effect.all(
+          plans.map((plan) => isolatedRetryEffect(plan)),
+          { concurrency: Math.max(1, settings.translationProfile.batching.concurrency) },
+        ),
+        { signal: controller.signal },
+      );
+      for (const outcome of outcomes) {
+        if (outcome.translation === undefined) continue;
+        accepted.set(outcome.id, outcome.translation);
+        acceptedRetryStage = outcome.stage;
       }
 
       const result: { id: string; target: string }[] = [];
@@ -1024,7 +1109,7 @@ export class LLMTranslationEngine {
         this.abortedContexts.has(options.context) ||
         controller.signal.aborted
       ) {
-        throw new TranslationAbortedError();
+        throw TranslationAbortedError.new();
       }
       if (isContextLengthExceeded(error) && request.targets.length > 1) {
         const midpoint = Math.floor(request.targets.length / 2);
@@ -1058,12 +1143,12 @@ export class LLMTranslationEngine {
     budget: PromptBudget,
   ): Promise<void> {
     if (this.isDisposed) {
-      const error = new TranslationSchedulerReplacedError();
+      const error = TranslationSchedulerReplacedError.new();
       for (const unit of units) unit.onRejected(error);
       return;
     }
     if (this.abortedContexts.has(options.context)) {
-      const error = new TranslationAbortedError();
+      const error = TranslationAbortedError.new();
       for (const unit of units) unit.onRejected(error);
       return;
     }
@@ -1150,12 +1235,12 @@ export class LLMTranslationEngine {
       );
     } catch (error) {
       if (this.isDisposed) {
-        const replacement = new TranslationSchedulerReplacedError();
+        const replacement = TranslationSchedulerReplacedError.new();
         for (const unit of units) unit.onRejected(replacement);
         return;
       }
       if (this.abortedContexts.has(options.context) || controller.signal.aborted) {
-        const abortError = new TranslationAbortedError();
+        const abortError = TranslationAbortedError.new();
         for (const unit of units) unit.onRejected(abortError);
         return;
       }
@@ -1203,7 +1288,7 @@ export class LLMTranslationEngine {
       ) {
         return;
       }
-      const error = new InvalidLLMResponseError();
+      const error = InvalidLLMResponseError.new();
       for (const unit of units) unit.onRejected(error);
       return;
     }
@@ -1244,7 +1329,7 @@ export class LLMTranslationEngine {
       // The correction attempt failed; fall through to InvalidLLMResponseError
     }
 
-    unit.onRejected(new InvalidLLMResponseError());
+    unit.onRejected(InvalidLLMResponseError.new());
   }
 
   /**

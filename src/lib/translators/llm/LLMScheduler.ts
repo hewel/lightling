@@ -56,14 +56,14 @@ export class LLMScheduler implements IScheduler {
     options?: ISchedulerTranslateOptions,
   ): Promise<string> {
     if (this.isDisposed) {
-      throw new TranslationSchedulerReplacedError();
+      throw TranslationSchedulerReplacedError.new();
     }
 
     const context = options?.context ?? 'scheduler';
     const priority = options?.priority ?? 0;
 
     if (this.abortedContexts.has(context)) {
-      throw new TranslationAbortedError();
+      throw TranslationAbortedError.new();
     }
 
     return new Promise<string>((resolve, reject) => {
@@ -123,7 +123,7 @@ export class LLMScheduler implements IScheduler {
       }
     }
 
-    const error = new TranslationAbortedError();
+    const error = TranslationAbortedError.new();
     for (const task of abortedTasks) {
       task.reject(error);
     }
@@ -145,7 +145,7 @@ export class LLMScheduler implements IScheduler {
     }
     this.containers.clear();
 
-    const error = new TranslationSchedulerReplacedError();
+    const error = TranslationSchedulerReplacedError.new();
     for (const task of allTasks) {
       task.reject(error);
     }
@@ -165,7 +165,7 @@ export class LLMScheduler implements IScheduler {
     if (container.tasks.length === 0) return;
 
     if (this.isDisposed) {
-      const error = new TranslationSchedulerReplacedError();
+      const error = TranslationSchedulerReplacedError.new();
       for (const task of container.tasks) {
         task.reject(error);
       }
@@ -173,7 +173,7 @@ export class LLMScheduler implements IScheduler {
     }
 
     if (this.abortedContexts.has(container.context)) {
-      const error = new TranslationAbortedError();
+      const error = TranslationAbortedError.new();
       for (const task of container.tasks) {
         task.reject(error);
       }

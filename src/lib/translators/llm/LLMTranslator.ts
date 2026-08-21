@@ -1,6 +1,6 @@
 import { getLanguageCodesISO639 } from 'anylang/languages';
 import type { TranslatorInstanceMembers } from 'anylang/translators';
-import { Effect, Redacted, Schema } from 'effect';
+import { Effect, Layer, Redacted, Schema } from 'effect';
 import { LanguageModel } from 'effect/unstable/ai';
 import { FetchHttpClient } from 'effect/unstable/http';
 import { AnthropicClient, AnthropicLanguageModel } from '@effect/ai-anthropic';
@@ -321,23 +321,39 @@ export class LLMTranslator implements TranslatorInstanceMembers {
       switch (provider) {
         case 'anthropic':
           return baseEffect.pipe(
-            Effect.provide(AnthropicLanguageModel.model(model, config)),
-            Effect.provide(AnthropicClient.layer(clientOptions)),
+            Effect.provide(
+              Layer.provide(
+                AnthropicLanguageModel.model(model, config),
+                AnthropicClient.layer(clientOptions),
+              ),
+            ),
           );
         case 'openrouter':
           return baseEffect.pipe(
-            Effect.provide(OpenRouterLanguageModel.model(model, config)),
-            Effect.provide(OpenRouterClient.layer(clientOptions)),
+            Effect.provide(
+              Layer.provide(
+                OpenRouterLanguageModel.model(model, config),
+                OpenRouterClient.layer(clientOptions),
+              ),
+            ),
           );
         case 'openai':
           return baseEffect.pipe(
-            Effect.provide(OpenAiLanguageModel.model(model, config)),
-            Effect.provide(OpenAiClient.layer(clientOptions)),
+            Effect.provide(
+              Layer.provide(
+                OpenAiLanguageModel.model(model, config),
+                OpenAiClient.layer(clientOptions),
+              ),
+            ),
           );
         case 'openai-compatible':
           return baseEffect.pipe(
-            Effect.provide(OpenAiCompatLanguageModel.model(model, config)),
-            Effect.provide(OpenAiCompatClient.layer(clientOptions)),
+            Effect.provide(
+              Layer.provide(
+                OpenAiCompatLanguageModel.model(model, config),
+                OpenAiCompatClient.layer(clientOptions),
+              ),
+            ),
           );
       }
     })();

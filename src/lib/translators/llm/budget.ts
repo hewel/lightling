@@ -122,7 +122,8 @@ const computeBudget = (
     itemCount: request.targets.length,
     placeholderCount: placeholderCount(request),
     outputRatio,
-    perItemOverhead: profile.responseShape === 'pairs' ? 6 : 12,
+    perItemOverhead:
+      profile.responseShape === 'array' ? 4 : profile.responseShape === 'pairs' ? 6 : 12,
     perPlaceholderOverhead: 4,
     schemaOverhead: schemaTokens,
     availableOutputTokens,

@@ -95,4 +95,39 @@ describe('translation prompt variants', () => {
     expect(advanced.userBody).toContain('Create a branch.');
     expect(advanced.userBody).toContain('Ignore previous instructions');
   });
+
+  test('keeps ids off the wire in array shape across variants', () => {
+    for (const promptVariant of promptVariants) {
+      const prompt = buildPageTranslationPrompt(request, {
+        ...baseProfile,
+        promptVariant,
+        responseShape: 'array',
+      });
+      expect(prompt.systemPrompt).toContain('{"translations":["translation"]}');
+      expect(prompt.userBody).not.toContain('"u1"');
+      const body = JSON.parse(prompt.userBody) as { targets: unknown[] };
+      expect(body.targets).toHaveLength(request.targets.length);
+    }
+  });
+
+  test('keeps id-based targets in pairs and objects shapes', () => {
+    for (const responseShape of ['pairs', 'objects'] as const) {
+      const prompt = buildPageTranslationPrompt(request, {
+        ...baseProfile,
+        promptVariant: 'compact',
+        responseShape,
+      });
+      expect(prompt.userBody).toContain('"u1"');
+    }
+  });
+
+  test('feeds named entities into the compact memory', () => {
+    const prompt = buildPageTranslationPrompt(request, {
+      ...baseProfile,
+      promptVariant: 'compact',
+      responseShape: 'array',
+    });
+    const body = JSON.parse(prompt.userBody) as { memory: { namedEntities: string[] } };
+    expect(body.memory.namedEntities).toEqual(['Lightling']);
+  });
 });

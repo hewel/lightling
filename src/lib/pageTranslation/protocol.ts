@@ -193,7 +193,8 @@ export type TranslationValidationFailure =
   | 'placeholder-corruption'
   | 'language-mismatch'
   | 'truncation'
-  | 'empty-translation';
+  | 'empty-translation'
+  | 'count-mismatch';
 
 export interface TranslationValidationIssue {
   id?: string;
@@ -249,6 +250,140 @@ export const validatePlaceholderIntegrity = (source: string, target: string): bo
   );
 };
 
+/**
+ * Lenient tag form tolerated on the repair path only: unquoted or
+ * single-quoted ids and `<x>` without the self-closing slash. Small models
+ * frequently emit these instead of the canonical form.
+ */
+const TOLERANT_PLACEHOLDER_PATTERN =
+  /<g\s+id\s*=\s*["']?([A-Za-z0-9_-]+)["']?\s*>|<\/g\s*>|<x\s+id\s*=\s*["']?([A-Za-z0-9_-]+)["']?\s*\/?>/gu;
+
+interface TolerantPlaceholderToken extends PlaceholderToken {
+  start: number;
+  end: number;
+}
+
+const readTolerantPlaceholders = (text: string): TolerantPlaceholderToken[] => {
+  const result: TolerantPlaceholderToken[] = [];
+  for (const match of text.matchAll(TOLERANT_PLACEHOLDER_PATTERN)) {
+    if (match[1] !== undefined) {
+      result.push({
+        type: 'g-open',
+        id: match[1],
+        start: match.index,
+        end: match.index + match[0].length,
+      });
+      continue;
+    }
+    if (match[2] !== undefined) {
+      result.push({
+        type: 'x',
+        id: match[2],
+        start: match.index,
+        end: match.index + match[0].length,
+      });
+      continue;
+    }
+    result.push({
+      type: 'g-close',
+      id: '',
+      start: match.index,
+      end: match.index + match[0].length,
+    });
+  }
+  return result;
+};
+
+const PLACEHOLDER_SEQUENCE_KIND: Record<PlaceholderToken['type'], string> = {
+  'g-open': 'g',
+  'g-close': 'c',
+  x: 'x',
+};
+
+const renderPlaceholderToken = (token: PlaceholderToken): string =>
+  token.type === 'g-open'
+    ? `<g id="${token.id}">`
+    : token.type === 'x'
+      ? `<x id="${token.id}"/>`
+      : '</g>';
+
+/**
+ * Deterministically repairs common small-model placeholder corruptions.
+ * Returns the repaired target, or `null` when the corruption is not safely
+ * repairable. Only structural repairs are attempted; visible text between
+ * tags is never altered.
+ *
+ * Repairs applied, in order:
+ * 1. Canonicalization: unquoted/single-quoted ids and `<x>` missing its
+ *    self-closing slash are rewritten to the canonical tag form.
+ * 2. Id remap: when the target's placeholder type sequence matches the
+ *    source exactly but ids differ, ids are reassigned positionally (models
+ *    often invent ids like `1` instead of `g-1` while keeping structure).
+ * 3. Missing trailing closes: when the target equals the source sequence
+ *    minus trailing `</g>` tokens AND the source itself ends with those
+ *    closes (no trailing text), the closes are appended at the end.
+ */
+export const repairPlaceholderIntegrity = (
+  source: string,
+  target: string,
+): string | null => {
+  const sourceTokens = readPlaceholders(source);
+  if (sourceTokens === null || sourceTokens.length === 0) return null;
+
+  const targetTokens = readTolerantPlaceholders(target);
+  if (targetTokens.length === 0) return null;
+
+  const sourceSeq = sourceTokens
+    .map((token) => PLACEHOLDER_SEQUENCE_KIND[token.type])
+    .join('');
+  let targetSeq = targetTokens
+    .map((token) => PLACEHOLDER_SEQUENCE_KIND[token.type])
+    .join('');
+
+  let missingCloses = 0;
+  if (targetSeq !== sourceSeq) {
+    if (
+      sourceSeq.startsWith(targetSeq) &&
+      sourceSeq
+        .slice(targetSeq.length)
+        .split('')
+        .every((kind) => kind === 'c') &&
+      source.trimEnd().endsWith('</g>')
+    ) {
+      missingCloses = sourceSeq.length - targetSeq.length;
+      targetSeq = sourceSeq;
+    } else {
+      return null;
+    }
+  }
+
+  const sourceIds = sourceTokens
+    .filter((token) => token.type !== 'g-close')
+    .map((token) => token.id);
+  let nextId = 0;
+  const remapped: PlaceholderToken[] = targetTokens.map((token) =>
+    token.type === 'g-close' ? token : { ...token, id: sourceIds[nextId++] ?? token.id },
+  );
+  for (let index = 0; index < missingCloses; index++) {
+    remapped.push({ type: 'g-close', id: '' });
+  }
+
+  let repaired = '';
+  let cursor = 0;
+  let tokenIndex = 0;
+  for (const token of targetTokens) {
+    repaired += target.slice(cursor, token.start);
+    repaired += renderPlaceholderToken(remapped[tokenIndex++]);
+    cursor = token.end;
+  }
+  repaired += target.slice(cursor);
+  for (; tokenIndex < remapped.length; tokenIndex++) {
+    repaired += renderPlaceholderToken(remapped[tokenIndex]);
+  }
+
+  return validatePlaceholderIntegrity(source, repaired) ? repaired : null;
+};
+
 const TARGET_SCRIPT_BY_LANGUAGE: Record<string, RegExp> = {
   ar: /\p{Script=Arabic}/u,
   bg: /\p{Script=Cyrillic}/u,
@@ -272,10 +407,33 @@ export const isPlausibleTargetLanguage = (
   return visibleText.length < 2 || pattern.test(visibleText);
 };
 
+const CODE_FENCE_PATTERN = /^```[^\n`]*\n([\s\S]*?)\n?\s*```$/u;
+
+/**
+ * Small models frequently wrap the JSON payload in a Markdown code fence.
+ * The fence carries no translation content, so strip it before parsing.
+ */
+const stripCodeFence = (raw: string): string => {
+  const trimmed = raw.trim();
+  const fenced = CODE_FENCE_PATTERN.exec(trimmed);
+  return fenced?.[1]?.trim() ?? trimmed;
+};
+
+export interface ParsePageTranslationResponseOptions {
+  /**
+   * When true, items failing placeholder integrity are passed through
+   * `repairPlaceholderIntegrity` and accepted when a deterministic repair
+   * succeeds. Benchmarks and model-quality measurements should keep this
+   * off so raw model behavior stays visible.
+   */
+  repairPlaceholders?: boolean;
+}
+
 export const parsePageTranslationResponse = (
   raw: string,
   targets: readonly TranslationTarget[],
   isLanguagePlausible: (text: string) => boolean = () => true,
+  options?: ParsePageTranslationResponseOptions,
 ):
   | { translations: { id: string; target: string }[]; issues: [] }
   | {
@@ -284,7 +442,7 @@ export const parsePageTranslationResponse = (
     } => {
   let value: unknown;
   try {
-    value = JSON.parse(raw.trim());
+    value = JSON.parse(stripCodeFence(raw));
   } catch {
     return { translations: [], issues: [{ failure: 'invalid-json' }] };
   }
@@ -302,10 +460,21 @@ export const parsePageTranslationResponse = (
   const accepted: { id: string; target: string }[] = [];
   const issues: TranslationValidationIssue[] = [];
 
-  for (const item of translations) {
+  // Order-based shape: a bare string array carries no ids, so items align
+  // with targets purely by position. A count mismatch makes every alignment
+  // unreliable, so the whole response is rejected rather than salvaged.
+  const positional = translations.every((item) => typeof item === 'string');
+  if (positional && translations.length !== targets.length) {
+    return { translations: [], issues: [{ failure: 'count-mismatch' }] };
+  }
+
+  for (const [index, item] of translations.entries()) {
     let id: string;
     let target: string;
-    if (
+    if (positional) {
+      id = targets[index].id;
+      target = item as string;
+    } else if (
       Array.isArray(item) &&
       item.length === 2 &&
       typeof item[0] === 'string' &&
@@ -345,8 +514,14 @@ export const parsePageTranslationResponse = (
       continue;
     }
     if (!validatePlaceholderIntegrity(source.sourceText, target)) {
-      issues.push({ id, failure: 'placeholder-corruption' });
-      continue;
+      const repaired = options?.repairPlaceholders
+        ? repairPlaceholderIntegrity(source.sourceText, target)
+        : null;
+      if (repaired === null) {
+        issues.push({ id, failure: 'placeholder-corruption' });
+        continue;
+      }
+      target = repaired;
     }
     if (!isLanguagePlausible(target)) {
       issues.push({ id, failure: 'language-mismatch' });

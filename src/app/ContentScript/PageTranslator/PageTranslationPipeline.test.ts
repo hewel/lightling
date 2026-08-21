@@ -235,4 +235,52 @@ describe('PageTranslationPipeline dynamic lifecycle', () => {
     expect(JSON.stringify(pipeline.getLog())).not.toContain('stack');
     pipeline.stop();
   });
+
+  test('chunks bulk DOM application so a single task never applies the whole page', async () => {
+    vi.useFakeTimers();
+    const originalReplace = Element.prototype.replaceChildren;
+    try {
+      const buttons = Array.from(
+        { length: 60 },
+        (_, index) => `<button>Save ${index}</button>`,
+      ).join('');
+      document.body.innerHTML = `<main>${buttons}</main>`;
+      let replaceChildrenCalls = 0;
+      Element.prototype.replaceChildren = function (
+        this: Element,
+        ...nodes: (Node | string)[]
+      ): void {
+        replaceChildrenCalls++;
+        originalReplace.apply(this, nodes);
+      };
+
+      const main = document.querySelector('main');
+      if (main === null) throw new Error('fixture main missing');
+      const pipeline = createPipeline(main);
+      pipeline.start();
+
+      // Flush microtasks only: collect, batch resolution, and the first
+      // synchronous pump turn happen without any macrotask.
+      for (let index = 0; index < 100; index++) await Promise.resolve();
+      const appliedInFirstTask = replaceChildrenCalls;
+
+      // Drain the remaining chunks. A 1ms step is used because
+      // advanceTimersByTimeAsync(0) does not fire 0ms timers scheduled
+      // during the same advance.
+      for (let index = 0; index < 500 && replaceChildrenCalls < 60; index++) {
+        await vi.advanceTimersByTimeAsync(1);
+      }
+
+      expect(replaceChildrenCalls).toBe(60);
+      expect(appliedInFirstTask).toBeGreaterThan(0);
+      expect(appliedInFirstTask).toBeLessThan(60);
+      expect(
+        Array.from(main.querySelectorAll('button'), (button) => button.textContent),
+      ).toContain('Speichern 0');
+      pipeline.stop();
+    } finally {
+      Element.prototype.replaceChildren = originalReplace;
+      vi.useRealTimers();
+    }
+  });
 });

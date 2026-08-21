@@ -165,7 +165,24 @@ const createMetrics = (): PagePipelineMetrics => ({
 });
 
 const groupKey = (unit: TranslationUnit): string =>
-  `${unit.kind}\u0000${unit.slot}\u0000${unit.contextClass}\u0000${unit.sectionId ?? ''}`;
+  `${unit.kind}\\u0000${unit.slot}\\u0000${unit.contextClass}\\u0000${unit.sectionId ?? ''}`;
+
+/**
+ * Yields to the event loop so bulk DOM writes never monopolize the main
+ * thread. Prefers `scheduler.yield()` (no clamping) where available.
+ */
+const yieldToMain = (): Promise<void> => {
+  if (
+    'scheduler' in globalThis &&
+    typeof globalThis.scheduler === 'object' &&
+    globalThis.scheduler !== null &&
+    'yield' in globalThis.scheduler &&
+    typeof globalThis.scheduler.yield === 'function'
+  ) {
+    return globalThis.scheduler.yield();
+  }
+  return new Promise((resolve) => setTimeout(resolve, 0));
+};
 
 export class PageTranslationPipeline {
   private readonly pageMemory = new Map<string, string>();
@@ -226,6 +243,7 @@ export class PageTranslationPipeline {
     ++this.generation;
     this.observer?.disconnect();
     this.observer = null;
+    this.applyQueue.length = 0;
     for (const occurrence of this.occurrences.slice().reverse())
       restoreOccurrence(occurrence);
     this.occurrences = [];
@@ -452,7 +470,7 @@ export class PageTranslationPipeline {
       if (cached !== undefined) {
         this.metrics.memoryHits++;
         this.recordPageMemoryHit(unit, cached);
-        if (this.isCurrent(generation)) this.applyUnit(unit, cached);
+        if (this.isCurrent(generation)) this.scheduleApply(unit, cached, generation);
       } else {
         this.metrics.memoryMisses++;
         waiting.push(unit);
@@ -555,7 +573,7 @@ export class PageTranslationPipeline {
         if (applied.has(item.unit.semanticKey)) continue;
         const translated = this.pageMemory.get(item.unit.semanticKey);
         if (translated !== undefined && this.isCurrent(generation)) {
-          this.applyUnit(item.unit, translated);
+          this.scheduleApply(item.unit, translated, generation);
           applied.add(item.unit.semanticKey);
         }
       }
@@ -768,8 +786,7 @@ export class PageTranslationPipeline {
         );
         this.observeAccepted(item.unit, translated);
         if (this.isCurrent(generation)) {
-          this.applyUnit(item.unit, translated);
-          this.options.onUnitResolved?.(assembly.values.length);
+          this.scheduleApply(item.unit, translated, generation, assembly.values.length);
         } else {
           this.metrics.staleCancellations++;
           if (logBatch !== null) {
@@ -845,6 +862,59 @@ export class PageTranslationPipeline {
     if (this.metrics.firstVisibleTranslationAt === undefined && unit.priority >= 4) {
       this.metrics.firstVisibleTranslationAt = performance.now();
     }
+  }
+
+  private readonly applyQueue: {
+    unit: TranslationUnit;
+    translation: string;
+    generation: number;
+    resolvedParts?: number;
+  }[] = [];
+  private applyPumpRunning = false;
+
+  /**
+   * Bulk DOM application goes through a chunked pump: at most
+   * APPLY_CHUNK_OCCURRENCES occurrences per macrotask, then the main thread
+   * is yielded. Applying a warm-cache replay or a large batch in one
+   * synchronous run froze the host page.
+   */
+  private static readonly APPLY_CHUNK_OCCURRENCES = 24;
+
+  private scheduleApply(
+    unit: TranslationUnit,
+    translation: string,
+    generation: number,
+    resolvedParts?: number,
+  ): void {
+    this.applyQueue.push({ unit, translation, generation, resolvedParts });
+    if (this.applyPumpRunning) return;
+    this.applyPumpRunning = true;
+    // Deferred to a microtask so all units enqueued by the same synchronous
+    // batch-completion loop accumulate into one chunked run.
+    queueMicrotask(() => {
+      void this.pumpApplies();
+    });
+  }
+
+  private async pumpApplies(): Promise<void> {
+    let chunk = 0;
+    while (this.applyQueue.length > 0) {
+      const item = this.applyQueue.shift();
+      if (item === undefined) break;
+      if (this.isCurrent(item.generation)) {
+        // Parse-safe: validatePlaceholderIntegrity ran before enqueueing.
+        this.applyUnit(item.unit, item.translation);
+        if (item.resolvedParts !== undefined) {
+          this.options.onUnitResolved?.(item.resolvedParts);
+        }
+        chunk += Math.max(1, item.unit.occurrences.length);
+      }
+      if (chunk >= PageTranslationPipeline.APPLY_CHUNK_OCCURRENCES) {
+        chunk = 0;
+        if (this.applyQueue.length > 0) await yieldToMain();
+      }
+    }
+    this.applyPumpRunning = false;
   }
 
   private adoptApplicationMutation(mutation: MutationRecord): Element | null {

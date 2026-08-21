@@ -16,7 +16,7 @@ export type StructuredOutputMode =
   | 'prompt-only';
 export type ReasoningMode = 'disabled' | 'minimal' | 'normal';
 export type ReasoningControl = 'reasoning-effort' | 'enable-thinking' | 'thinking-object';
-export type TranslationResponseShape = 'pairs' | 'objects';
+export type TranslationResponseShape = 'pairs' | 'objects' | 'array';
 export type ChatTemplateOwner = 'provider' | 'tokenizer' | 'application';
 
 export interface TranslationGenerationSettings {
@@ -256,7 +256,7 @@ export const createConservativeTranslationModelProfile = (
 const qualityPatches: Record<TranslationQualityMode, TranslationModelProfilePatch> = {
   fast: {
     promptVariant: 'compact',
-    responseShape: 'pairs',
+    responseShape: 'array',
     batching: {
       maxItems: 24,
       maxSourceTokens: 900,

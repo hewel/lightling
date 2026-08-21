@@ -233,7 +233,7 @@ describe('LLMScheduler', () => {
 
     // 2. TranslationAbortedError
     stubTranslator.translateBatchWithOptions.mockRejectedValueOnce(
-      new TranslationAbortedError(),
+      TranslationAbortedError.new(),
     );
 
     const p2 = scheduler.translate('aborted', 'en', 'es', { directTranslate: true });
@@ -242,7 +242,7 @@ describe('LLMScheduler', () => {
 
     // 3. TranslationSchedulerReplacedError
     stubTranslator.translateBatchWithOptions.mockRejectedValueOnce(
-      new TranslationSchedulerReplacedError(),
+      TranslationSchedulerReplacedError.new(),
     );
 
     const p3 = scheduler.translate('replaced', 'en', 'es', { directTranslate: true });
