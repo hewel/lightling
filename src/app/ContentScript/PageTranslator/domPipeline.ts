@@ -97,6 +97,11 @@ interface SegmentBinding {
   createdTextNodes: Set<Text>;
 }
 
+interface SerializedSegment {
+  sourceText: string;
+  binding: SegmentBinding;
+}
+
 interface AttributeBinding {
   type: 'attribute';
   element: Element;
@@ -260,7 +265,7 @@ const protectText = (
 const serializeSegment = (
   root: Element,
   options: CollectionOptions,
-): { sourceText: string; binding: SegmentBinding } => {
+): SerializedSegment => {
   const placeholders = new Map<string, Element>();
   const protectedValues = new Map<string, string>();
   const originalChildren = new Map<Element, Node[]>();
@@ -319,6 +324,24 @@ const serializeSegment = (
       createdTextNodes,
     },
   };
+};
+
+const collectTranslatableSegments = (
+  root: Element,
+  options: CollectionOptions,
+): SerializedSegment[] => {
+  const hasDirectTranslatableText = Array.from(root.childNodes).some(
+    (node) =>
+      node instanceof Text &&
+      hasMeaningfulText((node.nodeValue ?? '').replace(PROTECTED_TEXT_PATTERN, '')),
+  );
+  if (hasDirectTranslatableText) return [serializeSegment(root, options)];
+
+  return Array.from(root.children).flatMap((child) =>
+    ATOMIC_TAGS.has(child.tagName) || isExcluded(child, options)
+      ? []
+      : collectTranslatableSegments(child, options),
+  );
 };
 
 const headingPathFor = (element: Element, headings: Element[]): string[] => {
@@ -413,11 +436,12 @@ export const collectPageOccurrences = (
     sourceText: string,
     slot: TranslationSlot,
     binding: OccurrenceBinding,
+    semanticElement = element,
   ) => {
     if (!hasMeaningfulText(sourceText)) return;
-    const kind = classifyKind(element, slot);
-    const contextClass = getContextClass(element, kind);
-    const section = makeSection(element, headings);
+    const kind = classifyKind(semanticElement, slot);
+    const contextClass = getContextClass(semanticElement, kind);
+    const section = makeSection(semanticElement, headings);
     sections.set(section.sectionId, section);
     const normalizedText = normalizeTranslationText(sourceText);
     const semanticKey = createSemanticKey({
@@ -443,9 +467,9 @@ export const collectPageOccurrences = (
       slot,
       contextClass,
       sectionId: section.sectionId,
-      componentId: element.getAttribute('id') ?? undefined,
+      componentId: semanticElement.getAttribute('id') ?? undefined,
       semanticKey,
-      priority: priorityOverride ?? getPriority(element),
+      priority: priorityOverride ?? getPriority(semanticElement),
       binding,
       element,
       section,
@@ -455,8 +479,15 @@ export const collectPageOccurrences = (
   const visit = (element: Element) => {
     if (isExcluded(element, options)) return;
     if (isBoundary(element)) {
-      const serialized = serializeSegment(element, options);
-      addOccurrence(element, serialized.sourceText, 'visible-text', serialized.binding);
+      for (const serialized of collectTranslatableSegments(element, options)) {
+        addOccurrence(
+          serialized.binding.root,
+          serialized.sourceText,
+          'visible-text',
+          serialized.binding,
+          element,
+        );
+      }
       return;
     }
     for (const child of Array.from(element.children)) visit(child);

@@ -43,6 +43,25 @@ describe('DOM page translation pipeline', () => {
     expect(document.querySelector('p')?.textContent).toBe('Click Save to continue.');
   });
 
+  test('sends pure text for structural wrappers and skips placeholder-only segments', () => {
+    document.body.innerHTML =
+      '<main><a><span>FAQ</span><input></a><a><span>Noctalia</span><span>Current release · v5+</span></a><button><input></button></main>';
+    const spans = Array.from(document.querySelectorAll('span'));
+    const input = document.querySelector('a input');
+    const units = deduplicateOccurrences(collect().occurrences);
+
+    expect(units.map((unit) => unit.sourceText)).toEqual([
+      'FAQ',
+      'Noctalia',
+      'Current release · v5+',
+    ]);
+
+    applyOccurrenceTranslation(units[0].occurrences[0], 'Häufige Fragen');
+    expect(Array.from(document.querySelectorAll('span'))).toEqual(spans);
+    expect(document.querySelector('a input')).toBe(input);
+    expect(spans[0].textContent).toBe('Häufige Fragen');
+  });
+
   test('protects inline code and restores it unchanged', () => {
     document.body.innerHTML = '<p>Run <code>npm test</code> now.</p>';
     const unit = deduplicateOccurrences(collect().occurrences)[0];
