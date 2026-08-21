@@ -21,6 +21,7 @@ import { setConfigFactory } from '../../requests/backend/setConfig';
 import { suggestLanguageFactory } from '../../requests/backend/suggestLanguage';
 import { telemetryFactory } from '../../requests/backend/telemetry';
 import { translateFactory } from '../../requests/backend/translate';
+import { translatePageBatchFactory } from '../../requests/backend/translatePageBatch';
 import { addTranslationFactory } from '../../requests/backend/translations/addTranslation';
 import { clearTranslationsFactory } from '../../requests/backend/translations/clearTranslations';
 import { deleteTranslationFactory } from '../../requests/backend/translations/deleteTranslation';
@@ -39,6 +40,7 @@ import { updateConfigFactory } from '../../requests/backend/updateConfig';
 
 export const requestHandlers = [
   translateFactory,
+  translatePageBatchFactory,
   abortTranslationFactory,
   telemetryFactory,
   suggestLanguageFactory,

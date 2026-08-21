@@ -1,6 +1,16 @@
 import { isLanguageCodeISO639v1 } from 'anylang/languages';
 import { IScheduler, Scheduler, SchedulerWithCache } from 'anylang/scheduling';
 
+import {
+  createSemanticKey,
+  DEFAULT_GLOSSARY_VERSION,
+  type PageTranslationBatchRequest,
+  type PageTranslationBatchResponse,
+  type PageTranslationResult,
+  validatePlaceholderIntegrity,
+  WEBPAGE_NORMALIZATION_VERSION,
+  WEBPAGE_TRANSLATION_PROMPT_VERSION,
+} from '@/lib/pageTranslation/protocol';
 import { TELEMETRY_EVENT_NAME } from '@/lib/telemetry';
 import { telemetry } from '@/lib/telemetry/singleton';
 import { LLMScheduler } from '@/lib/translators/llm/LLMScheduler';
@@ -11,6 +21,7 @@ import { RecordValues } from '@/types/utils';
 
 import { TranslatorsMap } from '..';
 import { TranslatorsCacheStorage } from '../TranslatorsCacheStorage';
+import { PageTranslationMemory } from './PageTranslationMemory';
 
 export type Config = Pick<
   AppConfigType,
@@ -26,6 +37,8 @@ export class TranslatorManager<Translators extends TranslatorsMap = TranslatorsM
   private readonly managerOptions?: {
     onLLMTokenUsage?: (usage: { inputTokens: number; outputTokens: number }) => void;
   };
+  private readonly pageTranslationMemory = new PageTranslationMemory();
+
   constructor(
     config: Config,
     translators: Translators,
@@ -74,6 +87,117 @@ export class TranslatorManager<Translators extends TranslatorsMap = TranslatorsM
    */
   public getScheduler() {
     return this.getTranslationSchedulerInstance();
+  }
+  public async translatePageBatch(
+    request: PageTranslationBatchRequest,
+  ): Promise<PageTranslationBatchResponse> {
+    const identity = this.getPageTranslationIdentity();
+    const targets = request.targets.map((target) => ({
+      ...target,
+      semanticKey: createSemanticKey({
+        sourceLanguage: request.sourceLanguage,
+        targetLanguage: request.targetLanguage,
+        normalizedText: target.normalizedText,
+        kind: target.kind,
+        slot: target.slot,
+        contextClass: target.contextClass,
+        provider: identity.provider,
+        model: identity.model,
+        glossaryVersion: DEFAULT_GLOSSARY_VERSION,
+        promptVersion: WEBPAGE_TRANSLATION_PROMPT_VERSION,
+      }),
+    }));
+    const results = new Map<string, PageTranslationResult>();
+    const misses = [];
+    const metrics = { retryCount: 0, validationFailures: 0 };
+
+    for (const target of targets) {
+      const entry = await this.pageTranslationMemory.get(target.semanticKey);
+      if (entry === null) {
+        misses.push(target);
+      } else {
+        results.set(target.id, {
+          id: target.id,
+          target: entry.translatedText,
+          cacheKey: entry.key,
+          cacheHit: true,
+        });
+      }
+    }
+
+    if (misses.length > 0) {
+      const translatorClass = this.getTranslatorClass();
+      const translated =
+        (translatorClass as unknown) === LLMTranslator
+          ? await (this.getTranslatorInstance() as LLMTranslator).translatePageBatch(
+              { ...request, targets: misses },
+              {
+                context: request.sessionId,
+                priority: Math.max(...misses.map((target) => target.priority)),
+                retryLimit: this.config.scheduler.translateRetryAttemptLimit,
+              },
+              (increment) => {
+                metrics.retryCount += increment.retryCount;
+                metrics.validationFailures += increment.validationFailures;
+              },
+            )
+          : await Promise.all(
+              misses.map(async (target) => ({
+                id: target.id,
+                target: await this.getScheduler().translate(
+                  target.sourceText,
+                  request.sourceLanguage,
+                  request.targetLanguage,
+                  {
+                    context: request.sessionId,
+                    priority: target.priority,
+                  },
+                ),
+              })),
+            );
+
+      for (const translation of translated) {
+        const target = misses.find((candidate) => candidate.id === translation.id);
+        if (target === undefined) continue;
+        if (!validatePlaceholderIntegrity(target.sourceText, translation.target)) {
+          throw new Error(`Translator corrupted placeholders for ${target.id}`);
+        }
+        const now = Date.now();
+        const entry = {
+          key: target.semanticKey,
+          sourceLanguage: request.sourceLanguage,
+          targetLanguage: request.targetLanguage,
+          sourceText: target.sourceText,
+          translatedText: translation.target,
+          kind: target.kind,
+          slot: target.slot,
+          contextClass: target.contextClass,
+          provider: identity.provider,
+          model: identity.model,
+          glossaryVersion: DEFAULT_GLOSSARY_VERSION,
+          promptVersion: WEBPAGE_TRANSLATION_PROMPT_VERSION,
+          normalizationVersion: WEBPAGE_NORMALIZATION_VERSION,
+          createdAt: now,
+          lastUsedAt: now,
+        };
+        await this.pageTranslationMemory.set(entry);
+        results.set(target.id, {
+          id: target.id,
+          target: translation.target,
+          cacheKey: target.semanticKey,
+          cacheHit: false,
+        });
+      }
+    }
+
+    return {
+      translations: targets.map((target) => {
+        const result = results.get(target.id);
+        if (result === undefined) throw new Error(`Missing translation for ${target.id}`);
+        return result;
+      }),
+      metrics,
+    };
   }
 
   private llmSchedulerInstance: LLMScheduler | null = null;
@@ -202,6 +326,17 @@ export class TranslatorManager<Translators extends TranslatorsMap = TranslatorsM
 
     const { translatorModule, cache } = this.config;
     return new TranslatorsCacheStorage(translatorModule, cache);
+  }
+
+  private getPageTranslationIdentity(): { provider: string; model: string } {
+    if ((this.getTranslatorClass() as unknown) === LLMTranslator) {
+      const profile = getActiveLLMProfile(this.config.llmTranslator);
+      return { provider: profile.provider, model: profile.model };
+    }
+    return {
+      provider: this.config.translatorModule,
+      model: this.config.translatorModule,
+    };
   }
 
   private getTranslatorClass(): RecordValues<Translators> {

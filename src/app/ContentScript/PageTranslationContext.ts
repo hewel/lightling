@@ -94,7 +94,11 @@ export class PageTranslationContext {
 
     const pageSlice = (state: PageContextState) => ({
       state: state.pageTranslation,
-      config: state.config.pageTranslator,
+      config: {
+        ...state.config.pageTranslator,
+        translatorModule: state.config.translatorModule,
+        llmTranslator: state.config.llmTranslator,
+      },
     });
     const $pageTranslatorState = createObservableStore(
       pageSlice(this.$context.getState()),

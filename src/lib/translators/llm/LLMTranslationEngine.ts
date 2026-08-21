@@ -1,6 +1,14 @@
 import { Duration, Effect, Schema } from 'effect';
 import type { AiError, Prompt } from 'effect/unstable/ai';
 
+import {
+  isPlausibleTargetLanguage,
+  parsePageTranslationResponse,
+  type PageTranslationBatchRequest,
+  type TranslationTarget,
+  WEBPAGE_SYSTEM_PROMPT,
+} from '@/lib/pageTranslation/protocol';
+
 import type { LLMProfile } from './LLMTranslator';
 import { getEffectiveLLMApiUrl, type ResolvedLLMExecutionSettings } from './modelInfo';
 
@@ -313,6 +321,51 @@ export class LLMTranslationEngine {
       }
     }
     this.activeControllers.clear();
+  }
+
+  public async translatePageBatch(
+    request: PageTranslationBatchRequest,
+    options: TranslateBatchOptions,
+    onMetrics?: (metrics: { retryCount: number; validationFailures: number }) => void,
+  ): Promise<{ id: string; target: string }[]> {
+    if (this.isDisposed) throw new TranslationSchedulerReplacedError();
+    if (this.abortedContexts.has(options.context)) throw new TranslationAbortedError();
+    if (request.targets.length === 0) return [];
+
+    const settings = await this.getSettings();
+    if (this.isDisposed) throw new TranslationSchedulerReplacedError();
+    if (this.abortedContexts.has(options.context)) throw new TranslationAbortedError();
+
+    const deferred = createDeferred<{ id: string; target: string }[]>();
+    const sourceBytes = request.targets.reduce(
+      (total, target) => total + getUtf8ByteLength(target.sourceText),
+      0,
+    );
+    const unit: TranslationUnit = {
+      text: '',
+      estTokens: Math.ceil(sourceBytes / 3),
+      upperTokens: sourceBytes,
+      onResolved: () => {},
+      onRejected: (error) => deferred.reject(error),
+    };
+    const job: QueueJob = {
+      serial: this.serialCounter++,
+      priority: options.priority,
+      context: options.context,
+      units: [unit],
+      run: async () => {
+        try {
+          deferred.resolve(
+            await this.executePageBatch(request, options, settings, onMetrics),
+          );
+        } catch (error) {
+          deferred.reject(error);
+        }
+      },
+    };
+    this.queue.push(job);
+    this.schedulePump(settings.maxConcurrentRequests);
+    return deferred.promise;
   }
 
   public async translateBatch(
@@ -686,6 +739,161 @@ export class LLMTranslationEngine {
       );
 
     return attempt(retryLimit, INITIAL_RETRY_DELAY_MS);
+  }
+
+  private async executePageBatch(
+    request: PageTranslationBatchRequest,
+    options: TranslateBatchOptions,
+    settings: ResolvedLLMExecutionSettings,
+    onMetrics?: (metrics: { retryCount: number; validationFailures: number }) => void,
+  ): Promise<{ id: string; target: string }[]> {
+    if (this.isDisposed) throw new TranslationSchedulerReplacedError();
+    if (this.abortedContexts.has(options.context)) throw new TranslationAbortedError();
+
+    const sourceEstimate = request.targets.reduce(
+      (total, target) => total + Math.ceil(getUtf8ByteLength(target.sourceText) / 3),
+      0,
+    );
+    const maxOutputTokens =
+      settings.maxOutputTokens === null
+        ? Math.max(MIN_OUTPUT_TOKENS, Math.ceil(sourceEstimate * 1.8) + 96)
+        : Math.min(
+            settings.maxOutputTokens,
+            Math.max(MIN_OUTPUT_TOKENS, Math.ceil(sourceEstimate * 1.8) + 96),
+          );
+    const controller = new AbortController();
+    let controllers = this.activeControllers.get(options.context);
+    if (controllers === undefined) {
+      controllers = new Set();
+      this.activeControllers.set(options.context, controllers);
+    }
+    controllers.add(controller);
+
+    const accepted = new Map<string, string>();
+    const requestAttempt = async (
+      targets: TranslationTarget[],
+      retryStage: PageTranslationBatchRequest['retryStage'],
+      simplifiedContext: boolean,
+    ) => {
+      const body = JSON.stringify({
+        sourceLanguage: request.sourceLanguage,
+        targetLanguage: request.targetLanguage,
+        memory: request.memory,
+        context: simplifiedContext
+          ? {
+              headingPath: request.context.headingPath,
+              previous: [],
+              following: [],
+              retrieved: [],
+            }
+          : request.context,
+        group: request.group,
+        targets: targets.map((target) => ({
+          id: target.id,
+          kind: target.kind,
+          source: target.sourceText,
+        })),
+        retryStage,
+      });
+      const response = await Effect.runPromise(
+        this.buildRetryPolicy(
+          () =>
+            this.options.fetch({
+              prompt: [
+                { role: 'system', content: WEBPAGE_SYSTEM_PROMPT },
+                { role: 'user', content: body },
+              ],
+              maxOutputTokens,
+              signal: controller.signal,
+            }),
+          options.retryLimit,
+        ),
+        { signal: controller.signal },
+      );
+      this.reportUsage(response.usage);
+      return parsePageTranslationResponse(response.text, targets, (text) =>
+        isPlausibleTargetLanguage(text, request.targetLanguage),
+      );
+    };
+
+    try {
+      const initial = await requestAttempt(
+        request.targets,
+        request.retryStage ?? 'initial',
+        false,
+      );
+      if (initial.issues.length > 0) {
+        onMetrics?.({
+          retryCount: 0,
+          validationFailures: initial.issues.length,
+        });
+      }
+      for (const translation of initial.translations) {
+        accepted.set(translation.id, translation.target);
+      }
+
+      const failedIds = new Set(
+        initial.issues
+          .filter((issue) => issue.id !== undefined && !accepted.has(issue.id))
+          .map((issue) => issue.id)
+          .filter((id): id is string => id !== undefined),
+      );
+      if (initial.issues.some((issue) => issue.id === undefined)) {
+        for (const target of request.targets) {
+          if (!accepted.has(target.id)) failedIds.add(target.id);
+        }
+      }
+
+      for (const id of failedIds) {
+        const target = request.targets.find((candidate) => candidate.id === id);
+        if (target === undefined) continue;
+        onMetrics?.({ retryCount: 1, validationFailures: 0 });
+        let isolated = await requestAttempt([target], 'isolated', false);
+        if (isolated.issues.length > 0) {
+          onMetrics?.({ retryCount: 0, validationFailures: isolated.issues.length });
+        }
+        if (isolated.translations.length === 0) {
+          onMetrics?.({ retryCount: 1, validationFailures: 0 });
+          isolated = await requestAttempt([target], 'simplified-context', true);
+          if (isolated.issues.length > 0) {
+            onMetrics?.({ retryCount: 0, validationFailures: isolated.issues.length });
+          }
+        }
+        if (isolated.translations.length === 0) {
+          onMetrics?.({ retryCount: 1, validationFailures: 0 });
+          isolated = await requestAttempt([target], 'rich-context', false);
+          if (isolated.issues.length > 0) {
+            onMetrics?.({ retryCount: 0, validationFailures: isolated.issues.length });
+          }
+        }
+        const translation = isolated.translations[0];
+        if (translation !== undefined) accepted.set(id, translation.target);
+      }
+
+      const result: { id: string; target: string }[] = [];
+      for (const target of request.targets) {
+        const translated = accepted.get(target.id);
+        if (translated === undefined) {
+          throw new InvalidLLMResponseError({
+            message: `No valid translation returned for ${target.id}`,
+          });
+        }
+        result.push({ id: target.id, target: translated });
+      }
+      return result;
+    } catch (error) {
+      if (
+        this.isDisposed ||
+        this.abortedContexts.has(options.context) ||
+        controller.signal.aborted
+      ) {
+        throw new TranslationAbortedError();
+      }
+      throw error;
+    } finally {
+      controllers.delete(controller);
+      if (controllers.size === 0) this.activeControllers.delete(options.context);
+    }
   }
 
   private async executeBatch(

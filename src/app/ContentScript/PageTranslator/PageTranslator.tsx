@@ -1,19 +1,16 @@
-import {
-  DOMTranslator,
-  INodesTranslator,
-  IntersectionScheduler,
-  NodesTranslator,
-  PersistentDOMTranslator,
-} from 'domtranslator';
-import { createNodesFilter, isElementNode, isTextNode } from 'domtranslator/utils/nodes';
-
 import { getContentScriptStyles } from '@/lib/browser';
 import { ShadowDOMContainerManager } from '@/lib/ShadowDOMContainerManager';
+import { getActiveLLMProfile } from '@/lib/translators/llm/LLMTranslator';
+import {
+  FALLBACK_CONTEXT_WINDOW_TOKENS,
+  FALLBACK_MAX_CONCURRENT_REQUESTS,
+  FALLBACK_PREFERRED_INPUT_TOKENS,
+} from '@/lib/translators/llm/modelInfo';
 import { abortTranslation } from '@/requests/backend/abortTranslation';
-import { translate } from '@/requests/backend/translate';
 import { AppConfigType } from '@/types/runtime';
 
 import { OriginalTextPopup } from './components/OriginalTextPopup/OriginalTextPopup';
+import { PageTranslationPipeline } from './PageTranslationPipeline';
 import { pageTranslatorStatsUpdated } from './requests/pageTranslatorStatsUpdated';
 
 export type PageTranslatorStats = {
@@ -22,28 +19,18 @@ export type PageTranslatorStats = {
   pending: number;
 };
 
-function isBlockElement(element: Element) {
-  const blockTypes = ['block', 'flex', 'grid', 'table', 'table-row', 'list-item'];
-  const display = getComputedStyle(element).display;
-
-  return blockTypes.includes(display);
-}
-
-type PageTranslatorConfig = Partial<
+export type PageTranslatorConfig = Partial<
   Pick<
     AppConfigType['pageTranslator'],
     'originalTextPopup' | 'translatableAttributes' | 'excludeSelectors' | 'lazyTranslate'
   >
->;
+> &
+  Partial<Pick<AppConfigType, 'translatorModule' | 'llmTranslator'>>;
 
-// TODO: rewrite to augmentation
 export class PageTranslator {
+  private readonly documentIdentity = crypto.randomUUID();
   private translateContext: string = crypto.randomUUID();
-
-  private pageTranslator: {
-    persistentDomTranslator: PersistentDOMTranslator;
-    nodesTranslator: INodesTranslator;
-  } | null = null;
+  private pageTranslator: PageTranslationPipeline | null = null;
   private pageTranslateDirection: { from: string; to: string } | null = null;
   private translateState: PageTranslatorStats = {
     resolved: 0,
@@ -79,80 +66,58 @@ export class PageTranslator {
 
     this.translateContext = crypto.randomUUID();
     const localContext = this.translateContext;
-
-    // Create local reference to object for decrease risc mutation
-    const localTranslateState = this.translateState;
-    const translateText = async (text: string, priority: number) => {
-      if (localContext !== this.translateContext) {
-        throw new Error('Outdated context');
-      }
-
-      localTranslateState.pending++;
-      this.translateStateUpdate();
-
-      return translate(text, from, to, { priority, context: this.translateContext })
-        .then((translatedText) => {
-          if (localContext === this.translateContext) {
-            localTranslateState.resolved++;
-          }
-
-          return translatedText;
-        })
-        .catch((reason) => {
-          if (localContext === this.translateContext) {
-            localTranslateState.rejected++;
-          }
-
-          throw reason;
-        })
-        .finally(() => {
-          if (localContext === this.translateContext) {
-            localTranslateState.pending--;
-            this.translateStateUpdate();
-          }
-        });
-    };
+    const profile =
+      this.config.translatorModule === 'LLMTranslator' &&
+      this.config.llmTranslator !== undefined
+        ? getActiveLLMProfile(this.config.llmTranslator)
+        : null;
+    const provider = profile?.provider ?? this.config.translatorModule ?? 'unknown';
+    const model = profile?.model ?? this.config.translatorModule ?? 'unknown';
+    const signature = [
+      location.href,
+      this.documentIdentity,
+      from,
+      to,
+      provider,
+      model,
+      this.config.lazyTranslate ? 'lazy' : 'eager',
+    ].join('\u0000');
 
     this.pageTranslateDirection = { from, to };
-
-    const nodesTranslator = new NodesTranslator(translateText);
-    this.pageTranslator = {
-      nodesTranslator,
-      persistentDomTranslator: new PersistentDOMTranslator(
-        new DOMTranslator(
-          // Nodes will be translated with fake translator,
-          // that is just adds a text prefix to original text
-          nodesTranslator,
-          {
-            // When `scheduler` is provided, a lazy translation mode will be used.
-            // Nodes will be translated only when intersects a viewport
-            scheduler: this.config.lazyTranslate
-              ? new IntersectionScheduler()
-              : undefined,
-
-            // Filter will skip nodes that must not be translated
-            filter: createNodesFilter({
-              // Only listed attributes will be translated
-              attributesList: this.config.translatableAttributes,
-              // Any elements not included in list will be translated
-              ignoredSelectors: (this.config.excludeSelectors ?? []).filter(
-                (selector) => {
-                  // Skip comments
-                  if (selector.startsWith('!')) return false;
-
-                  // Skip empty strings
-                  if (selector.trim().length === 0) return false;
-
-                  return true;
-                },
-              ),
-            }),
-          },
-        ),
+    this.pageTranslator = new PageTranslationPipeline({
+      root: document.documentElement,
+      sourceLanguage: from,
+      targetLanguage: to,
+      identity: { provider, model },
+      sessionId: localContext,
+      sessionSignature: signature,
+      contextWindow: profile?.contextWindowTokens ?? FALLBACK_CONTEXT_WINDOW_TOKENS,
+      preferredInputTokens:
+        profile?.preferredInputTokens ?? FALLBACK_PREFERRED_INPUT_TOKENS,
+      concurrency: profile?.maxConcurrentRequests ?? FALLBACK_MAX_CONCURRENT_REQUESTS,
+      translatableAttributes: this.config.translatableAttributes,
+      excludeSelectors: (this.config.excludeSelectors ?? []).filter(
+        (selector) => !selector.startsWith('!') && selector.trim() !== '',
       ),
-    };
-
-    this.pageTranslator.persistentDomTranslator.translate(document.documentElement);
+      onUnitStarted: (count) => {
+        if (localContext !== this.translateContext) return;
+        this.translateState.pending += count;
+        this.translateStateUpdate();
+      },
+      onUnitResolved: (count) => {
+        if (localContext !== this.translateContext) return;
+        this.translateState.resolved += count;
+        this.translateState.pending = Math.max(0, this.translateState.pending - count);
+        this.translateStateUpdate();
+      },
+      onUnitRejected: (count) => {
+        if (localContext !== this.translateContext) return;
+        this.translateState.rejected += count;
+        this.translateState.pending = Math.max(0, this.translateState.pending - count);
+        this.translateStateUpdate();
+      },
+    });
+    this.pageTranslator.start();
 
     if (this.config.originalTextPopup) {
       document.addEventListener('mouseover', this.showOriginalTextHandler);
@@ -164,9 +129,8 @@ export class PageTranslator {
       throw new Error('Page is not translated');
     }
 
-    const previousContext = this.translateContext;
-
-    this.pageTranslator.persistentDomTranslator.restore(document.documentElement);
+    const previousContext = this.pageTranslator.getSessionId();
+    this.pageTranslator.stop();
     this.pageTranslator = null;
     this.pageTranslateDirection = null;
 
@@ -192,44 +156,18 @@ export class PageTranslator {
     styles: getContentScriptStyles(),
   });
 
-  private readonly showOriginalTextHandler = (evt: MouseEvent) => {
-    const target: Element = evt.target as Element;
+  private readonly showOriginalTextHandler = (event: MouseEvent) => {
+    if (!(event.target instanceof HTMLElement)) return;
+    const target = event.target;
 
-    const getTextOfElement = (element: Node) => {
-      let text = '';
-
-      if (isTextNode(element)) {
-        text +=
-          this.pageTranslator?.nodesTranslator.getState(element)?.originalText ?? '';
-      } else if (isElementNode(element)) {
-        for (const node of Array.from(element.childNodes)) {
-          if (isTextNode(node)) {
-            text +=
-              this.pageTranslator?.nodesTranslator.getState(node)?.originalText ?? '';
-          } else if (isElementNode(node) && !isBlockElement(node)) {
-            text += getTextOfElement(node);
-          } else {
-            break;
-          }
-        }
-      }
-
-      return text;
-    };
-
-    // Create root node
     if (this.shadowRoot.getRootNode() === null) {
       this.shadowRoot.createRootNode();
     }
 
-    // TODO: show popup with text after delay
-    const text = getTextOfElement(target);
-    if (text) {
-      // TODO: consider viewport boundaries
+    const text = this.pageTranslator?.getOriginalText(target) ?? '';
+    if (text !== '') {
       this.shadowRoot.mountComponent(
-        <OriginalTextPopup target={{ current: target as HTMLElement }}>
-          {text}
-        </OriginalTextPopup>,
+        <OriginalTextPopup target={{ current: target }}>{text}</OriginalTextPopup>,
       );
     } else {
       this.shadowRoot.unmountComponent();

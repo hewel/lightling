@@ -1,8 +1,7 @@
 import type { ObservableStore } from '@/lib/store';
-import type { AppConfigType } from '@/types/runtime';
 
 import type { PageTranslationOptions } from '../PageTranslationContext';
-import { PageTranslator } from './PageTranslator';
+import { PageTranslator, type PageTranslatorConfig } from './PageTranslator';
 
 export class PageTranslatorManager {
   private readonly $state;
@@ -11,7 +10,7 @@ export class PageTranslatorManager {
   constructor(
     $state: ObservableStore<{
       state: PageTranslationOptions | null;
-      config: AppConfigType['pageTranslator'];
+      config: PageTranslatorConfig;
     }>,
   ) {
     this.$state = $state;

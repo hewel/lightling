@@ -11,6 +11,7 @@ import {
 } from '@effect/ai-openai-compat';
 import { OpenRouterClient, OpenRouterLanguageModel } from '@effect/ai-openrouter';
 
+import type { PageTranslationBatchRequest } from '@/lib/pageTranslation/protocol';
 import { AppConfigType } from '@/types/runtime';
 
 import { getMessage } from '../../language';
@@ -125,6 +126,24 @@ export class LLMTranslator implements TranslatorInstanceMembers {
       ...options,
       isolateInvalidBatches: true,
     });
+  }
+
+  public translatePageBatch(
+    request: PageTranslationBatchRequest,
+    options: LLMBatchRequestOptions,
+    onMetrics?: (metrics: { retryCount: number; validationFailures: number }) => void,
+  ): Promise<{ id: string; target: string }[]> {
+    if (this.profile.model === '') {
+      return Promise.reject(new Error('LLM translator model is not configured'));
+    }
+    return this.engine.translatePageBatch(
+      request,
+      {
+        ...options,
+        isolateInvalidBatches: true,
+      },
+      onMetrics,
+    );
   }
 
   public abort(context: string): void {
