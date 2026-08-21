@@ -35,10 +35,10 @@ import {
   type LLMRequestEffect,
 } from './LLMTranslationEngine';
 import {
-  loadLLMExecutionSettings,
   resolveLLMProfileConnection,
   type ResolvedLLMExecutionSettings,
 } from './modelInfo';
+import { loadLLMExecutionSettingsCached } from './modelListCache';
 import { validateFallbackProfiles, type ConfiguredLLMProfile } from './modelProfile';
 
 export type LLMTranslatorConfig = AppConfigType['llmTranslator'];
@@ -115,18 +115,23 @@ export class LLMTranslator implements TranslatorInstanceMembers {
         warnings: configurationWarnings,
       });
     }
-    const settingsPromise = loadLLMExecutionSettings(this.profile).then((settings) => {
-      this.resolvedSettings = settings;
-      if (this.profile.translationProfile?.debug && settings.profileWarnings.length > 0) {
-        console.debug('[llm-translation-profile]', {
-          profile: settings.translationProfile.id,
-          provider: settings.translationProfile.providerId,
-          model: settings.translationProfile.modelId,
-          warnings: settings.profileWarnings,
-        });
-      }
-      return settings;
-    });
+    const settingsPromise = loadLLMExecutionSettingsCached(this.profile).then(
+      (settings) => {
+        this.resolvedSettings = settings;
+        if (
+          this.profile.translationProfile?.debug &&
+          settings.profileWarnings.length > 0
+        ) {
+          console.debug('[llm-translation-profile]', {
+            profile: settings.translationProfile.id,
+            provider: settings.translationProfile.providerId,
+            model: settings.translationProfile.modelId,
+            warnings: settings.profileWarnings,
+          });
+        }
+        return settings;
+      },
+    );
     this.engine = new LLMTranslationEngine({
       loadSettings: () => settingsPromise,
       fetch: (request) => this.buildFetchEffect(request),

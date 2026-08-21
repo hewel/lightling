@@ -1,4 +1,12 @@
-import { type FC, type ReactNode, useCallback, useMemo, useRef, useState } from 'react';
+import {
+  type FC,
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { Banner } from '@astryxdesign/core/Banner';
 import { Collapsible } from '@astryxdesign/core/Collapsible';
 import { EmptyState } from '@astryxdesign/core/EmptyState';
@@ -22,7 +30,7 @@ import { InputGroupAction } from '@/components/controls/InputGroupAction/InputGr
 import { Button } from '@/components/primitives/Button/Button.bundle/universal';
 import { Textinput } from '@/components/primitives/Textinput/Textinput.bundle/desktop';
 import { getMessage } from '@/lib/language';
-import { fetchLLMModels, testLLMTranslator } from '@/lib/translators/llm/api';
+import { testLLMTranslator } from '@/lib/translators/llm/api';
 import {
   type LLMProfile,
   type LLMProvider,
@@ -33,6 +41,10 @@ import {
   getLLMDiscoveryIdentity,
   resolveLLMExecutionSettings,
 } from '@/lib/translators/llm/modelInfo';
+import {
+  fetchLLMModelsCached,
+  getCachedLLMModels,
+} from '@/lib/translators/llm/modelListCache';
 import {
   resolveTranslationModelProfile,
   validateFallbackProfiles,
@@ -429,7 +441,7 @@ export const LLMProfilesFieldList: FC<LLMProfilesFieldListProps> = ({
       },
     }));
 
-    fetchLLMModels(profile)
+    fetchLLMModelsCached(profile, { forceRefresh: true })
       .then((models) => {
         const current = currentValue.current.profiles[index];
         if (
@@ -555,6 +567,34 @@ export const LLMProfilesFieldList: FC<LLMProfilesFieldListProps> = ({
     selectedProfile !== undefined
       ? resolveLLMExecutionSettings(selectedProfile, selectedModelInfo)
       : undefined;
+
+  const selectedDiscoveryIdentity =
+    selectedProfile !== undefined ? getLLMDiscoveryIdentity(selectedProfile) : null;
+
+  // Restore the fetched model list from the persistent cache without a network request
+  useEffect(() => {
+    if (selectedProfile === undefined || selectedDiscoveryIdentity === null) return;
+
+    const identity = selectedDiscoveryIdentity;
+    getCachedLLMModels(selectedProfile).then((models) => {
+      if (models === null || models.length === 0) return;
+
+      const current = currentValue.current.profiles[selectedProfileIndex];
+      if (current === undefined || getLLMDiscoveryIdentity(current) !== identity) return;
+
+      setRowStates((currentStates) => {
+        if (currentStates[selectedProfileIndex]?.models !== undefined) {
+          return currentStates;
+        }
+
+        return {
+          ...currentStates,
+          [selectedProfileIndex]: { ...currentStates[selectedProfileIndex], models },
+        };
+      });
+    });
+    // oxlint-disable-next-line react/exhaustive-deps
+  }, [selectedProfileIndex, selectedDiscoveryIdentity]);
 
   const detectedOutputCap = selectedModelInfo?.maxOutputTokens ?? null;
   const autoMaxOutputDescription =
@@ -747,6 +787,8 @@ export const LLMProfilesFieldList: FC<LLMProfilesFieldListProps> = ({
                       }))}
                       value={selectedProfile.model}
                       width="100%"
+                      hasSearch
+                      searchPlaceholder={getMessage('common_search')}
                       status={selectedRowState.modelsStatus}
                       onChange={(model) => {
                         patchProfile(selectedProfileIndex, { model });

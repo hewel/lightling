@@ -158,6 +158,12 @@ const PopupPage: FC<PopupPageProps> = ({ rootElement }) => {
 
   const minWidth = useMemo(() => (isMobileBrowser() ? undefined : 450), []);
 
+  // Refetch config and features after the translator model selector changes them
+  const handleConfigUpdated = useCallback(() => {
+    getConfig().then(setConfig);
+    getTranslatorFeatures().then(setTranslatorFeatures);
+  }, []);
+
   return (
     <PopupWindow
       rootElement={rootElement}
@@ -168,6 +174,7 @@ const PopupPage: FC<PopupPageProps> = ({ rootElement }) => {
       config={config}
       translatorFeatures={translatorFeatures}
       minWidth={minWidth}
+      onConfigUpdated={handleConfigUpdated}
     />
   );
 };

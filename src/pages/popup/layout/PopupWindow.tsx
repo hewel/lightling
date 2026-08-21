@@ -10,7 +10,7 @@ import {
 } from 'react';
 import { IconButton } from '@astryxdesign/core/IconButton';
 import { Spinner } from '@astryxdesign/core/Spinner';
-import { HStack } from '@astryxdesign/core/Stack';
+import { HStack, StackItem } from '@astryxdesign/core/Stack';
 import { Tab, TabList } from '@astryxdesign/core/TabList';
 import * as stylex from '@stylexjs/stylex';
 import { IconBook2, IconHistory, IconSettings } from '@tabler/icons-react';
@@ -22,6 +22,8 @@ import { telemetry } from '@/lib/telemetry/singleton';
 import { XResizeObserver } from '@/lib/XResizeObserver';
 import LogoElement from '@/res/logo-base.svg';
 import { AppConfigType } from '@/types/runtime';
+
+import { TranslatorModelSelector } from './TranslatorModelSelector';
 
 const styles = stylex.create({
   root: {
@@ -121,6 +123,12 @@ export interface PopupWindowProps {
   // NOTE: it not used here, only forward, maybe should move it to components init hook
   config?: AppConfigType;
   translatorFeatures?: TranslatorFeatures;
+
+  /**
+   * Called after the translator model selector updates the config,
+   * so the parent can refetch config and translator features
+   */
+  onConfigUpdated?: () => void;
 }
 
 export type PopupWindowContextProps = { activeTab?: string };
@@ -141,6 +149,7 @@ export const PopupWindow: FC<PopupWindowProps> = ({
   setActiveTab,
   rootElement,
   minWidth,
+  onConfigUpdated,
 }) => {
   useLayoutEffect(() => {
     telemetry.track(TELEMETRY_EVENT_NAME.POPUP_OPENED);
@@ -324,6 +333,11 @@ export const PopupWindow: FC<PopupWindowProps> = ({
         xstyle={styles.header}
       >
         <LogoElement {...stylex.props(styles.logoIcon)} />
+        {config !== undefined && onConfigUpdated !== undefined && (
+          <StackItem size="fill">
+            <TranslatorModelSelector config={config} onConfigUpdated={onConfigUpdated} />
+          </StackItem>
+        )}
         <HStack gap={1} align="center">
           <IconButton
             href="/pages/history/history.html"

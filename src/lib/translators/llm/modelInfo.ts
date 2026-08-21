@@ -467,6 +467,7 @@ export const resolveLLMExecutionSettings = (
  */
 export const loadLLMExecutionSettings = async (
   profile: ConfiguredLLMProfile,
+  fetchModels: typeof fetchLLMModels = fetchLLMModels,
 ): Promise<ResolvedLLMExecutionSettings> => {
   const isDiscoverable =
     profile.provider === 'openrouter' || profile.provider === 'openai-compatible';
@@ -474,7 +475,7 @@ export const loadLLMExecutionSettings = async (
   let modelInfo: LLMModelInfo | null = null;
   if (isDiscoverable) {
     try {
-      const models = await fetchLLMModels(profile);
+      const models = await fetchModels(profile);
       modelInfo = models.find((model) => model.id === profile.model) ?? null;
     } catch {
       // Timeout, transport, and decode failures fall back without failing translation

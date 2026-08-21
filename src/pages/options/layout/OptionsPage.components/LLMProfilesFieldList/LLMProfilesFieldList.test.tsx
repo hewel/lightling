@@ -16,11 +16,16 @@ import {
 } from './LLMProfilesFieldList';
 
 const apiMocks = vi.hoisted(() => ({
-  fetchLLMModels: vi.fn(),
   testLLMTranslator: vi.fn(),
 }));
 
+const cacheMocks = vi.hoisted(() => ({
+  fetchLLMModelsCached: vi.fn(),
+  getCachedLLMModels: vi.fn(),
+}));
+
 vi.mock('@/lib/translators/llm/api', () => apiMocks);
+vi.mock('@/lib/translators/llm/modelListCache', () => cacheMocks);
 vi.mock('@/lib/language', () => ({
   getMessage: (name: string, substitutions?: string | string[]) =>
     substitutions === undefined
@@ -71,8 +76,10 @@ describe('LLMProfilesFieldList', () => {
     container = document.createElement('div');
     document.body.append(container);
     root = createRoot(container);
-    apiMocks.fetchLLMModels.mockReset();
     apiMocks.testLLMTranslator.mockReset();
+    cacheMocks.fetchLLMModelsCached.mockReset();
+    // No cached models by default: hydration stays inert
+    cacheMocks.getCachedLLMModels.mockReset().mockResolvedValue(null);
   });
 
   afterEach(async () => {
@@ -281,7 +288,7 @@ describe('LLMProfilesFieldList', () => {
   });
 
   it('keeps model discovery and connection tests available per row', async () => {
-    apiMocks.fetchLLMModels.mockResolvedValue([makeModelInfo('gpt-next')]);
+    cacheMocks.fetchLLMModelsCached.mockResolvedValue([makeModelInfo('gpt-next')]);
     apiMocks.testLLMTranslator.mockResolvedValue('Hola');
     const profile = openAIProfile();
     await render({ activeProfile: profile.name, profiles: [profile] });
@@ -305,12 +312,14 @@ describe('LLMProfilesFieldList', () => {
       await Promise.resolve();
     });
 
-    expect(apiMocks.fetchLLMModels).toHaveBeenCalledWith(profile);
+    expect(cacheMocks.fetchLLMModelsCached).toHaveBeenCalledWith(profile, {
+      forceRefresh: true,
+    });
     expect(apiMocks.testLLMTranslator).toHaveBeenCalledWith(profile);
   });
 
   it('renders fetched models as a selector with id values and displayName labels', async () => {
-    apiMocks.fetchLLMModels.mockResolvedValue([
+    cacheMocks.fetchLLMModelsCached.mockResolvedValue([
       makeModelInfo('gpt-next', 'GPT Next'),
       makeModelInfo('gpt-4o', 'GPT-4o'),
     ]);
@@ -328,6 +337,23 @@ describe('LLMProfilesFieldList', () => {
 
     expect(container.textContent).toContain('GPT Next');
     expect(container.textContent).not.toContain('gpt-next');
+  });
+
+  it('hydrates the model selector from the cache without a fetch', async () => {
+    cacheMocks.getCachedLLMModels.mockResolvedValue([
+      makeModelInfo('gpt-next', 'GPT Next'),
+      makeModelInfo('gpt-4o', 'GPT-4o'),
+    ]);
+    const profile = openAIProfile();
+    profile.model = 'gpt-next';
+    await render({ activeProfile: profile.name, profiles: [profile] });
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(cacheMocks.fetchLLMModelsCached).not.toHaveBeenCalled();
+    expect(container.textContent).toContain('GPT Next');
   });
 
   it('toggles the advanced execution collapsible', async () => {
@@ -406,7 +432,7 @@ describe('LLMProfilesFieldList', () => {
   });
 
   it('preserves fetched models and model status when editing model or overrides, but clears test status', async () => {
-    apiMocks.fetchLLMModels.mockResolvedValue([
+    cacheMocks.fetchLLMModelsCached.mockResolvedValue([
       makeModelInfo('gpt-next', 'GPT Next'),
       makeModelInfo('gpt-4o', 'GPT-4o'),
     ]);
@@ -494,7 +520,7 @@ describe('LLMProfilesFieldList', () => {
       deferred.resolve = resolve;
       deferred.reject = reject;
     });
-    apiMocks.fetchLLMModels.mockReturnValue(promise);
+    cacheMocks.fetchLLMModelsCached.mockReturnValue(promise);
     const profile = openAIProfile();
     profile.model = 'gpt-next';
     const onChange = await render({
@@ -529,7 +555,7 @@ describe('LLMProfilesFieldList', () => {
   });
 
   it('shows auto output descriptions for uncapped and detected caps', async () => {
-    apiMocks.fetchLLMModels.mockResolvedValue([
+    cacheMocks.fetchLLMModelsCached.mockResolvedValue([
       makeModelInfo('gpt-next', 'GPT Next', 1024),
       makeModelInfo('gpt-4o', 'GPT-4o'),
     ]);

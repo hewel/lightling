@@ -1,10 +1,10 @@
 import { FC, useCallback, useMemo } from 'react';
-import { Badge } from '@astryxdesign/core/Badge';
 import { Collapsible } from '@astryxdesign/core/Collapsible';
 import { Heading } from '@astryxdesign/core/Heading';
 import { Selector } from '@astryxdesign/core/Selector';
 import { HStack, VStack } from '@astryxdesign/core/Stack';
 import { Text } from '@astryxdesign/core/Text';
+import { Token } from '@astryxdesign/core/Token';
 import * as stylex from '@stylexjs/stylex';
 
 import { PageTranslatorStats } from '@/app/ContentScript/PageTranslator/PageTranslator';
@@ -225,20 +225,20 @@ export const PageTranslator: FC<PageTranslatorProps> = ({
         <VStack gap={2}>
           <Heading level={4}>{getMessage('pageTranslator_translationReport')}</Heading>
           <HStack gap={2}>
-            <Badge
-              variant="success"
+            <Token
+              color="green"
               label={`${getMessage('pageTranslator_translationReport_resolve')}: ${
                 counters !== undefined ? counters.resolved : 0
               }`}
             />
-            <Badge
-              variant="error"
+            <Token
+              color="red"
               label={`${getMessage('pageTranslator_translationReport_reject')}: ${
                 counters !== undefined ? counters.rejected : 0
               }`}
             />
-            <Badge
-              variant="neutral"
+            <Token
+              color="default"
               label={`${getMessage('pageTranslator_translationReport_queue')}: ${
                 counters !== undefined ? counters.pending : 0
               }`}
