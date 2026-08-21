@@ -9,6 +9,8 @@ const decodeOptions = {
   reportInput: true,
 } satisfies SchemaAST.ParseOptions;
 
+// Infinity is accepted for legacy persisted and request values; only NaN is invalid.
+// @effect-diagnostics-next-line schemaNumber:off
 export const NonNaNNumber = Schema.Number.check(
   Schema.makeFilter((input: number) => !Number.isNaN(input), {
     identifier: 'NonNaNNumber',
@@ -16,7 +18,7 @@ export const NonNaNNumber = Schema.Number.check(
   }),
 );
 
-export const PositiveInteger = Schema.Number.check(
+export const PositiveInteger = Schema.Finite.check(
   // `Number.isInteger` implies a finite value
   Schema.makeFilter((input: number) => Number.isInteger(input) && input > 0, {
     identifier: 'PositiveInteger',
@@ -24,7 +26,7 @@ export const PositiveInteger = Schema.Number.check(
   }),
 );
 
-export const NonNegativeInteger = Schema.Number.check(
+export const NonNegativeInteger = Schema.Finite.check(
   Schema.makeFilter((input: number) => Number.isInteger(input) && input >= 0, {
     identifier: 'NonNegativeInteger',
     expected: 'a non-negative integer',

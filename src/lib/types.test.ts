@@ -137,5 +137,6 @@ describe('runtime type helpers', () => {
     expect(Schema.is(NonNegativeInteger)(3)).toBe(true);
     expect(Schema.is(NonNegativeInteger)(-1)).toBe(false);
     expect(Schema.is(NonNegativeInteger)(0.5)).toBe(false);
+    expect(Schema.is(NonNegativeInteger)(Infinity)).toBe(false);
   });
 });

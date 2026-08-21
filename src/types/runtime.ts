@@ -24,10 +24,14 @@ export const LangCodeWithAuto = Schema.String.check(
 );
 
 const OptionalNumber = Schema.Union([NonNaNNumber, Schema.Undefined]).pipe(
+  // `withDecodingDefault` requires the schema's precise success type, not `void`.
+  // @effect-diagnostics-next-line effectSucceedWithVoid:off
   Schema.withDecodingDefault(Effect.succeed(undefined)),
 );
 
 const OptionalBoolean = Schema.Union([Schema.Boolean, Schema.Undefined]).pipe(
+  // `withDecodingDefault` requires the schema's precise success type, not `void`.
+  // @effect-diagnostics-next-line effectSucceedWithVoid:off
   Schema.withDecodingDefault(Effect.succeed(undefined)),
 );
 
@@ -284,7 +288,7 @@ const TranslationProfileOverrides = Schema.Struct({
   ),
 );
 
-export const DEFAULT_TRANSLATION_PROFILE_OVERRIDES = Schema.decodeUnknownSync(
+export const DEFAULT_TRANSLATION_PROFILE_OVERRIDES = Schema.decodeSync(
   TranslationProfileOverrides,
 )({});
 
