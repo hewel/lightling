@@ -1,17 +1,16 @@
+import type { LLMBatchRequestOptions, LLMBatchTranslator } from './LLMBatchTranslator';
 import { LLMScheduler, type LLMSchedulerConfig } from './LLMScheduler';
 import {
   TranslationAbortedError,
   TranslationSchedulerReplacedError,
-  type TranslateBatchOptions,
 } from './LLMTranslationEngine';
-import type { LLMTranslator } from './LLMTranslator';
 
-class StubLLMTranslator {
+class StubLLMTranslator implements LLMBatchTranslator {
   calls: Array<{
     texts: string[];
     from: string;
     to: string;
-    options: TranslateBatchOptions;
+    options: LLMBatchRequestOptions;
   }> = [];
   abortedContexts: string[] = [];
   disposed = false;
@@ -21,7 +20,7 @@ class StubLLMTranslator {
       texts: string[],
       from: string,
       to: string,
-      options: TranslateBatchOptions,
+      options: LLMBatchRequestOptions,
     ): Promise<string[]> => {
       this.calls.push({ texts, from, to, options });
       return texts.map((t) => `tr:${t}`);
@@ -39,7 +38,6 @@ class StubLLMTranslator {
 
 const defaultConfig: LLMSchedulerConfig = {
   translateRetryAttemptLimit: 2,
-  isAllowDirectTranslateBadChunks: true,
   directTranslateLength: null,
   translatePoolDelay: 300,
   chunkSizeForInstantTranslate: null,
@@ -57,11 +55,7 @@ describe('LLMScheduler', () => {
   test('pooling unions same-key texts into one batch call', async () => {
     const stubTranslator = new StubLLMTranslator();
     const onFinalError = vi.fn();
-    const scheduler = new LLMScheduler(
-      stubTranslator as unknown as LLMTranslator,
-      defaultConfig,
-      onFinalError,
-    );
+    const scheduler = new LLMScheduler(stubTranslator, defaultConfig, onFinalError);
 
     const promise1 = scheduler.translate('hello', 'en', 'es', {
       context: 'page-1',
@@ -89,7 +83,6 @@ describe('LLMScheduler', () => {
         context: 'page-1',
         priority: 1,
         retryLimit: 2,
-        isolateInvalidBatches: true,
       },
     });
   });
@@ -97,11 +90,7 @@ describe('LLMScheduler', () => {
   test('differing priority or context prevents pooling', async () => {
     const stubTranslator = new StubLLMTranslator();
     const onFinalError = vi.fn();
-    const scheduler = new LLMScheduler(
-      stubTranslator as unknown as LLMTranslator,
-      defaultConfig,
-      onFinalError,
-    );
+    const scheduler = new LLMScheduler(stubTranslator, defaultConfig, onFinalError);
 
     const p1 = scheduler.translate('text1', 'en', 'es', {
       context: 'ctx-A',
@@ -134,11 +123,7 @@ describe('LLMScheduler', () => {
   test('directTranslate in options flushes early without timer delay', async () => {
     const stubTranslator = new StubLLMTranslator();
     const onFinalError = vi.fn();
-    const scheduler = new LLMScheduler(
-      stubTranslator as unknown as LLMTranslator,
-      defaultConfig,
-      onFinalError,
-    );
+    const scheduler = new LLMScheduler(stubTranslator, defaultConfig, onFinalError);
 
     const promise = scheduler.translate('instant', 'en', 'de', {
       directTranslate: true,
@@ -156,7 +141,7 @@ describe('LLMScheduler', () => {
     const stubTranslator = new StubLLMTranslator();
     const onFinalError = vi.fn();
     const scheduler = new LLMScheduler(
-      stubTranslator as unknown as LLMTranslator,
+      stubTranslator,
       { ...defaultConfig, directTranslateLength: 10 },
       onFinalError,
     );
@@ -173,7 +158,7 @@ describe('LLMScheduler', () => {
     const stubTranslator = new StubLLMTranslator();
     const onFinalError = vi.fn();
     const scheduler = new LLMScheduler(
-      stubTranslator as unknown as LLMTranslator,
+      stubTranslator,
       { ...defaultConfig, chunkSizeForInstantTranslate: 2 },
       onFinalError,
     );
@@ -193,11 +178,7 @@ describe('LLMScheduler', () => {
   test('abort rejects pooled tasks with TranslationAbortedError and future translate for aborted context rejects', async () => {
     const stubTranslator = new StubLLMTranslator();
     const onFinalError = vi.fn();
-    const scheduler = new LLMScheduler(
-      stubTranslator as unknown as LLMTranslator,
-      defaultConfig,
-      onFinalError,
-    );
+    const scheduler = new LLMScheduler(stubTranslator, defaultConfig, onFinalError);
 
     const p1 = scheduler.translate('hello', 'en', 'es', { context: 'ctx-abort' });
 
@@ -217,11 +198,7 @@ describe('LLMScheduler', () => {
   test('dispose rejects pooled tasks with TranslationSchedulerReplacedError and is idempotent', async () => {
     const stubTranslator = new StubLLMTranslator();
     const onFinalError = vi.fn();
-    const scheduler = new LLMScheduler(
-      stubTranslator as unknown as LLMTranslator,
-      defaultConfig,
-      onFinalError,
-    );
+    const scheduler = new LLMScheduler(stubTranslator, defaultConfig, onFinalError);
 
     const p1 = scheduler.translate('hello', 'en', 'es');
 
@@ -240,11 +217,7 @@ describe('LLMScheduler', () => {
   test('onFinalError is called for non-cancellation failures and not for cancellation errors', async () => {
     const stubTranslator = new StubLLMTranslator();
     const onFinalError = vi.fn();
-    const scheduler = new LLMScheduler(
-      stubTranslator as unknown as LLMTranslator,
-      defaultConfig,
-      onFinalError,
-    );
+    const scheduler = new LLMScheduler(stubTranslator, defaultConfig, onFinalError);
 
     // 1. Regular error
     stubTranslator.translateBatchWithOptions.mockRejectedValueOnce(

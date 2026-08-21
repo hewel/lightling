@@ -76,6 +76,20 @@ test('TranslatorManager translate text with selected translator', async () => {
   expect(translatedText).toBe(expectedText);
 });
 
+test('setConfig rebuilds the scheduler with the newly selected translator', async () => {
+  const translatorManager = new TranslatorManager(defaultConfig, createTranslatorsList());
+
+  translatorManager.getScheduler();
+  translatorManager.setConfig({
+    ...defaultConfig,
+    translatorModule: 'translator3',
+  });
+
+  await expect(
+    translatorManager.getScheduler().translate('Hello world', 'en', 'de'),
+  ).resolves.toBe('translator3["Hello world"-en-de]');
+});
+
 test('TranslatorManager passes llmTranslator config to LLMTranslator', async () => {
   const translatorManager = new TranslatorManager(
     { ...defaultConfig, translatorModule: 'LLMTranslator' },
@@ -191,34 +205,6 @@ describe('TranslatorManager LLM integration', () => {
     maxOutputTokens: null,
     maxConcurrentRequests: null,
   };
-
-  test('LLM path instantiates LLMTranslator directly while non-LLM wraps with telemetry subclass', () => {
-    const translators = {
-      ...createTranslatorsList(),
-      LLMTranslator,
-    };
-
-    // LLM path
-    const llmManager = new TranslatorManager(
-      {
-        ...defaultConfig,
-        translatorModule: 'LLMTranslator',
-        llmTranslator: { activeProfile: 'Profile1', profiles: [llmProfile1] },
-      },
-      translators,
-    );
-    const llmTranslatorInstance = llmManager.getTranslator();
-    expect(llmTranslatorInstance.constructor).toBe(LLMTranslator);
-
-    // Non-LLM path
-    const regularManager = new TranslatorManager(
-      { ...defaultConfig, translatorModule: 'translator1' },
-      translators,
-    );
-    const regularTranslatorInstance = regularManager.getTranslator();
-    expect(regularTranslatorInstance.constructor).not.toBe(translators.translator1);
-    expect(regularTranslatorInstance).toBeInstanceOf(translators.translator1);
-  });
 
   test('setConfig disposes previous LLMScheduler instance', () => {
     const disposeSpy = vi.spyOn(LLMScheduler.prototype, 'dispose');

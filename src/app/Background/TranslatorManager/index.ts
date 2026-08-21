@@ -66,7 +66,7 @@ export class TranslatorManager<Translators extends TranslatorsMap = TranslatorsM
   }
 
   public getTranslator(): InstanceType<RecordValues<Translators>> {
-    return this.getTranslatorInstance(false);
+    return this.getTranslatorInstance();
   }
 
   /**
@@ -85,12 +85,15 @@ export class TranslatorManager<Translators extends TranslatorsMap = TranslatorsM
         this.llmSchedulerInstance = null;
       }
 
+      this.translator = null;
+
       const translatorClass = this.getTranslatorClass();
       const isLLM = (translatorClass as unknown) === LLMTranslator;
       const { useCache, ...schedulerConfig } = this.config.scheduler;
+      let schedulerInstance: IScheduler;
 
       if (isLLM) {
-        const translator = this.getTranslatorInstance(true) as LLMTranslator;
+        const translator = this.getTranslatorInstance() as LLMTranslator;
         const onFinalError = (error: unknown) => {
           telemetry.track(TELEMETRY_EVENT_NAME.ERROR_CAPTURED, {
             scope: 'translator',
@@ -99,39 +102,38 @@ export class TranslatorManager<Translators extends TranslatorsMap = TranslatorsM
           });
         };
 
-        const llmScheduler = new LLMScheduler(translator, schedulerConfig, onFinalError);
+        const llmScheduler = new LLMScheduler(
+          translator,
+          {
+            translateRetryAttemptLimit: this.config.scheduler.translateRetryAttemptLimit,
+            directTranslateLength: this.config.scheduler.directTranslateLength,
+            translatePoolDelay: this.config.scheduler.translatePoolDelay,
+            chunkSizeForInstantTranslate:
+              this.config.scheduler.chunkSizeForInstantTranslate,
+          },
+          onFinalError,
+        );
         this.llmSchedulerInstance = llmScheduler;
-
-        let schedulerInstance: IScheduler = llmScheduler;
-        if (useCache) {
-          const cacheInstance = this.getCacheInstance();
-          schedulerInstance = new SchedulerWithCache(
-            llmScheduler as unknown as Scheduler,
-            cacheInstance,
-          );
-        }
-
-        this.schedulerInstance = schedulerInstance;
+        schedulerInstance = llmScheduler;
       } else {
-        const translator = this.getTranslatorInstance(true);
-        const scheduler = new Scheduler(translator, schedulerConfig);
-
-        let schedulerInstance: IScheduler = scheduler;
-        if (useCache) {
-          const cacheInstance = this.getCacheInstance();
-          schedulerInstance = new SchedulerWithCache(scheduler, cacheInstance);
-        }
-
-        this.schedulerInstance = schedulerInstance;
+        const translator = this.getTranslatorInstance();
+        schedulerInstance = new Scheduler(translator, schedulerConfig);
       }
+
+      this.schedulerInstance = useCache
+        ? new SchedulerWithCache(
+            schedulerInstance as unknown as Scheduler,
+            this.getCacheInstance(),
+          )
+        : schedulerInstance;
     }
 
     return this.schedulerInstance;
   }
 
   private translator: InstanceType<RecordValues<Translators>> | null = null;
-  private getTranslatorInstance(forceCreate: boolean) {
-    if (!forceCreate && this.translator !== null) return this.translator;
+  private getTranslatorInstance() {
+    if (this.translator !== null) return this.translator;
 
     const translatorClass = this.getTranslatorClass();
 

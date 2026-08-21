@@ -1,14 +1,17 @@
 import type { IScheduler, ISchedulerTranslateOptions } from 'anylang/scheduling';
 
-import type { AppConfigType } from '@/types/runtime';
-
+import type { LLMBatchTranslator } from './LLMBatchTranslator';
 import {
   TranslationAbortedError,
   TranslationSchedulerReplacedError,
 } from './LLMTranslationEngine';
-import type { LLMTranslator } from './LLMTranslator';
 
-export type LLMSchedulerConfig = Omit<AppConfigType['scheduler'], 'useCache'>;
+export type LLMSchedulerConfig = {
+  translateRetryAttemptLimit: number;
+  directTranslateLength: number | null;
+  translatePoolDelay: number;
+  chunkSizeForInstantTranslate: number | null;
+};
 
 interface Task {
   text: string;
@@ -41,7 +44,7 @@ export class LLMScheduler implements IScheduler {
   private readonly containers = new Map<string, TaskContainer>();
 
   constructor(
-    private readonly translator: LLMTranslator,
+    private readonly translator: LLMBatchTranslator,
     private readonly config: LLMSchedulerConfig,
     private readonly onFinalError: (error: unknown) => void,
   ) {}
@@ -185,7 +188,6 @@ export class LLMScheduler implements IScheduler {
         context: container.context,
         priority: container.priority,
         retryLimit: this.config.translateRetryAttemptLimit,
-        isolateInvalidBatches: true,
       })
       .then((results) => {
         for (let i = 0; i < tasks.length; i++) {

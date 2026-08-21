@@ -31,11 +31,7 @@ export const [translateFactory, translateRequest] = buildBackendRequest<
 
       const result = await scheduler.translate(text, from, to, options);
 
-      // Fire-and-forget: statistics must never break translation
-      void backgroundContext
-        .getTranslationStatsStorage()
-        .addTranslation()
-        .catch(() => undefined);
+      backgroundContext.getTranslationAccounting().recordTranslation();
 
       return result;
     },

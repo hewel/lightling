@@ -1,5 +1,7 @@
 import type { LLMProfile } from './LLMTranslator';
 import {
+  buildLLMGenerationConfig,
+  createLLMClientOptions,
   FALLBACK_CONTEXT_WINDOW_TOKENS,
   FALLBACK_MAX_CONCURRENT_REQUESTS,
   FALLBACK_PREFERRED_INPUT_TOKENS,
@@ -8,6 +10,7 @@ import {
   getLLMDiscoveryIdentity,
   loadLLMExecutionSettings,
   resolveLLMExecutionSettings,
+  resolveLLMProfileConnection,
   type LLMModelInfo,
 } from './modelInfo';
 
@@ -237,6 +240,56 @@ describe('URL and discovery identity normalization', () => {
     ).toBe('https://x.test/v1');
   });
 
+  test('resolves empty and custom profile connections for provider clients', () => {
+    expect(
+      resolveLLMProfileConnection({
+        provider: 'openai',
+        apiUrl: '',
+        apiKey: '',
+        model: 'gpt-4.1',
+      }),
+    ).toEqual({
+      provider: 'openai',
+      apiUrl: undefined,
+      apiKey: undefined,
+      model: 'gpt-4.1',
+    });
+
+    expect(
+      resolveLLMProfileConnection({
+        provider: 'openai-compatible',
+        apiUrl: 'https://x.test/v1//',
+        apiKey: 'secret',
+        model: 'custom-model',
+      }),
+    ).toEqual({
+      provider: 'openai-compatible',
+      apiUrl: 'https://x.test/v1',
+      apiKey: 'secret',
+      model: 'custom-model',
+    });
+  });
+
+  test('creates raw non-empty client options', () => {
+    expect(
+      createLLMClientOptions({
+        provider: 'openai-compatible',
+        apiUrl: 'https://x.test/v1//',
+        apiKey: 'secret',
+      }),
+    ).toEqual({
+      apiUrl: 'https://x.test/v1//',
+      apiKey: 'secret',
+    });
+    expect(
+      createLLMClientOptions({
+        provider: 'openai',
+        apiUrl: '',
+        apiKey: '',
+      }),
+    ).toEqual({});
+  });
+
   test('discovery identity covers provider, normalized URL, and key', () => {
     const a = getLLMDiscoveryIdentity({
       provider: 'openai-compatible',
@@ -257,6 +310,72 @@ describe('URL and discovery identity normalization', () => {
         apiKey: 'k2',
       }),
     );
+  });
+});
+
+describe('buildLLMGenerationConfig', () => {
+  test('maps Anthropic generation parameters', () => {
+    expect(
+      buildLLMGenerationConfig(
+        makeProfile({ provider: 'anthropic', apiUrl: '' }),
+        2048,
+        null,
+      ),
+    ).toEqual({ max_tokens: 2048, temperature: 0 });
+  });
+
+  test('uses OpenRouter temperature only when support is unknown or declared', () => {
+    const profile = makeProfile({ provider: 'openrouter', apiUrl: '' });
+
+    expect(buildLLMGenerationConfig(profile, 1024, null)).toEqual({
+      max_tokens: 1024,
+      temperature: 0,
+    });
+    expect(buildLLMGenerationConfig(profile, 1024, ['temperature'])).toEqual({
+      max_tokens: 1024,
+      temperature: 0,
+    });
+    expect(buildLLMGenerationConfig(profile, 1024, ['tools'])).toEqual({
+      max_tokens: 1024,
+    });
+  });
+
+  test('omits OpenAI temperature for reasoning models', () => {
+    expect(
+      buildLLMGenerationConfig(
+        makeProfile({ provider: 'openai', apiUrl: '', model: 'gpt-4.1' }),
+        4096,
+        null,
+      ),
+    ).toEqual({ max_output_tokens: 4096, temperature: 0 });
+    expect(
+      buildLLMGenerationConfig(
+        makeProfile({ provider: 'openai', apiUrl: '', model: 'o3-mini' }),
+        4096,
+        null,
+      ),
+    ).toEqual({ max_output_tokens: 4096 });
+  });
+
+  test('disables Ant Ling reasoning for Ling-3.0 models', () => {
+    expect(buildLLMGenerationConfig(makeProfile(), 512, null)).toEqual({
+      max_output_tokens: 512,
+      temperature: 0,
+    });
+    expect(
+      buildLLMGenerationConfig(
+        makeProfile({
+          apiUrl: 'https://api.ant-ling.com/v1/',
+          model: 'Ling-3.0-tiny',
+        }),
+        512,
+        null,
+      ),
+    ).toEqual({
+      max_output_tokens: 512,
+      temperature: 0,
+      thinking: { type: 'disabled' },
+    });
   });
 });
 

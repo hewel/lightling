@@ -251,6 +251,88 @@ export const getLLMDiscoveryIdentity = (
 ): string =>
   JSON.stringify([profile.provider, getEffectiveLLMApiUrl(profile), profile.apiKey]);
 
+export type LLMResolvedProfile = {
+  provider: LLMProfile['provider'];
+  apiUrl: string | undefined;
+  apiKey: string | undefined;
+  model: LLMProfile['model'];
+};
+
+export const createLLMClientOptions = (
+  profile: Pick<LLMProfile, 'provider' | 'apiUrl' | 'apiKey'>,
+): { apiUrl?: string; apiKey?: string } => ({
+  ...(profile.apiUrl === '' ? {} : { apiUrl: profile.apiUrl }),
+  ...(profile.apiKey === '' ? {} : { apiKey: profile.apiKey }),
+});
+
+export const resolveLLMProfileConnection = (
+  profile: Pick<LLMProfile, 'provider' | 'apiUrl' | 'apiKey' | 'model'>,
+): LLMResolvedProfile => {
+  const clientOptions = createLLMClientOptions(profile);
+
+  return {
+    provider: profile.provider,
+    apiUrl:
+      clientOptions.apiUrl === undefined ? undefined : getEffectiveLLMApiUrl(profile),
+    apiKey: clientOptions.apiKey,
+    model: profile.model,
+  };
+};
+
+const isOpenAiTemperatureOmittedModel = (model: string): boolean => {
+  if (model.startsWith('o1')) return true;
+  if (model.startsWith('o3')) return true;
+  if (model.startsWith('o4-mini')) return true;
+  if (model.startsWith('codex-mini')) return true;
+  if (model.startsWith('computer-use-preview')) return true;
+  if (model.startsWith('gpt-5') && !model.includes('chat')) return true;
+  return false;
+};
+
+export const buildLLMGenerationConfig = (
+  profile: Pick<LLMProfile, 'provider' | 'apiUrl' | 'model'>,
+  maxOutputTokens: number,
+  supportedParameters: readonly string[] | null,
+): Record<string, unknown> => {
+  switch (profile.provider) {
+    case 'anthropic':
+      return { max_tokens: maxOutputTokens, temperature: 0 };
+    case 'openrouter': {
+      const config: Record<string, unknown> = { max_tokens: maxOutputTokens };
+      if (supportedParameters === null || supportedParameters.includes('temperature')) {
+        config.temperature = 0;
+      }
+      return config;
+    }
+    case 'openai': {
+      const config: Record<string, unknown> = {
+        max_output_tokens: maxOutputTokens,
+      };
+      if (!isOpenAiTemperatureOmittedModel(profile.model)) {
+        config.temperature = 0;
+      }
+      return config;
+    }
+    case 'openai-compatible': {
+      const config: Record<string, unknown> = {
+        max_output_tokens: maxOutputTokens,
+        temperature: 0,
+      };
+      // Ling-3.0 models are hybrid reasoning models; Ant Ling burns the whole
+      // output budget on the reasoning chain when thinking is left enabled,
+      // so the JSON array never materializes (finish_reason 'length'). The
+      // docs scope `thinking` to flash, but tiny honors it too (verified).
+      if (
+        getEffectiveLLMApiUrl(profile) === 'https://api.ant-ling.com/v1' &&
+        profile.model.startsWith('Ling-3.0-')
+      ) {
+        config.thinking = { type: 'disabled' };
+      }
+      return config;
+    }
+  }
+};
+
 /**
  * Fetch metadata of models available at the profile's API, sorted by ID.
  * Every supported provider exposes an OpenAI-style `GET {apiUrl}/models` listing;

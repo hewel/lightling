@@ -249,26 +249,6 @@ describe('LLMTranslator', () => {
     expect(body.temperature).toBe(0);
   });
 
-  test('omits temperature for OpenAI reasoning models', async () => {
-    currentHandler = () => openAiResponse(JSON.stringify(['Hola']));
-
-    const translator = new LLMTranslator(
-      profileConfig({
-        name: 'OpenAI',
-        provider: 'openai',
-        apiUrl: '',
-        apiKey: 'openai-key',
-        model: 'o3-mini',
-        ...autoExecution,
-      }),
-    );
-
-    await translator.translate('Hello', 'en', 'es');
-    const [, init] = fetchMock.mock.calls[0];
-    const body = JSON.parse(decodeBody(init?.body));
-    expect(body.temperature).toBeUndefined();
-  });
-
   test('translates via Anthropic provider with x-api-key auth', async () => {
     currentHandler = () => anthropicMessageResponse(JSON.stringify(['Hola']));
 
@@ -328,33 +308,6 @@ describe('LLMTranslator', () => {
     expect(body.temperature).toBe(0);
   });
 
-  test('OpenRouter omits temperature when not advertised', async () => {
-    currentHandler = (input) => {
-      if (String(input).endsWith('/models')) {
-        return modelsResponse([
-          { id: 'custom/reasoning-model', supported_parameters: [] },
-        ]);
-      }
-      return openRouterResponse(JSON.stringify(['Hola']));
-    };
-
-    const translator = new LLMTranslator(
-      profileConfig({
-        name: 'OpenRouter',
-        provider: 'openrouter',
-        apiUrl: '',
-        apiKey: 'openrouter-key',
-        model: 'custom/reasoning-model',
-        ...autoExecution,
-      }),
-    );
-
-    await translator.translate('Hello', 'en', 'es');
-    const [, init] = chatCompletionCalls()[0];
-    const body = JSON.parse(decodeBody(init?.body));
-    expect(body.temperature).toBeUndefined();
-  });
-
   test('Ant Ling flash disables thinking and sends temperature 0', async () => {
     currentHandler = (input) => {
       if (String(input).endsWith('/models')) {
@@ -382,31 +335,6 @@ describe('LLMTranslator', () => {
     const body = JSON.parse(decodeBody(init?.body));
     expect(body.max_tokens).toBeGreaterThan(0);
     expect(body.temperature).toBe(0);
-    expect(body.thinking).toEqual({ type: 'disabled' });
-  });
-
-  test('Ant Ling tiny also disables thinking', async () => {
-    currentHandler = (input) => {
-      if (String(input).endsWith('/models')) {
-        return modelsResponse([{ id: 'Ling-3.0-tiny' }]);
-      }
-      return chatCompletionResponse(JSON.stringify(['你好']));
-    };
-
-    const translator = new LLMTranslator(
-      profileConfig({
-        name: 'Ant Ling',
-        provider: 'openai-compatible',
-        apiUrl: 'https://api.ant-ling.com/v1',
-        apiKey: 'ant-ling-key',
-        model: 'Ling-3.0-tiny',
-        ...autoExecution,
-      }),
-    );
-
-    await expect(translator.translate('Hello', 'en', 'zh')).resolves.toBe('你好');
-    const [, init] = chatCompletionCalls()[0];
-    const body = JSON.parse(decodeBody(init?.body));
     expect(body.thinking).toEqual({ type: 'disabled' });
   });
 

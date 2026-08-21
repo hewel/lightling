@@ -15,15 +15,16 @@ import { AppConfigType } from '@/types/runtime';
 
 import { getMessage } from '../../language';
 
+import type { LLMBatchRequestOptions } from './LLMBatchTranslator';
 import {
   LLMTranslationEngine,
   type LLMRequest,
   type LLMRequestEffect,
-  type TranslateBatchOptions,
 } from './LLMTranslationEngine';
 import {
-  getEffectiveLLMApiUrl,
+  buildLLMGenerationConfig,
   loadLLMExecutionSettings,
+  resolveLLMProfileConnection,
   type ResolvedLLMExecutionSettings,
 } from './modelInfo';
 
@@ -53,16 +54,6 @@ export const getActiveLLMProfile = (config: LLMTranslatorConfig): LLMProfile =>
   config.profiles.find((profile) => profile.name === config.activeProfile) ??
   config.profiles[0] ??
   emptyProfile;
-
-const isOpenAiTemperatureOmittedModel = (model: string): boolean => {
-  if (model.startsWith('o1')) return true;
-  if (model.startsWith('o3')) return true;
-  if (model.startsWith('o4-mini')) return true;
-  if (model.startsWith('codex-mini')) return true;
-  if (model.startsWith('computer-use-preview')) return true;
-  if (model.startsWith('gpt-5') && !model.includes('chat')) return true;
-  return false;
-};
 
 /**
  * Translator powered by an arbitrary LLM API.
@@ -118,7 +109,6 @@ export class LLMTranslator implements TranslatorInstanceMembers {
       context: crypto.randomUUID(),
       priority: 0,
       retryLimit: 2,
-      isolateInvalidBatches: true,
     });
   }
 
@@ -126,12 +116,15 @@ export class LLMTranslator implements TranslatorInstanceMembers {
     texts: string[],
     sourceLanguage: string,
     targetLanguage: string,
-    options: TranslateBatchOptions,
+    options: LLMBatchRequestOptions,
   ): Promise<string[]> {
     if (this.profile.model === '') {
       return Promise.reject(new Error('LLM translator model is not configured'));
     }
-    return this.engine.translateBatch(texts, sourceLanguage, targetLanguage, options);
+    return this.engine.translateBatch(texts, sourceLanguage, targetLanguage, {
+      ...options,
+      isolateInvalidBatches: true,
+    });
   }
 
   public abort(context: string): void {
@@ -155,10 +148,10 @@ export class LLMTranslator implements TranslatorInstanceMembers {
   }
 
   private buildFetchEffect(request: LLMRequest): LLMRequestEffect {
-    const { provider, apiUrl, apiKey, model } = this.profile;
+    const { provider, apiUrl, apiKey, model } = resolveLLMProfileConnection(this.profile);
     const clientOptions = {
-      apiUrl: apiUrl === '' ? undefined : apiUrl,
-      apiKey: apiKey === '' ? undefined : Redacted.make(apiKey),
+      apiUrl,
+      apiKey: apiKey === undefined ? undefined : Redacted.make(apiKey),
     };
 
     const baseEffect = LanguageModel.generateText({
@@ -174,7 +167,11 @@ export class LLMTranslator implements TranslatorInstanceMembers {
       })),
     );
 
-    const config = this.buildProviderConfig(provider, model, request.maxOutputTokens);
+    const config = buildLLMGenerationConfig(
+      this.profile,
+      request.maxOutputTokens,
+      this.resolvedSettings?.supportedParameters ?? null,
+    );
 
     const modelEffect = (() => {
       switch (provider) {
@@ -202,53 +199,5 @@ export class LLMTranslator implements TranslatorInstanceMembers {
     })();
 
     return modelEffect.pipe(Effect.provide(FetchHttpClient.layer));
-  }
-
-  private buildProviderConfig(
-    provider: LLMProvider,
-    model: string,
-    maxOutputTokens: number,
-  ): Record<string, unknown> {
-    const supported = this.resolvedSettings?.supportedParameters ?? null;
-
-    switch (provider) {
-      case 'anthropic':
-        return { max_tokens: maxOutputTokens, temperature: 0 };
-      case 'openrouter': {
-        const config: Record<string, unknown> = { max_tokens: maxOutputTokens };
-        if (supported === null || supported.includes('temperature')) {
-          config.temperature = 0;
-        }
-        return config;
-      }
-      case 'openai': {
-        const config: Record<string, unknown> = { max_output_tokens: maxOutputTokens };
-        if (!isOpenAiTemperatureOmittedModel(model)) {
-          config.temperature = 0;
-        }
-        return config;
-      }
-      case 'openai-compatible': {
-        const effectiveUrl = getEffectiveLLMApiUrl({
-          provider,
-          apiUrl: this.profile.apiUrl,
-        });
-        const config: Record<string, unknown> = {
-          max_output_tokens: maxOutputTokens,
-          temperature: 0,
-        };
-        // Ling-3.0 models are hybrid reasoning models; Ant Ling burns the whole
-        // output budget on the reasoning chain when thinking is left enabled,
-        // so the JSON array never materializes (finish_reason 'length'). The
-        // docs scope `thinking` to flash, but tiny honors it too (verified).
-        if (
-          effectiveUrl === 'https://api.ant-ling.com/v1' &&
-          model.startsWith('Ling-3.0-')
-        ) {
-          config.thinking = { type: 'disabled' };
-        }
-        return config;
-      }
-    }
   }
 }
