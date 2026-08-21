@@ -20,6 +20,14 @@ export type PageTranslationOptions = {
   to: string;
 };
 
+export const withDetectedPageLanguage = (
+  options: PageTranslationOptions,
+  pageLanguage: string | null,
+): PageTranslationOptions =>
+  options.from === 'auto' && pageLanguage !== null
+    ? { ...options, from: pageLanguage }
+    : options;
+
 export type PageData = {
   language: string | null;
 };
@@ -50,6 +58,18 @@ export class PageTranslationContext {
   ) => {
     if (isDeepEqual(this.$context.getState().pageTranslation, pageTranslation)) return;
     this.$context.setState({ pageTranslation });
+  };
+
+  private readonly resolveTranslationOptions = async (
+    options: PageTranslationOptions,
+  ): Promise<PageTranslationOptions> => {
+    if (options.from !== 'auto') return options;
+    const detectedLanguage = await getPageLanguage(true);
+    const pageLanguage = detectedLanguage ?? this.$context.getState().pageData.language;
+    if (detectedLanguage !== null) {
+      this.$context.setState({ pageData: { language: detectedLanguage } });
+    }
+    return withDetectedPageLanguage(options, pageLanguage);
   };
 
   private readonly controllers: {
@@ -119,6 +139,7 @@ export class PageTranslationContext {
     this.controllers.pageTranslator = new PageTranslatorController(
       getPageTranslatorManager,
       this.updatePageTranslationState,
+      this.resolveTranslationOptions,
     );
     this.$context.subscribe(
       ({ pageTranslation }) => pageTranslation,

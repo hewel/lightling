@@ -149,6 +149,9 @@ export class TranslatorManager<Translators extends TranslatorsMap = TranslatorsM
                 if (increment.acceptedRetryStage !== undefined) {
                   metrics.acceptedRetryStage = increment.acceptedRetryStage;
                 }
+                if (increment.failedIds !== undefined) {
+                  metrics.failedIds = increment.failedIds;
+                }
                 metrics.validationFailures += increment.validationFailures;
               },
             )
@@ -171,7 +174,9 @@ export class TranslatorManager<Translators extends TranslatorsMap = TranslatorsM
         const target = misses.find((candidate) => candidate.id === translation.id);
         if (target === undefined) continue;
         if (!validatePlaceholderIntegrity(target.sourceText, translation.target)) {
-          throw new Error(`Translator corrupted placeholders for ${target.id}`);
+          metrics.validationFailures++;
+          metrics.failedIds = [...(metrics.failedIds ?? []), target.id];
+          continue;
         }
         const now = Date.now();
         const entry = {
@@ -202,14 +207,14 @@ export class TranslatorManager<Translators extends TranslatorsMap = TranslatorsM
       }
     }
 
-    return {
-      translations: targets.map((target) => {
-        const result = results.get(target.id);
-        if (result === undefined) throw new Error(`Missing translation for ${target.id}`);
-        return result;
-      }),
-      metrics,
-    };
+    const translations = targets.flatMap((target) => {
+      const result = results.get(target.id);
+      return result === undefined ? [] : [result];
+    });
+    metrics.failedIds = targets
+      .filter((target) => !results.has(target.id))
+      .map((target) => target.id);
+    return { translations, metrics };
   }
 
   private llmSchedulerInstance: LLMScheduler | null = null;

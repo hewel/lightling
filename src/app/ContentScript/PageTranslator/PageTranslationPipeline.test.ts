@@ -180,6 +180,39 @@ describe('PageTranslationPipeline dynamic lifecycle', () => {
     pipeline.stop();
   });
 
+  test('keeps accepted translations when one target remains unresolved', async () => {
+    document.body.innerHTML = '<main><button>Save</button><button>Close</button></main>';
+    vi.mocked(translatePageBatch).mockImplementationOnce(async (request) => {
+      const accepted = request.targets[0];
+      return {
+        translations: [
+          {
+            id: accepted.id,
+            target: 'Speichern',
+            cacheKey: accepted.semanticKey,
+            cacheHit: false,
+          },
+        ],
+      };
+    });
+    const main = document.querySelector('main');
+    if (main === null) throw new Error('fixture main missing');
+    const pipeline = createPipeline(main, true);
+    pipeline.start();
+
+    await vi.waitFor(() =>
+      expect(main.querySelector('button')?.textContent).toBe('Speichern'),
+    );
+    expect(
+      Array.from(main.querySelectorAll('button'), (button) => button.textContent),
+    ).toEqual(['Speichern', 'Close']);
+    expect(pipeline.getLog()?.batches[0].targets).toMatchObject([
+      { sourceText: 'Save', status: 'translated' },
+      { sourceText: 'Close', status: 'failed' },
+    ]);
+    pipeline.stop();
+  });
+
   test('records provider failures without stack traces', async () => {
     vi.mocked(translatePageBatch).mockRejectedValueOnce(
       new Error('provider unavailable'),

@@ -57,6 +57,24 @@ describe('provider inference mapping', () => {
     expect(mapping.generationConfig).not.toHaveProperty('repetition_penalty');
   });
 
+  test('disables thinking for the direct Ling Tiny profile', () => {
+    const configured = structuredClone(llmProviderPresets.antling);
+    configured.model = 'Ling-3.0-tiny';
+    const profile = resolveTranslationModelProfile(configured, null).profile;
+    const mapping = mapTranslationInferenceRequest(
+      'openai-compatible',
+      profile,
+      request(),
+      null,
+    );
+
+    expect(profile.reasoningControl).toBe('thinking-object');
+    expect(profile.capabilities.supportsReasoningControl).toBe(true);
+    expect(mapping.generationConfig).toMatchObject({
+      thinking: { type: 'disabled' },
+    });
+  });
+
   test('filters every OpenRouter field not declared by model metadata', () => {
     const supported = ['temperature', 'top_p', 'frequency_penalty'];
     const profile = profileFor('openrouter', supported);

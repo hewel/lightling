@@ -30,19 +30,19 @@ export const getOptionsPageUrl = () => {
   return browser.runtime.getURL(optionsPage ?? 'options/index.html');
 };
 
+export const normalizeDetectedLanguage = (language: string | null): string | null => {
+  if (language === null) return null;
+  const primaryLanguage = language.trim().toLowerCase().split(/[-_]/u)[0];
+  return isValidLanguage(primaryLanguage) ? primaryLanguage : null;
+};
+
 export function getPageLanguageFromMeta() {
   const html = document.documentElement;
 
   const langAttributes = ['lang', 'xml:lang'];
   for (const name of langAttributes) {
-    const pageLangRaw = html.getAttribute(name);
-    if (pageLangRaw !== null) {
-      const match = /^([a-z]+)(-[a-zA-Z]+)?$/.exec(pageLangRaw);
-      if (match !== null) {
-        const language = match[1];
-        return isValidLanguage(language) ? language : null;
-      }
-    }
+    const language = normalizeDetectedLanguage(html.getAttribute(name));
+    if (language !== null) return language;
   }
 
   return null;
@@ -81,10 +81,10 @@ export const getPageLanguage = async (detectByContent = false, reliableOnly = fa
 
   // Try detect language by content
   if (langFromMeta === null || detectByContent) {
-    const contentLang = await detectLanguage(document.body.innerText, reliableOnly);
-    if (contentLang !== null) {
-      return contentLang;
-    }
+    const contentLang = normalizeDetectedLanguage(
+      await detectLanguage(document.body.innerText, reliableOnly),
+    );
+    if (contentLang !== null) return contentLang;
   }
 
   return langFromMeta;

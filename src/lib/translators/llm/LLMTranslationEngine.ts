@@ -1001,12 +1001,12 @@ export class LLMTranslationEngine {
       }
 
       const result: { id: string; target: string }[] = [];
+      const unresolvedIds: string[] = [];
       for (const target of request.targets) {
         const translated = accepted.get(target.id);
         if (translated === undefined) {
-          throw new InvalidLLMResponseError({
-            message: `No valid translation returned for ${target.id}`,
-          });
+          unresolvedIds.push(target.id);
+          continue;
         }
         result.push({ id: target.id, target: translated });
       }
@@ -1015,6 +1015,7 @@ export class LLMTranslationEngine {
         validationFailures: 0,
         acceptedProfileId: profile.id,
         acceptedRetryStage,
+        failedIds: unresolvedIds,
       });
       return result;
     } catch (error) {

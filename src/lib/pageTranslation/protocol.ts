@@ -103,6 +103,7 @@ export interface PageTranslationAttemptMetrics {
   validationFailures: number;
   acceptedProfileId?: string;
   acceptedRetryStage?: PageTranslationBatchRequest['retryStage'];
+  failedIds?: string[];
 }
 
 export interface PageTranslationResult {

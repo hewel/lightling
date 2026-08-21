@@ -75,6 +75,11 @@ describe('translation prompt variants', () => {
     expect(prompt.variant).toBe('compact');
     expect(prompt.userBody).not.toContain('retrieved');
     expect(prompt.systemPrompt).toContain('{"translations":[["id","translation"]]}');
+    expect(JSON.parse(prompt.userBody)).toMatchObject({
+      primarySourceLanguage: 'en',
+      targetLanguage: 'zh',
+    });
+    expect(prompt.systemPrompt).toContain('targets may be mixed-language');
   });
 
   test('adds retrieved examples only to the advanced prompt', () => {

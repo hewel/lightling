@@ -105,7 +105,45 @@ describe('LLM webpage request contract', () => {
         validationFailures: 0,
         acceptedProfileId: settings.translationProfile.id,
         acceptedRetryStage: 'isolated',
+        failedIds: [],
       },
     ]);
+  });
+
+  test('returns accepted targets when another target exhausts retries', async () => {
+    const responses = [
+      JSON.stringify({
+        translations: [
+          { id: 'u1', target: 'Speichern' },
+          { id: 'u2', target: 'Nutze <x id="wrong"/>.' },
+        ],
+      }),
+      'invalid',
+      'invalid',
+      'invalid',
+    ];
+    const metrics: PageTranslationAttemptMetrics[] = [];
+    const engine = new LLMTranslationEngine({
+      loadSettings: () => Promise.resolve(settings),
+      fetch: () =>
+        Effect.succeed({
+          text: responses.shift() ?? '',
+          usage: { inputTokens: null, outputTokens: null },
+        }),
+    });
+
+    await expect(
+      engine.translatePageBatch(
+        request,
+        {
+          context: 'session',
+          priority: 4,
+          retryLimit: 0,
+          isolateInvalidBatches: true,
+        },
+        (increment) => metrics.push(increment),
+      ),
+    ).resolves.toEqual([{ id: 'u1', target: 'Speichern' }]);
+    expect(metrics.at(-1)).toMatchObject({ failedIds: ['u2'] });
   });
 });

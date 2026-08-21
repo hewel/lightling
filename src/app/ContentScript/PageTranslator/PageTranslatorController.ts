@@ -20,21 +20,29 @@ export class PageTranslatorController {
   private readonly updateTranslationState: (
     options: PageTranslationOptions | null,
   ) => void;
+  private readonly resolveTranslationOptions: (
+    options: PageTranslationOptions,
+  ) => Promise<PageTranslationOptions>;
   constructor(
     getManager: () => Promise<PageTranslatorManager>,
     updateTranslationState: (options: PageTranslationOptions | null) => void,
+    resolveTranslationOptions: (
+      options: PageTranslationOptions,
+    ) => Promise<PageTranslationOptions>,
   ) {
     this.getManager = getManager;
     this.updateTranslationState = updateTranslationState;
+    this.resolveTranslationOptions = resolveTranslationOptions;
   }
 
   public async translate(options: PageTranslationOptions) {
-    this.updateTranslationState(options);
+    const resolvedOptions = await this.resolveTranslationOptions(options);
+    this.updateTranslationState(resolvedOptions);
     await this.notifyState();
     trackClientEvent(TELEMETRY_EVENT_NAME.PAGE_TRANSLATION_CHANGED, {
       action: 'run',
-      from: options.from,
-      to: options.to,
+      from: resolvedOptions.from,
+      to: resolvedOptions.to,
     });
   }
 

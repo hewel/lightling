@@ -2,7 +2,7 @@
 import type { AppConfigType } from '@/types/runtime';
 
 export const TRANSLATION_MODEL_PROFILE_VERSION = 'translation-profile-v1';
-export const TRANSLATION_PAGE_PROMPT_VERSION = 'page-v2';
+export const TRANSLATION_PAGE_PROMPT_VERSION = 'page-v3';
 
 export type ConfiguredLLMProfile = AppConfigType['llmTranslator']['profiles'][number];
 export type LLMProvider = ConfiguredLLMProfile['provider'];

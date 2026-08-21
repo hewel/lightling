@@ -696,12 +696,28 @@ export class PageTranslationPipeline {
         }
       }
       const completedUnits = new Set<string>();
+      const missingTargetIds = new Set<string>();
+      const responseById = new Map(
+        response.translations.map((translation) => [translation.id, translation]),
+      );
+      const failedSemanticKeys = new Set(
+        fresh
+          .filter((item) => !responseById.has(item.target.id))
+          .map((item) => item.unit.semanticKey),
+      );
       for (const item of fresh) {
-        const matching = response.translations.find(
-          (translation) => translation.id === item.target.id,
-        );
-        if (matching === undefined)
-          throw new Error(`Missing translation ${item.target.id}`);
+        const matching = responseById.get(item.target.id);
+        if (matching === undefined || failedSemanticKeys.has(item.unit.semanticKey)) {
+          this.pendingParts.delete(item.unit.semanticKey);
+          missingTargetIds.add(item.target.id);
+          if (logBatch !== null) {
+            const loggedTarget = logBatch.targets.find(
+              (target) => target.id === item.target.id,
+            );
+            if (loggedTarget !== undefined) loggedTarget.status = 'failed';
+          }
+          continue;
+        }
         let assembly = this.pendingParts.get(item.unit.semanticKey);
         if (assembly === undefined) {
           assembly = {
@@ -725,6 +741,7 @@ export class PageTranslationPipeline {
       }
 
       for (const item of fresh) {
+        if (missingTargetIds.has(item.target.id)) continue;
         if (completedUnits.has(item.unit.semanticKey)) continue;
         const assembly = this.pendingParts.get(item.unit.semanticKey);
         if (
@@ -762,13 +779,16 @@ export class PageTranslationPipeline {
           }
         }
       }
+      if (missingTargetIds.size > 0) {
+        this.options.onUnitRejected?.(missingTargetIds.size);
+      }
       this.adaptiveTuner.observe(
         this.options.modelProfile,
         this.options.sourceLanguage,
         this.options.targetLanguage,
         fresh[0].unit.contextClass,
         {
-          valid: true,
+          valid: missingTargetIds.size === 0,
           truncated: false,
           timedOut: false,
           latencyMs: performance.now() - batchStartedAt,

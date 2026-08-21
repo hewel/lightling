@@ -178,23 +178,16 @@ export class LLMTranslator implements TranslatorInstanceMembers {
     if (this.profile.model === '') {
       throw new Error('LLM translator model is not configured');
     }
-    try {
-      return await this.engine.translatePageBatch(
-        request,
-        {
-          ...options,
-          isolateInvalidBatches: true,
-        },
-        onMetrics,
-      );
-    } catch (error) {
-      if (!Schema.is(InvalidLLMResponseError)(error)) throw error;
-      const fallbackName = this.profile.fallbackProfile;
-      if (fallbackName === null || fallbackName === this.profile.name) throw error;
-      const fallback = this.config.profiles.find(
-        (candidate) => candidate.name === fallbackName,
-      );
-      if (fallback === undefined) throw error;
+
+    const fallbackName = this.profile.fallbackProfile;
+    const fallback =
+      fallbackName === null || fallbackName === this.profile.name
+        ? undefined
+        : this.config.profiles.find((candidate) => candidate.name === fallbackName);
+    const translateFallback = async (
+      targets: PageTranslationBatchRequest['targets'],
+    ): Promise<{ id: string; target: string }[]> => {
+      if (fallback === undefined || targets.length === 0) return [];
       onMetrics?.({ retryCount: 1, validationFailures: 0 });
       const fallbackTranslator = new LLMTranslator(
         {
@@ -204,11 +197,56 @@ export class LLMTranslator implements TranslatorInstanceMembers {
         this.translatorOptions,
       );
       try {
-        return await fallbackTranslator.translatePageBatch(request, options, onMetrics);
+        return await fallbackTranslator.translatePageBatch(
+          { ...request, targets },
+          options,
+          onMetrics,
+        );
       } finally {
         fallbackTranslator.dispose();
       }
+    };
+
+    let translated: { id: string; target: string }[];
+    try {
+      translated = await this.engine.translatePageBatch(
+        request,
+        {
+          ...options,
+          isolateInvalidBatches: true,
+        },
+        onMetrics,
+      );
+    } catch (error) {
+      if (!Schema.is(InvalidLLMResponseError)(error) || fallback === undefined) {
+        throw error;
+      }
+      return translateFallback(request.targets);
     }
+
+    const translatedIds = new Set(translated.map((item) => item.id));
+    const missingTargets = request.targets.filter(
+      (target) => !translatedIds.has(target.id),
+    );
+    const fallbackTranslations = await translateFallback(missingTargets);
+    if (fallbackTranslations.length === 0) return translated;
+
+    const merged = new Map(
+      [...translated, ...fallbackTranslations].map((item) => [item.id, item]),
+    );
+    const result = request.targets.flatMap((target) => {
+      const item = merged.get(target.id);
+      return item === undefined ? [] : [item];
+    });
+    const resolvedIds = new Set(result.map((item) => item.id));
+    onMetrics?.({
+      retryCount: 0,
+      validationFailures: 0,
+      failedIds: request.targets
+        .filter((target) => !resolvedIds.has(target.id))
+        .map((target) => target.id),
+    });
+    return result;
   }
 
   public abort(context: string): void {
