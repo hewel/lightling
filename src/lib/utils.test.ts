@@ -1,4 +1,5 @@
 import {
+  createUUID,
   getValueAtPath,
   isDeepEqual,
   isEqualIntersection,
@@ -64,5 +65,19 @@ describe('object utilities', () => {
         { modifiers: ['ctrlKey', 'altKey'] },
       ),
     ).toBe(false);
+  });
+
+  test('falls back to getRandomValues for RFC 4122 v4 UUIDs', () => {
+    const getRandomValues = vi.fn((bytes: Uint8Array) => {
+      for (let index = 0; index < bytes.length; index++) bytes[index] = index;
+      return bytes;
+    });
+    vi.stubGlobal('crypto', { getRandomValues });
+    try {
+      expect(createUUID()).toBe('00010203-0405-4607-8809-0a0b0c0d0e0f');
+      expect(getRandomValues).toHaveBeenCalledOnce();
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });

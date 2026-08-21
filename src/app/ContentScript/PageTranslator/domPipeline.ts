@@ -399,6 +399,7 @@ const attributeSlot = (attribute: string): TranslationSlot | null => {
 export const collectPageOccurrences = (
   root: Element,
   options: CollectionOptions,
+  priorityOverride?: number,
 ): CollectedPage => {
   const occurrences: TextOccurrence[] = [];
   const sections = new Map<string, SectionContext>();
@@ -444,7 +445,7 @@ export const collectPageOccurrences = (
       sectionId: section.sectionId,
       componentId: element.getAttribute('id') ?? undefined,
       semanticKey,
-      priority: getPriority(element),
+      priority: priorityOverride ?? getPriority(element),
       binding,
       element,
       section,

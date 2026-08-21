@@ -56,3 +56,7 @@ macrotask
 retryable
 millis
 antling
+backoffs
+longtask
+rescan
+rescans

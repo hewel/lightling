@@ -113,4 +113,25 @@ export interface PageTranslationLog {
   metrics: PageTranslationLogMetrics;
   batches: PageTranslationLogBatch[];
   droppedBatches: number;
+  /** [DEBUG-perf1] Temporary real-world freeze probe; remove after diagnosis. */
+  debugPerf?: PageTranslationPerfProbe;
+}
+
+/** [DEBUG-perf1] Temporary real-world freeze probe; remove after diagnosis. */
+export interface PageTranslationPerfProbe {
+  longTasks: number;
+  longTaskTotalMs: number;
+  longTaskMaxMs: number;
+  collectCalls: number;
+  collectTotalMs: number;
+  collectMaxMs: number;
+  applyChunks: number;
+  applyTotalMs: number;
+  applyMaxChunkMs: number;
+  mutationCallbacks: number;
+  mutationRecords: number;
+  volatileBackoffs: number;
+  mutationMaxRecords: number;
+  mutationTotalMs: number;
+  mutationMaxMs: number;
 }

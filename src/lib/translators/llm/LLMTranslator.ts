@@ -15,6 +15,7 @@ import type {
   PageTranslationAttemptMetrics,
   PageTranslationBatchRequest,
 } from '@/lib/pageTranslation/protocol';
+import { createUUID } from '@/lib/utils';
 import {
   DEFAULT_ADAPTIVE_BATCHING,
   DEFAULT_LLM_FALLBACK_PROFILE,
@@ -149,7 +150,7 @@ export class LLMTranslator implements TranslatorInstanceMembers {
     targetLanguage: string,
   ): Promise<string[]> {
     return this.translateBatchWithOptions(texts, sourceLanguage, targetLanguage, {
-      context: crypto.randomUUID(),
+      context: createUUID(),
       priority: 0,
       retryLimit: 2,
     });

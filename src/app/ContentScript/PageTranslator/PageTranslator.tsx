@@ -10,6 +10,7 @@ import {
   conservativeTokenCounter,
   resolveTranslationTokenizer,
 } from '@/lib/translators/llm/tokenizer';
+import { createUUID } from '@/lib/utils';
 import { abortTranslation } from '@/requests/backend/abortTranslation';
 import type { AppConfigType } from '@/types/runtime';
 
@@ -36,8 +37,8 @@ export type PageTranslatorConfig = Partial<
   Partial<Pick<AppConfigType, 'translatorModule' | 'llmTranslator'>>;
 
 export class PageTranslator {
-  private readonly documentIdentity = crypto.randomUUID();
-  private translateContext: string = crypto.randomUUID();
+  private readonly documentIdentity = createUUID();
+  private translateContext: string = createUUID();
   private pageTranslator: PageTranslationPipeline | null = null;
   private pageTranslateDirection: { from: string; to: string } | null = null;
   private translateState: PageTranslatorStats = {
@@ -72,7 +73,7 @@ export class PageTranslator {
       throw new Error('Page already translated');
     }
 
-    this.translateContext = crypto.randomUUID();
+    this.translateContext = createUUID();
     const localContext = this.translateContext;
     const configuredProfile =
       this.config.translatorModule === 'LLMTranslator' &&
@@ -177,7 +178,7 @@ export class PageTranslator {
     this.pageTranslator = null;
     this.pageTranslateDirection = null;
 
-    this.translateContext = crypto.randomUUID();
+    this.translateContext = createUUID();
     this.translateState = {
       resolved: 0,
       rejected: 0,

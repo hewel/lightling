@@ -77,7 +77,7 @@ describe('PageTranslationPipeline dynamic lifecycle', () => {
     ).toEqual(['Save', 'Save']);
   });
 
-  test('retranslates an application-updated label without entering a feedback loop', async () => {
+  test('retranslates an application-updated label without forcing layout reads', async () => {
     const main = document.querySelector('main');
     const button = document.querySelector('button');
     if (main === null || button === null) throw new Error('fixture missing');
@@ -85,12 +85,38 @@ describe('PageTranslationPipeline dynamic lifecycle', () => {
     pipeline.start();
     await vi.waitFor(() => expect(button.textContent).toBe('Speichern'));
 
+    const rectSpy = vi.spyOn(Element.prototype, 'getBoundingClientRect');
     button.textContent = 'Close';
     await vi.waitFor(() => expect(button.textContent).toBe('Schließen'));
     expect(translatePageBatch).toHaveBeenCalledTimes(2);
+    expect(rectSpy).not.toHaveBeenCalled();
+    rectSpy.mockRestore();
 
     pipeline.stop();
     expect(button.textContent).toBe('Close');
+  });
+
+  test('backs off when the page framework restores the original source text', async () => {
+    const main = document.querySelector('main');
+    const button = document.querySelector('button');
+    if (main === null || button === null) throw new Error('fixture missing');
+    const pipeline = createPipeline(main);
+    pipeline.start();
+    await vi.waitFor(() => expect(button.textContent).toBe('Speichern'));
+
+    // A framework-owned node rejects our translation and restores its source.
+    // The translator must stop fighting that node instead of restore/rescan.
+    vi.useFakeTimers();
+    try {
+      button.textContent = 'Save';
+      for (let index = 0; index < 20; index++) await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(20);
+      expect(button.textContent).toBe('Save');
+      expect(translatePageBatch).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
+    pipeline.stop();
   });
 
   test('never applies a result after the translation session stops', async () => {

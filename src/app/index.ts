@@ -235,18 +235,17 @@ export class App {
       tabs.forEach((tab) => {
         if (tab.status === 'unloaded') return;
 
-        // Ignore special URLs
-        if (
-          !tab.url ||
-          tab.url.startsWith('chrome://') ||
-          tab.url.startsWith('https://chrome.google.com')
-        )
-          return;
+        // Browser-internal, extension, file, and error pages reject script
+        // injection. Only ordinary web pages are valid eager-injection
+        // targets after install.
+        if (!tab.url || !/^https?:\/\//u.test(tab.url)) return;
 
-        browser.scripting.executeScript({
-          target: { tabId: tab.id },
-          files: contentScriptFiles,
-        });
+        void browser.scripting
+          .executeScript({
+            target: { tabId: tab.id },
+            files: contentScriptFiles,
+          })
+          .catch(() => undefined);
       });
     }
   };

@@ -19,6 +19,7 @@ import {
   type TranslationModelProfile,
 } from '@/lib/translators/llm/modelProfile';
 import type { TranslationTokenCounter } from '@/lib/translators/llm/tokenizer';
+import { createUUID } from '@/lib/utils';
 import { abortTranslation } from '@/requests/backend/abortTranslation';
 import { translatePageBatch } from '@/requests/backend/translatePageBatch';
 
@@ -184,6 +185,14 @@ const yieldToMain = (): Promise<void> => {
   return new Promise((resolve) => setTimeout(resolve, 0));
 };
 
+const PAGE_MUTATION_OBSERVER_OPTIONS: MutationObserverInit = {
+  subtree: true,
+  childList: true,
+  characterData: true,
+  attributes: true,
+  attributeFilter: ['placeholder', 'title', 'aria-label', 'alt', 'value', 'hidden'],
+};
+
 export class PageTranslationPipeline {
   private readonly pageMemory = new Map<string, string>();
   private readonly inFlight = new Map<string, Promise<string>>();
@@ -195,6 +204,11 @@ export class PageTranslationPipeline {
   private appliedText = new WeakMap<Node, string>();
   private appliedAttributes = new WeakMap<Element, Map<string, string>>();
   private appliedChildren = new WeakMap<Element, Node[]>();
+  private mutationConflicts = new WeakMap<
+    Element,
+    { count: number; windowStartedAt: number }
+  >();
+  private readonly volatileElements = new Set<Element>();
   private readonly accepted: AcceptedTranslation[] = [];
   private readonly terminology = new TerminologyMemory();
   private readonly ratioTracker = new OutputRatioTracker();
@@ -203,6 +217,26 @@ export class PageTranslationPipeline {
   private metrics = createMetrics();
   private occurrences: TextOccurrence[] = [];
   private observer: MutationObserver | null = null;
+  /** [DEBUG-perf1] Temporary real-world freeze probe; remove after diagnosis. */
+  private perfObserver: PerformanceObserver | null = null;
+  /** [DEBUG-perf1] Temporary real-world freeze probe; remove after diagnosis. */
+  private readonly perfProbe = {
+    longTasks: 0,
+    longTaskTotalMs: 0,
+    longTaskMaxMs: 0,
+    collectCalls: 0,
+    collectTotalMs: 0,
+    collectMaxMs: 0,
+    applyChunks: 0,
+    applyTotalMs: 0,
+    applyMaxChunkMs: 0,
+    mutationCallbacks: 0,
+    mutationRecords: 0,
+    volatileBackoffs: 0,
+    mutationMaxRecords: 0,
+    mutationTotalMs: 0,
+    mutationMaxMs: 0,
+  };
   private generation = 0;
   private pageProfile: PageProfile;
   private currentUrl = location.href;
@@ -230,20 +264,36 @@ export class PageTranslationPipeline {
     this.observer = new MutationObserver((mutations) => {
       void this.onMutations(mutations);
     });
-    this.observer.observe(this.options.root, {
-      subtree: true,
-      childList: true,
-      characterData: true,
-      attributes: true,
-      attributeFilter: ['placeholder', 'title', 'aria-label', 'alt', 'value', 'hidden'],
-    });
+    this.observer.observe(this.options.root, PAGE_MUTATION_OBSERVER_OPTIONS);
+    // [DEBUG-perf1] Temporary real-world freeze probe; remove after diagnosis.
+    if (this.logBatches !== null) {
+      try {
+        this.perfObserver = new PerformanceObserver((list) => {
+          for (const entry of list.getEntries()) {
+            this.perfProbe.longTasks++;
+            this.perfProbe.longTaskTotalMs += entry.duration;
+            this.perfProbe.longTaskMaxMs = Math.max(
+              this.perfProbe.longTaskMaxMs,
+              entry.duration,
+            );
+          }
+        });
+        this.perfObserver.observe({ entryTypes: ['longtask'] });
+      } catch {
+        this.perfObserver = null;
+      }
+    }
   }
 
   public stop(): void {
     ++this.generation;
     this.observer?.disconnect();
     this.observer = null;
+    this.perfObserver?.disconnect();
+    this.perfObserver = null;
     this.applyQueue.length = 0;
+    this.mutationConflicts = new WeakMap();
+    this.volatileElements.clear();
     for (const occurrence of this.occurrences.slice().reverse())
       restoreOccurrence(occurrence);
     this.occurrences = [];
@@ -276,6 +326,7 @@ export class PageTranslationPipeline {
       metrics: { ...this.metrics },
       batches: structuredClone(this.logBatches),
       droppedBatches: this.droppedLogBatches,
+      debugPerf: { ...this.perfProbe },
     };
   }
 
@@ -434,9 +485,19 @@ export class PageTranslationPipeline {
     };
   }
 
-  private async scanAndTranslate(root: Element, generation: number): Promise<void> {
+  private async scanAndTranslate(
+    root: Element,
+    generation: number,
+    priorityOverride?: number,
+  ): Promise<void> {
     if (!this.isCurrent(generation)) return;
-    const collected = collectPageOccurrences(root, this.options);
+    // [DEBUG-perf1] Temporary real-world freeze probe; remove after diagnosis.
+    const collectStartedAt = performance.now();
+    const collected = collectPageOccurrences(root, this.options, priorityOverride);
+    const collectMs = performance.now() - collectStartedAt;
+    this.perfProbe.collectCalls++;
+    this.perfProbe.collectTotalMs += collectMs;
+    this.perfProbe.collectMaxMs = Math.max(this.perfProbe.collectMaxMs, collectMs);
     this.pageProfile = collected.pageProfile;
     const newOccurrences = collected.occurrences.filter((occurrence) => {
       let slots = this.processedSlots.get(occurrence.element);
@@ -897,35 +958,141 @@ export class PageTranslationPipeline {
   }
 
   private async pumpApplies(): Promise<void> {
-    let chunk = 0;
-    while (this.applyQueue.length > 0) {
-      const item = this.applyQueue.shift();
-      if (item === undefined) break;
-      if (this.isCurrent(item.generation)) {
-        // Parse-safe: validatePlaceholderIntegrity ran before enqueueing.
-        this.applyUnit(item.unit, item.translation);
-        if (item.resolvedParts !== undefined) {
-          this.options.onUnitResolved?.(item.resolvedParts);
+    try {
+      while (this.applyQueue.length > 0) {
+        // Preserve mutations queued before this chunk; records generated by
+        // the synchronous apply itself are drained immediately afterwards.
+        const pendingExternalMutations = this.observer?.takeRecords() ?? [];
+        const chunkStartedAt = performance.now();
+        let chunkOccurrences = 0;
+
+        while (
+          this.applyQueue.length > 0 &&
+          chunkOccurrences < PageTranslationPipeline.APPLY_CHUNK_OCCURRENCES
+        ) {
+          const item = this.applyQueue.shift();
+          if (item === undefined) break;
+          if (!this.isCurrent(item.generation)) continue;
+          // Parse-safe: validatePlaceholderIntegrity ran before enqueueing.
+          this.applyUnit(item.unit, item.translation);
+          if (item.resolvedParts !== undefined) {
+            this.options.onUnitResolved?.(item.resolvedParts);
+          }
+          chunkOccurrences += Math.max(1, item.unit.occurrences.length);
         }
-        chunk += Math.max(1, item.unit.occurrences.length);
-      }
-      if (chunk >= PageTranslationPipeline.APPLY_CHUNK_OCCURRENCES) {
-        chunk = 0;
+
+        // MutationObserver delivery is deferred until this synchronous chunk
+        // returns. Drain our own writes now so they cannot be misclassified
+        // as source-page changes and trigger restore -> rescan feedback.
+        this.observer?.takeRecords();
+
+        const elapsed = performance.now() - chunkStartedAt;
+        this.perfProbe.applyChunks++;
+        this.perfProbe.applyTotalMs += elapsed;
+        this.perfProbe.applyMaxChunkMs = Math.max(
+          this.perfProbe.applyMaxChunkMs,
+          elapsed,
+        );
+
+        if (pendingExternalMutations.length > 0) {
+          await this.onMutations(pendingExternalMutations);
+        }
         if (this.applyQueue.length > 0) await yieldToMain();
       }
+    } finally {
+      this.applyPumpRunning = false;
     }
-    this.applyPumpRunning = false;
   }
 
-  private adoptApplicationMutation(mutation: MutationRecord): Element | null {
+  private isVolatileMutationTarget(target: Node): boolean {
+    for (const element of this.volatileElements) {
+      if (!element.isConnected) {
+        this.volatileElements.delete(element);
+        continue;
+      }
+      if (element === target || element.contains(target)) return true;
+    }
+    return false;
+  }
+
+  private isSourceReset(occurrence: TextOccurrence, mutation: MutationRecord): boolean {
+    const binding = occurrence.binding;
+    if (binding.type === 'attribute') {
+      return (
+        mutation.type === 'attributes' &&
+        mutation.target === binding.element &&
+        mutation.attributeName === binding.attribute &&
+        binding.element.getAttribute(binding.attribute) === binding.originalValue
+      );
+    }
+    if (
+      mutation.type === 'characterData' &&
+      mutation.target instanceof Text &&
+      binding.originalText.get(mutation.target) === mutation.target.nodeValue
+    ) {
+      return true;
+    }
+    if (mutation.type !== 'childList' || !(mutation.target instanceof Element)) {
+      return false;
+    }
+    const originalChildren = binding.originalChildren.get(mutation.target);
+    if (originalChildren === undefined) return false;
+    const readOriginalText = (node: Node): string => {
+      if (node instanceof Text) {
+        return binding.originalText.get(node) ?? node.nodeValue ?? '';
+      }
+      if (!(node instanceof Element)) return '';
+      const children = binding.originalChildren.get(node);
+      if (children === undefined) return node.textContent ?? '';
+      return children.map(readOriginalText).join('');
+    };
+    return (
+      mutation.target.textContent === originalChildren.map(readOriginalText).join('')
+    );
+  }
+
+  private hasRepeatedMutationConflict(element: Element): boolean {
+    const now = performance.now();
+    const existing = this.mutationConflicts.get(element);
+    if (existing === undefined || now - existing.windowStartedAt > 1000) {
+      this.mutationConflicts.set(element, { count: 1, windowStartedAt: now });
+      return false;
+    }
+    existing.count++;
+    return existing.count >= 3;
+  }
+
+  private adoptApplicationMutation(
+    mutation: MutationRecord,
+  ): { root: Element; rescan: boolean } | null {
     for (let index = this.occurrences.length - 1; index >= 0; index--) {
       const occurrence = this.occurrences[index];
       if (!occurrence.element.contains(mutation.target)) continue;
+      const sourceReset = this.isSourceReset(occurrence, mutation);
       if (!adoptSourceMutation(occurrence, mutation)) continue;
+
+      const shouldBackOff =
+        sourceReset || this.hasRepeatedMutationConflict(occurrence.element);
       restoreOccurrence(occurrence);
+      // restoreOccurrence is our own write; never feed it back into adoption.
+      this.observer?.takeRecords();
       this.occurrences.splice(index, 1);
+
+      if (shouldBackOff) {
+        this.perfProbe.volatileBackoffs++;
+        this.volatileElements.add(occurrence.element);
+        for (let queueIndex = this.applyQueue.length - 1; queueIndex >= 0; queueIndex--) {
+          if (this.applyQueue[queueIndex].unit.occurrences.includes(occurrence)) {
+            this.applyQueue.splice(queueIndex, 1);
+          }
+        }
+        // Keep the processed slot: the page owns this volatile node and must
+        // not enter another translate -> framework reset loop.
+        return { root: occurrence.element, rescan: false };
+      }
+
       this.processedSlots.get(occurrence.element)?.delete(occurrence.slot);
-      return occurrence.element;
+      return { root: occurrence.element, rescan: true };
     }
     return null;
   }
@@ -937,8 +1104,13 @@ export class PageTranslationPipeline {
       ++this.generation;
       this.metrics.staleCancellations++;
       await abortTranslation({ context: previousSession }).catch(() => undefined);
+      // Restore generates the same childList/characterData records as apply.
+      // Observe only after the synchronous restore completes so those writes
+      // cannot trigger a second restore -> rescan cycle.
+      this.observer?.disconnect();
       for (const occurrence of this.occurrences.slice().reverse())
         restoreOccurrence(occurrence);
+      this.observer?.observe(this.options.root, PAGE_MUTATION_OBSERVER_OPTIONS);
       this.metrics = createMetrics();
       this.logBatches?.splice(0);
       this.droppedLogBatches = 0;
@@ -953,7 +1125,9 @@ export class PageTranslationPipeline {
       this.appliedText = new WeakMap();
       this.appliedAttributes = new WeakMap();
       this.appliedChildren = new WeakMap();
-      this.runtimeSessionId = crypto.randomUUID();
+      this.mutationConflicts = new WeakMap();
+      this.volatileElements.clear();
+      this.runtimeSessionId = createUUID();
       this.runtimeSignature = `${this.currentUrl}\u0000${this.options.sourceLanguage}\u0000${this.options.targetLanguage}\u0000${this.options.identity.provider}\u0000${this.options.identity.model}\u0000${this.runtimeSessionId}`;
       const generation = ++this.generation;
       await this.scanAndTranslate(this.options.root, generation);
@@ -961,13 +1135,17 @@ export class PageTranslationPipeline {
     }
 
     const roots = new Set<Element>();
+    // [DEBUG-perf1] Temporary real-world freeze probe; remove after diagnosis.
+    const mutationLoopStartedAt = performance.now();
     for (const mutation of mutations) {
+      if (this.isVolatileMutationTarget(mutation.target)) continue;
       if (mutation.type === 'characterData') {
         const current = mutation.target.nodeValue ?? '';
         if (this.appliedText.get(mutation.target) === current) continue;
-        const root = this.adoptApplicationMutation(mutation);
-        if (root !== null) roots.add(root);
-        else if (mutation.target.parentElement !== null) {
+        const adopted = this.adoptApplicationMutation(mutation);
+        if (adopted !== null) {
+          if (adopted.rescan) roots.add(adopted.root);
+        } else if (mutation.target.parentElement !== null) {
           roots.add(mutation.target.parentElement);
         }
         continue;
@@ -979,8 +1157,9 @@ export class PageTranslationPipeline {
           ?.get(attribute ?? '');
         if (attribute !== null && expected === mutation.target.getAttribute(attribute))
           continue;
-        const root = this.adoptApplicationMutation(mutation);
-        roots.add(root ?? mutation.target);
+        const adopted = this.adoptApplicationMutation(mutation);
+        if (adopted === null) roots.add(mutation.target);
+        else if (adopted.rescan) roots.add(adopted.root);
         continue;
       }
       if (mutation.type === 'childList' && mutation.target instanceof Element) {
@@ -993,9 +1172,9 @@ export class PageTranslationPipeline {
         ) {
           continue;
         }
-        const root = this.adoptApplicationMutation(mutation);
-        if (root !== null) {
-          roots.add(root);
+        const adopted = this.adoptApplicationMutation(mutation);
+        if (adopted !== null) {
+          if (adopted.rescan) roots.add(adopted.root);
           continue;
         }
       }
@@ -1004,7 +1183,37 @@ export class PageTranslationPipeline {
         else if (node.parentElement !== null) roots.add(node.parentElement);
       }
     }
+    // [DEBUG-perf1] Temporary real-world freeze probe; remove after diagnosis.
+    const mutationLoopMs = performance.now() - mutationLoopStartedAt;
+    this.perfProbe.mutationCallbacks++;
+    this.perfProbe.mutationRecords += mutations.length;
+    this.perfProbe.mutationMaxRecords = Math.max(
+      this.perfProbe.mutationMaxRecords,
+      mutations.length,
+    );
+    this.perfProbe.mutationTotalMs += mutationLoopMs;
+    this.perfProbe.mutationMaxMs = Math.max(this.perfProbe.mutationMaxMs, mutationLoopMs);
+
+    const scanRoots: Element[] = [];
+    if (roots.size > 16) {
+      // A large mutation wave (framework rerender/navigation) is cheaper to
+      // collect once from the pipeline root than to force layout and rescan
+      // dozens of overlapping subtrees.
+      scanRoots.push(this.options.root);
+    } else {
+      for (const root of roots) {
+        if (scanRoots.some((candidate) => candidate.contains(root))) continue;
+        for (let index = scanRoots.length - 1; index >= 0; index--) {
+          if (root.contains(scanRoots[index])) scanRoots.splice(index, 1);
+        }
+        scanRoots.push(root);
+      }
+    }
+
     const generation = this.generation;
-    for (const root of roots) await this.scanAndTranslate(root, generation);
+    // Dynamic rescans use a fixed near-viewport priority. Reading every
+    // element's bounding box after DOM writes forced thousands of layouts in
+    // the real trace; request scheduling does not need that precision here.
+    for (const root of scanRoots) await this.scanAndTranslate(root, generation, 3);
   }
 }

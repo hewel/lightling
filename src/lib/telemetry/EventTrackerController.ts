@@ -1,12 +1,14 @@
 import browser from 'webextension-polyfill';
 
+import { createUUID } from '@/lib/utils';
+
 import { EventPayload, EventTracker } from '.';
 
 export async function getTelemetryId(): Promise<string> {
   let { telemetryId } = await browser.storage.local.get('telemetryId');
 
   if (!telemetryId) {
-    telemetryId = crypto.randomUUID();
+    telemetryId = createUUID();
     await browser.storage.local.set({ telemetryId });
   }
 
