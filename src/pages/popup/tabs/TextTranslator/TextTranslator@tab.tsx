@@ -1,22 +1,22 @@
-import { useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import { useFocusVisible } from '@react-aria/interactions';
 
-import { useDelayCallback } from '@/lib/hooks/useDelayCallback';
 import { translate as sendTranslateRequest } from '@/requests/backend/translate';
 
-import { InitFn, PopupWindowContext, TabComponent } from '../../layout/PopupWindow';
-
-import { TextTranslator, TextTranslatorProps, TranslationState } from './TextTranslator';
 import {
-  TextTranslatorData,
-  TextTranslatorStorage,
-} from './TextTranslator.utils/TextTranslatorStorage';
+  PopupWindowContext,
+  type InitFn,
+  type TabComponent,
+} from '../../layout/PopupWindow';
 
-type InitData = {
-  from: string;
-  to: string;
-  lastTranslate: TranslationState | null;
-};
+import { TextTranslator, type TextTranslatorProps } from './TextTranslator';
+import {
+  recoverTextTranslatorInitData,
+  type TextTranslatorInitData,
+  useTextTranslatorPersistence,
+} from './TextTranslator.persistence';
+
+type InitData = TextTranslatorInitData;
 
 /**
  * Wrapper on `TextTranslator` to use as tab in `PopupWindow`
@@ -36,48 +36,12 @@ export const TextTranslatorTab: TabComponent<InitFn<InitData>> = ({
     TextTranslatorProps['lastTranslation']
   >(initData.lastTranslate ?? null);
 
-  // Remember user input
-  const serializeLenLimit = 100000;
-  const serializeDelay = 300;
-  const [setDelayCb] = useDelayCallback();
-
-  const textTranslatorStorage = useMemo(() => new TextTranslatorStorage(), []);
-  useEffect(() => {
-    const serialize = () => {
-      try {
-        const translationState: TextTranslatorData = {
-          // Cast string to `langCode`
-          from,
-          to,
-          translate: null,
-        };
-
-        if (lastTranslation !== null && config.textTranslator.rememberText) {
-          const { originalText, translatedText } = lastTranslation;
-
-          if (
-            originalText.length <= serializeLenLimit &&
-            (translatedText === null || translatedText.length <= serializeLenLimit)
-          ) {
-            translationState.translate = lastTranslation;
-          }
-        }
-
-        textTranslatorStorage.setData(translationState);
-      } catch (err) {
-        console.error(err);
-      }
-    };
-
-    setDelayCb(serialize, serializeDelay);
-  }, [
-    setDelayCb,
-    lastTranslation,
-    config.textTranslator.rememberText,
+  useTextTranslatorPersistence({
     from,
     to,
-    textTranslatorStorage,
-  ]);
+    lastTranslation,
+    rememberText: config.textTranslator.rememberText,
+  });
 
   // Focus on input when focus is free
   const { activeTab } = useContext(PopupWindowContext);
@@ -127,36 +91,9 @@ export const TextTranslatorTab: TabComponent<InitFn<InitData>> = ({
 };
 
 TextTranslatorTab.init = async ({ translatorFeatures, config }) => {
-  let from = translatorFeatures.isSupportAutodetect
-    ? 'auto'
-    : translatorFeatures.supportedLanguages[0];
-  let to = config.language;
-
-  // Try recovery state
-  let lastTranslate: InitData['lastTranslate'] = null;
-
-  const textTranslatorStorage = new TextTranslatorStorage();
-  const lastState = await textTranslatorStorage.getData();
-  if (lastState !== null) {
-    const { isSupportAutodetect, supportedLanguages } = translatorFeatures;
-    const { from: lastFrom, to: lastTo, translate } = lastState;
-
-    if (
-      (lastFrom === 'auto' && isSupportAutodetect) ||
-      supportedLanguages.includes(lastFrom)
-    ) {
-      from = lastFrom;
-    }
-
-    if (supportedLanguages.includes(lastTo)) {
-      to = lastTo;
-    }
-
-    // Recovery text
-    if (config.textTranslator.rememberText && translate !== null) {
-      lastTranslate = translate;
-    }
-  }
-
-  return { from, to, lastTranslate };
+  return recoverTextTranslatorInitData({
+    translatorFeatures,
+    language: config.language,
+    rememberText: config.textTranslator.rememberText,
+  });
 };
