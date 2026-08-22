@@ -269,14 +269,16 @@ describe('TranslatorManager LLM integration', () => {
       llmTranslator: { activeProfile: 'Profile1', profiles: [llmProfile1] },
     });
 
-    expect(disposeSpy).toHaveBeenCalledTimes(1);
+    // TranslatorManager owns one scheduler, and LLMTranslator owns its internal
+    // page-batch scheduler. Replacing the manager scheduler disposes both.
+    expect(disposeSpy).toHaveBeenCalledTimes(2);
     translateSpy.mockRestore();
     disposeSpy.mockRestore();
   });
 
   test('getCacheInstance uses getLLMCacheId isolating cache between different models', async () => {
     const mockTranslate = vi
-      .spyOn(LLMTranslator.prototype, 'translateBatchWithOptions')
+      .spyOn(LLMTranslator.prototype, 'executeBatchWithOptions')
       .mockImplementation(async (texts) => texts.map((t) => `llm:${t}`));
 
     const llmManager = new TranslatorManager(
