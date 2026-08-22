@@ -2,6 +2,7 @@ import type { ObservableStore } from '@/lib/store';
 
 import type { PageTranslationOptions } from '../PageTranslationContext';
 import { PageTranslator, type PageTranslatorConfig } from './PageTranslator';
+import { PageTranslatorLifecycle } from './PageTranslatorLifecycle';
 
 export class PageTranslatorManager {
   private readonly $state;
@@ -25,40 +26,19 @@ export class PageTranslatorManager {
   }
 
   public start() {
+    const lifecycle = new PageTranslatorLifecycle(this.pageTranslator);
+
     // Manage page translation instance
     this.$state.subscribe(
       ({ config }) => config,
-      (config) => {
-        if (!this.pageTranslator.isRun()) {
-          this.pageTranslator.updateConfig(config);
-          return;
-        }
-
-        const direction = this.pageTranslator.getTranslateDirection();
-        if (direction === null) {
-          throw new TypeError('Invalid response from getTranslateDirection method');
-        }
-
-        this.pageTranslator.stop();
-        this.pageTranslator.updateConfig(config);
-        this.pageTranslator.run(direction.from, direction.to);
-      },
+      (config) => lifecycle.updateConfig(config),
       { fireImmediately: true },
     );
 
     // Manage page translation state
     this.$state.subscribe(
       ({ state }) => state,
-      (pageTranslation) => {
-        const shouldTranslate = pageTranslation !== null;
-        if (shouldTranslate === this.pageTranslator.isRun()) return;
-
-        if (pageTranslation !== null) {
-          this.pageTranslator.run(pageTranslation.from, pageTranslation.to);
-        } else {
-          this.pageTranslator.stop();
-        }
-      },
+      (pageTranslation) => lifecycle.updateState(pageTranslation),
       { fireImmediately: true },
     );
   }
