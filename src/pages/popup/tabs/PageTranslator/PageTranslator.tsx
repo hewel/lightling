@@ -1,4 +1,4 @@
-import { FC, useCallback, useMemo } from 'react';
+import { FC, useMemo } from 'react';
 import { Collapsible } from '@astryxdesign/core/Collapsible';
 import { Heading } from '@astryxdesign/core/Heading';
 import { Selector } from '@astryxdesign/core/Selector';
@@ -40,16 +40,19 @@ export interface PageTranslatorProps
   extends
     MutableValue<'from', string | undefined>,
     MutableValue<'to', string | undefined>,
-    MutableValue<'isShowOptions', boolean>,
-    // TODO: use literals
-    MutableValue<'sitePreferences', string>,
-    MutableValue<'languagePreferences', string> {
+    MutableValue<'isShowOptions', boolean> {
   /**
    * Features of translator module
    */
   translatorFeatures: TabData['translatorFeatures'];
 
   hostname: string;
+
+  sitePreferences: string;
+  setSitePreferences: (value: string) => void;
+
+  languagePreferences: string;
+  setLanguagePreferences: (value: string) => void;
 
   showCounters?: boolean;
 
@@ -99,26 +102,6 @@ export const PageTranslator: FC<PageTranslatorProps> = ({
   const localizedLang = useMemo(
     () => (from ? getLanguageNameByCode(from) : null),
     [from],
-  );
-
-  // TODO: #important fix types in library to allow set types strict
-  const setTranslateLangAdaptor = useCallback(
-    (value: string[] | string | undefined) => {
-      // TODO: check that it is const value
-      if (typeof value === 'string') {
-        setLanguagePreferences(value);
-      }
-    },
-    [setLanguagePreferences],
-  );
-
-  const setTranslateStateAdaptor = useCallback(
-    (value: string[] | string | undefined) => {
-      if (typeof value === 'string') {
-        setSitePreferences(value);
-      }
-    },
-    [setSitePreferences],
   );
 
   const translateLanguageOptions = useMemo(
@@ -193,7 +176,7 @@ export const PageTranslator: FC<PageTranslatorProps> = ({
                 isLabelHidden
                 options={translateLanguageOptions}
                 value={languagePreferences}
-                onChange={setTranslateLangAdaptor}
+                onChange={setLanguagePreferences}
               />
             </HStack>
           </VStack>
@@ -209,7 +192,7 @@ export const PageTranslator: FC<PageTranslatorProps> = ({
                 isLabelHidden
                 options={translateSiteOptions}
                 value={sitePreferences}
-                onChange={setTranslateStateAdaptor}
+                onChange={setSitePreferences}
               />
             </HStack>
           </VStack>
