@@ -20,11 +20,11 @@ export type PageTranslationSessionConfig = {
 
 export interface PageTranslationSessionDescriptor {
   sessionId: string;
+  sessionSignature: string;
   provider: string;
   model: string;
   modelProfile: TranslationModelProfile;
   tokenCounter: TranslationTokenCounter;
-  sessionSignature: string;
   logEnabled: boolean;
   debug: boolean;
 }
@@ -89,11 +89,11 @@ export const preparePageTranslationSession = ({
 
   return {
     sessionId,
+    sessionSignature,
     provider,
     model,
     modelProfile,
     tokenCounter,
-    sessionSignature,
     logEnabled,
     debug,
   };

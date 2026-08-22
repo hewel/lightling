@@ -711,7 +711,6 @@ export class PageTranslationPipeline {
       sourceLanguage: this.options.sourceLanguage,
       targetLanguage: this.options.targetLanguage,
       sessionId: this.runtimeSessionId,
-      sessionSignature: this.runtimeSignature,
       memory: pageProfile,
       section: fresh[0].unit.section,
       context,

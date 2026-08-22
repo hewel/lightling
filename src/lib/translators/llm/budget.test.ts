@@ -44,7 +44,6 @@ const request: PageTranslationBatchRequest = {
   sourceLanguage: 'en',
   targetLanguage: 'de',
   sessionId: 'session',
-  sessionSignature: 'signature',
   memory: {
     pageTitle: 'Repository settings page with a deliberately long descriptive title',
     pageType: 'technical documentation settings reference',

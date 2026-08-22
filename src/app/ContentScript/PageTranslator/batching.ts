@@ -126,7 +126,6 @@ const makeBudgetRequest = (
   sourceLanguage: options.sourceLanguage,
   targetLanguage: options.targetLanguage,
   sessionId: 'planning',
-  sessionSignature: 'planning',
   memory: options.pageProfile,
   ...(options.section === undefined ? {} : { section: options.section }),
   context: options.context,

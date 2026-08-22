@@ -64,6 +64,9 @@ describe('PageTranslationPipeline dynamic lifecycle', () => {
       expect(main.querySelector('button')?.textContent).toBe('Speichern'),
     );
     expect(translatePageBatch).toHaveBeenCalledTimes(1);
+    const request = vi.mocked(translatePageBatch).mock.calls[0]?.[0];
+    expect(request?.sessionId).toEqual(expect.any(String));
+    expect(request).not.toHaveProperty('sessionSignature');
 
     const repeated = document.createElement('button');
     repeated.textContent = 'Save';

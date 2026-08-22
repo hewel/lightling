@@ -85,7 +85,6 @@ export interface PageTranslationBatchRequest {
   sourceLanguage: string;
   targetLanguage: string;
   sessionId: string;
-  sessionSignature: string;
   memory: PageProfile;
   section?: SectionContext;
   context: TranslationRequestContext;

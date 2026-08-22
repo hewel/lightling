@@ -34,7 +34,6 @@ const request: PageTranslationBatchRequest = {
   sourceLanguage: 'en',
   targetLanguage: 'de',
   sessionId: 'session',
-  sessionSignature: 'signature',
   memory: {
     languageDirection: 'auto',
     glossary: [],

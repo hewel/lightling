@@ -27,7 +27,6 @@ const createRequest = (targets: TranslationTarget[]): PageTranslationBatchReques
   sourceLanguage: 'en',
   targetLanguage: 'de',
   sessionId: 'session-1',
-  sessionSignature: 'signature-1',
   memory: {
     languageDirection: 'ltr',
     glossary: [],

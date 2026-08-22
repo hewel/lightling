@@ -46,29 +46,24 @@ describe('preparePageTranslationSession', () => {
     expect(session.modelProfile.safetyReserveTokens).toBe(640);
   });
 
-  test('includes identity and lazy/eager mode in the session signature', () => {
-    const eager = preparePageTranslationSession({
-      ...baseInput,
-      config: { translatorModule: 'GoogleTranslator', lazyTranslate: false },
-    });
-    const lazy = preparePageTranslationSession({
+  test('builds a local session signature without adding it to transport', () => {
+    const session = preparePageTranslationSession({
       ...baseInput,
       config: { translatorModule: 'GoogleTranslator', lazyTranslate: true },
     });
 
-    expect(eager.sessionSignature.split('\u0000')).toEqual([
+    expect(session.sessionId).toBe(baseInput.sessionId);
+    expect(session.sessionSignature.split('\u0000')).toEqual([
       baseInput.pageUrl,
       baseInput.documentIdentity,
       baseInput.from,
       baseInput.to,
-      eager.provider,
-      eager.model,
-      eager.modelProfile.profileVersion,
-      eager.modelProfile.promptVersion,
-      'eager',
+      session.provider,
+      session.model,
+      session.modelProfile.profileVersion,
+      session.modelProfile.promptVersion,
+      'lazy',
     ]);
-    expect(lazy.sessionSignature).not.toBe(eager.sessionSignature);
-    expect(lazy.sessionSignature.endsWith('\u0000lazy')).toBe(true);
   });
 
   test('exposes debug, logging, provider, and model identity fields', () => {
@@ -94,7 +89,5 @@ describe('preparePageTranslationSession', () => {
     expect(session.model).toBe(profile.model);
     expect(session.logEnabled).toBe(true);
     expect(session.debug).toBe(true);
-    expect(session.sessionSignature).toContain(profile.provider);
-    expect(session.sessionSignature).toContain(profile.model);
   });
 });
