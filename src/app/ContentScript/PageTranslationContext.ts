@@ -1,15 +1,13 @@
 import { createObservableStore, type ObservableStore } from '@/lib/store';
 import { isDeepEqual } from '@/lib/utils';
 
-import { onHotkeysPressed } from '../../components/controls/Hotkey/utils';
 import { getPageLanguage } from '../../lib/browser';
 import type { AppConfigType } from '../../types/runtime';
 
+import { startPageTranslationLifecycle } from './PageTranslationLifecycle';
 import { shouldAutoTranslate } from './PageTranslator/autoTranslationDecision';
 import { PageTranslatorController } from './PageTranslator/PageTranslatorController';
-import { PageTranslatorManager } from './PageTranslator/PageTranslatorManager';
 import { SelectTranslatorController } from './SelectTranslator/SelectTranslatorController';
-import { SelectTranslatorManager } from './SelectTranslator/SelectTranslatorManager';
 
 export type PageTranslationOptions = {
   from: string;
@@ -85,104 +83,18 @@ export class PageTranslationContext {
   }
 
   public async start() {
-    const selectSlice = (state: PageContextState) => ({
-      enabled:
-        state.config.selectTranslator.enabled &&
-        (state.pageTranslation === null ||
-          !state.config.selectTranslator.disableWhileTranslatePage),
-      config: state.config.selectTranslator,
-      pageData: state.pageData,
-    });
-    const $selectTranslatorState = createObservableStore(
-      selectSlice(this.$context.getState()),
-    );
-    this.$context.subscribe(
-      selectSlice,
-      (slice) => $selectTranslatorState.setState(slice),
-      { equalityFn: isDeepEqual },
-    );
-
-    const selectTranslatorManager = new SelectTranslatorManager($selectTranslatorState);
-    selectTranslatorManager.start();
-    this.controllers.selectTranslator = new SelectTranslatorController(
-      selectTranslatorManager,
-    );
-
-    const pageSlice = (state: PageContextState) => ({
-      state: state.pageTranslation,
-      config: {
-        ...state.config.pageTranslator,
-        translatorModule: state.config.translatorModule,
-        llmTranslator: state.config.llmTranslator,
+    return startPageTranslationLifecycle({
+      $context: this.$context,
+      setPageTranslatorController: (controller) => {
+        this.controllers.pageTranslator = controller;
       },
-    });
-    const $pageTranslatorState = createObservableStore(
-      pageSlice(this.$context.getState()),
-    );
-    this.$context.subscribe(pageSlice, (slice) => $pageTranslatorState.setState(slice), {
-      equalityFn: isDeepEqual,
-    });
-
-    let pageTranslatorManager: PageTranslatorManager | null = null;
-    const getPageTranslatorManager = async () => {
-      if (pageTranslatorManager === null) {
-        pageTranslatorManager = new PageTranslatorManager($pageTranslatorState);
-        pageTranslatorManager.start();
-      }
-      return pageTranslatorManager;
-    };
-
-    this.controllers.pageTranslator = new PageTranslatorController(
-      getPageTranslatorManager,
-      this.updatePageTranslationState,
-      this.resolveTranslationOptions,
-    );
-    this.$context.subscribe(
-      ({ pageTranslation }) => pageTranslation,
-      (pageTranslation) => {
-        if (pageTranslation !== null) {
-          void getPageTranslatorManager();
-        }
+      setSelectTranslatorController: (controller) => {
+        this.controllers.selectTranslator = controller;
       },
-      { fireImmediately: true },
-    );
-
-    void this.scanPage();
-
-    let hotkeysObserverCleanup: (() => void) | null = null;
-    this.$context.subscribe(
-      (state) => ({
-        hotkeys: state.config.pageTranslator.toggleTranslationHotkey,
-        userLanguage: state.config.language,
-        pageLanguage: state.pageData.language,
-        isPageTranslated: state.pageTranslation !== null,
-      }),
-      ({ hotkeys, pageLanguage, userLanguage, isPageTranslated }) => {
-        if (hotkeysObserverCleanup) {
-          hotkeysObserverCleanup();
-          hotkeysObserverCleanup = null;
-        }
-
-        if (hotkeys) {
-          hotkeysObserverCleanup = onHotkeysPressed(hotkeys, (event) => {
-            event.preventDefault();
-            if (isPageTranslated) {
-              this.updatePageTranslationState(null);
-            } else {
-              if (pageLanguage === null) {
-                throw new Error('Page language not set');
-              }
-
-              this.updatePageTranslationState({
-                from: pageLanguage,
-                to: userLanguage,
-              });
-            }
-          });
-        }
-      },
-      { equalityFn: isDeepEqual, fireImmediately: true },
-    );
+      updatePageTranslationState: this.updatePageTranslationState,
+      resolveTranslationOptions: this.resolveTranslationOptions,
+      scanPage: this.scanPage,
+    });
   }
 
   private readonly scanPage = async () => {
