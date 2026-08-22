@@ -22,6 +22,7 @@ import { RecordValues } from '@/types/utils';
 
 import { TranslatorsMap } from '..';
 import { TranslatorsCacheStorage } from '../TranslatorsCacheStorage';
+import { createPageBatchExecution } from './pageBatchExecution';
 import { PageTranslationMemory } from './PageTranslationMemory';
 
 export type Config = Pick<
@@ -129,46 +130,25 @@ export class TranslatorManager<Translators extends TranslatorsMap = TranslatorsM
         });
       }
     }
-
     if (misses.length > 0) {
-      const translatorClass = this.getTranslatorClass();
-      const translated =
-        (translatorClass as unknown) === LLMTranslator
-          ? await (this.getTranslatorInstance() as LLMTranslator).translatePageBatch(
-              { ...request, targets: misses },
-              {
-                context: request.sessionId,
-                priority: Math.max(...misses.map((target) => target.priority)),
-                retryLimit: this.config.scheduler.translateRetryAttemptLimit,
-              },
-              (increment) => {
-                metrics.retryCount += increment.retryCount;
-                if (increment.acceptedProfileId !== undefined) {
-                  metrics.acceptedProfileId = increment.acceptedProfileId;
-                }
-                if (increment.acceptedRetryStage !== undefined) {
-                  metrics.acceptedRetryStage = increment.acceptedRetryStage;
-                }
-                if (increment.failedIds !== undefined) {
-                  metrics.failedIds = increment.failedIds;
-                }
-                metrics.validationFailures += increment.validationFailures;
-              },
-            )
-          : await Promise.all(
-              misses.map(async (target) => ({
-                id: target.id,
-                target: await this.getScheduler().translate(
-                  target.sourceText,
-                  request.sourceLanguage,
-                  request.targetLanguage,
-                  {
-                    context: request.sessionId,
-                    priority: target.priority,
-                  },
-                ),
-              })),
-            );
+      const translated = await createPageBatchExecution({
+        translatorClass: this.getTranslatorClass(),
+        getLLMTranslator: () => this.getTranslatorInstance() as LLMTranslator,
+        getScheduler: () => this.getScheduler(),
+        retryLimit: this.config.scheduler.translateRetryAttemptLimit,
+      }).execute({ ...request, targets: misses }, (increment) => {
+        metrics.retryCount += increment.retryCount;
+        if (increment.acceptedProfileId !== undefined) {
+          metrics.acceptedProfileId = increment.acceptedProfileId;
+        }
+        if (increment.acceptedRetryStage !== undefined) {
+          metrics.acceptedRetryStage = increment.acceptedRetryStage;
+        }
+        if (increment.failedIds !== undefined) {
+          metrics.failedIds = increment.failedIds;
+        }
+        metrics.validationFailures += increment.validationFailures;
+      });
 
       for (const translation of translated) {
         const target = misses.find((candidate) => candidate.id === translation.id);
