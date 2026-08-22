@@ -264,14 +264,13 @@ export const PageTranslatorTab: TabComponent<InitFn<InitData>> = ({
   const [counters, setCounters] = useState<PageTranslatorStats>(countersInit);
   useEffect(() => {
     // Handle updates
-    pageTranslatorStatsUpdatedHandler((counters, messageTabId) => {
+    return pageTranslatorStatsUpdatedHandler((counters, messageTabId) => {
       // Skip messages from other tabs
       if (messageTabId !== tabId) return;
 
       setCounters(counters);
     });
-    // oxlint-disable-next-line react/exhaustive-deps
-  }, []);
+  }, [tabId]);
 
   const pageTranslationStorage = useMemo(() => new PageTranslationStorage(), []);
   const [isShowOptions, setIsShowOptions] = useStateWithProxy<boolean>(
