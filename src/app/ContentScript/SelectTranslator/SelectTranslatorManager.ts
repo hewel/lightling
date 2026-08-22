@@ -17,8 +17,10 @@ export class SelectTranslatorManager {
 
   private selectTranslator: SelectTranslator | null = null;
 
-  public getSelectTranslator() {
-    return this.selectTranslator;
+  public translateSelectedText() {
+    if (this.selectTranslator === null || !this.selectTranslator.isRun()) return;
+
+    this.selectTranslator.translateSelectedText();
   }
 
   public start() {

@@ -7,10 +7,6 @@ export class SelectTranslatorController {
   }
 
   public translateSelectedText() {
-    const selectTranslator = this.manager.getSelectTranslator();
-    if (selectTranslator === null) return;
-    if (selectTranslator.isRun()) {
-      selectTranslator.translateSelectedText();
-    }
+    this.manager.translateSelectedText();
   }
 }
