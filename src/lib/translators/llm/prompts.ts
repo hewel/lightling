@@ -104,7 +104,11 @@ export const promptVariantForRetry = (
   profile: TranslationModelProfile,
   retryStage: PageTranslationBatchRequest['retryStage'],
 ): PromptVariant => {
-  if (retryStage === 'simplified-context' || retryStage === 'isolated') {
+  if (
+    retryStage === 'simplified-context' ||
+    retryStage === 'isolated' ||
+    retryStage === 'fragmented'
+  ) {
     return 'compact';
   }
   if (retryStage === 'rich-context') return 'advanced';

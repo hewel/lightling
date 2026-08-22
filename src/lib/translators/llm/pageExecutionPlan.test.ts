@@ -77,7 +77,7 @@ describe('page execution plan', () => {
     });
   });
 
-  test('preserves the placeholder-corruption ladder', () => {
+  test('isolates placeholder corruption once before structural fallback', () => {
     const history = [
       attempt(['a'], 'initial', {
         issues: [{ id: 'a', failure: 'placeholder-corruption' }],
@@ -94,9 +94,9 @@ describe('page execution plan', () => {
         translations: [],
       }),
     );
-    expect(planNext(request(['a']), history, policy)).toMatchObject({
-      kind: 'attempt',
-      stage: 'simplified-context',
+    expect(planNext(request(['a']), history, policy)).toEqual({
+      kind: 'terminal',
+      reason: 'exhausted',
     });
   });
 

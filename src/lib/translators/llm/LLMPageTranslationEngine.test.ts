@@ -127,6 +127,66 @@ describe('LLM webpage request contract', () => {
     ]);
   });
 
+  test('reassembles placeholder-free fragments after structural retries fail', async () => {
+    const calls: LLMRequest[] = [];
+    const corruptedResponse = JSON.stringify({
+      translations: [{ id: 'u1', target: 'Klicke Speichern mit Code jetzt.' }],
+    });
+    const fragmentTranslations = [
+      { id: 'u1:fragment-1', target: 'Klicke' },
+      { id: 'u1:fragment-2', target: 'Speichern' },
+      { id: 'u1:fragment-3', target: 'mit' },
+      { id: 'u1:fragment-4', target: 'jetzt.' },
+    ];
+    const engine = new LLMTranslationEngine({
+      loadSettings: () => Promise.resolve(settings),
+      fetch: (llmRequest) => {
+        calls.push(llmRequest);
+        const prompt = JSON.stringify(llmRequest.messages);
+        let text = corruptedResponse;
+        for (const translation of fragmentTranslations) {
+          if (!prompt.includes(translation.id)) continue;
+          text = JSON.stringify({ translations: [translation] });
+        }
+        return Effect.succeed({
+          text,
+          usage: { inputTokens: null, outputTokens: null },
+        });
+      },
+    });
+    const metrics: PageTranslationAttemptMetrics[] = [];
+
+    const result = await engine.translatePageBatch(
+      {
+        ...request,
+        targets: [target('u1', 'Click <g id="link">Save</g> with <x id="code"/> now.')],
+      },
+      {
+        context: 'session',
+        priority: 4,
+        retryLimit: 0,
+        isolateInvalidBatches: true,
+      },
+      (increment) => metrics.push(increment),
+    );
+    expect(result).toEqual([
+      {
+        id: 'u1',
+        target: 'Klicke <g id="link">Speichern</g> mit <x id="code"/> jetzt.',
+      },
+    ]);
+
+    expect(calls.length).toBeGreaterThan(2);
+    const fragmentedCall = calls.find((call) =>
+      JSON.stringify(call.messages).includes('u1:fragment-1'),
+    );
+    const fragmentedPrompt = JSON.stringify(fragmentedCall?.messages);
+    expect(fragmentedPrompt).not.toContain('<x id=');
+    expect(fragmentedPrompt).not.toContain('<g id=');
+    expect(metrics[0]?.acceptedRetryStage).toBe('fragmented');
+    expect(metrics[0]?.failedIds).toEqual([]);
+  });
+
   test('records transport retries in the terminal journal', async () => {
     vi.useFakeTimers();
     try {

@@ -34,6 +34,10 @@ describe('page translation protocol', () => {
     expect(isInvariantTranslationSource('©2026 Meta Platforms, Inc.')).toBe(true);
     expect(isInvariantTranslationSource('tsx')).toBe(true);
     expect(isInvariantTranslationSource('bash')).toBe(true);
+    expect(isInvariantTranslationSource('@imdreamrunner')).toBe(true);
+    expect(
+      isInvariantTranslationSource('<x id="x-1"/> — XDSCollapse → XDSCollapsible'),
+    ).toBe(true);
 
     for (const text of [
       'Save',
@@ -43,6 +47,8 @@ describe('page translation protocol', () => {
       'Community',
       'Changelog',
       'This is a normal sentence.',
+      '<x id="x-1"/> — Rename <x id="x-2"/> status to <x id="x-3"/>',
+      '<x id="x-1"/> — TopNav title → heading',
     ]) {
       expect(isInvariantTranslationSource(text)).toBe(false);
     }

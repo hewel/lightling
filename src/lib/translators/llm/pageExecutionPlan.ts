@@ -81,6 +81,15 @@ const stagesForTarget = (
     return [{ stage: 'rich-context', contextMode: 'rich' }];
   }
 
+  if (failures.has('placeholder-corruption')) {
+    // Isolation distinguishes cross-target interference. Repeating the same
+    // structured target with less context cannot restore removed DOM tokens;
+    // the engine's placeholder-free fragment fallback owns that case.
+    return policy.retryWithSmallerBatch && policy.maxRetries > 0
+      ? [{ stage: 'isolated', contextMode: 'normal' }]
+      : [];
+  }
+
   const stages: { stage: PageExecutionStage; contextMode: PageExecutionContextMode }[] =
     [];
   if (policy.retryWithSmallerBatch) {

@@ -87,7 +87,12 @@ export interface TranslationTarget {
   priority: number;
 }
 
-export type RetryStage = 'initial' | 'isolated' | 'simplified-context' | 'rich-context';
+export type RetryStage =
+  | 'initial'
+  | 'isolated'
+  | 'simplified-context'
+  | 'rich-context'
+  | 'fragmented';
 
 export interface PageTranslationBatchRequest {
   sourceLanguage: string;
@@ -196,6 +201,7 @@ const RetryStageSchema = Schema.Literals([
   'isolated',
   'simplified-context',
   'rich-context',
+  'fragmented',
 ]);
 
 const TranslationContextItemSchema = Schema.Struct({
@@ -611,6 +617,7 @@ const comparableText = (text: string): string =>
 const LIKELY_INVARIANT_SOURCE_PATTERN = /(?:[_/]|::|[a-z][A-Z]|[A-Z]{2})/u;
 const COPYRIGHT_SOURCE_PATTERN = /^©\s*\d{4}(?:[-–]\d{4})?\b/u;
 const IDENTIFIER_SOURCE_PATTERN = /^[A-Za-z][A-Za-z0-9_+#./:-]{1,15}$/u;
+const HANDLE_SOURCE_PATTERN = /^@[A-Za-z0-9](?:[A-Za-z0-9_-]{0,38})$/u;
 const CODE_LANGUAGE_IDENTIFIERS: Record<string, true> = {
   bash: true,
   bat: true,
@@ -649,7 +656,10 @@ const CODE_LANGUAGE_IDENTIFIERS: Record<string, true> = {
 const isLikelyInvariantSource = (text: string): boolean => {
   const words = text.match(/\p{L}+/gu);
   return (
-    words !== null && words.length <= 3 && LIKELY_INVARIANT_SOURCE_PATTERN.test(text)
+    words !== null &&
+    words.length <= 3 &&
+    !words.some((word) => /^[a-z]{2,}$/u.test(word)) &&
+    LIKELY_INVARIANT_SOURCE_PATTERN.test(text)
   );
 };
 
@@ -668,6 +678,7 @@ export const isInvariantTranslationSource = (
     return true;
   }
   return (
+    HANDLE_SOURCE_PATTERN.test(comparableSource) ||
     isLikelyInvariantSource(comparableSource) ||
     COPYRIGHT_SOURCE_PATTERN.test(comparableSource) ||
     isIdentifierLikeSource(comparableSource)

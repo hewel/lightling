@@ -247,6 +247,83 @@ interface PromptBudget {
   /** Estimated token cost of the fixed prompt plus framing */
   readonly baseEst: number;
 }
+
+type FragmentedTargetPart =
+  | string
+  | {
+      readonly id: string;
+      readonly leadingWhitespace: string;
+      readonly trailingWhitespace: string;
+    };
+
+interface FragmentedTargetPlan {
+  readonly target: TranslationTarget;
+  readonly fragments: TranslationTarget[];
+  readonly parts: FragmentedTargetPart[];
+}
+
+const STRUCTURAL_PLACEHOLDER_PATTERN =
+  /<g id="[A-Za-z0-9_-]+">|<\/g>|<x id="[A-Za-z0-9_-]+"\/>/gu;
+
+const createFragmentedTargetPlan = (
+  target: TranslationTarget,
+): FragmentedTargetPlan | null => {
+  const fragments: TranslationTarget[] = [];
+  const parts: FragmentedTargetPart[] = [];
+  let cursor = 0;
+  let hasPlaceholder = false;
+
+  const addText = (text: string): void => {
+    if (!/\p{L}/u.test(text)) {
+      parts.push(text);
+      return;
+    }
+    const trimmedStart = text.trimStart();
+    const leadingWhitespace = text.slice(0, text.length - trimmedStart.length);
+    const trimmed = trimmedStart.trimEnd();
+    const trailingWhitespace = trimmedStart.slice(trimmed.length);
+    if (trimmed === '') {
+      parts.push(text);
+      return;
+    }
+    const serial = fragments.length + 1;
+    const id = `${target.id}:fragment-${serial}`;
+    fragments.push({
+      ...target,
+      id,
+      sourceText: trimmed,
+      normalizedText: trimmed.normalize('NFC').replace(/\s+/gu, ' ').trim(),
+      semanticKey: `${target.semanticKey}:fragment-${serial}`,
+    });
+    parts.push({ id, leadingWhitespace, trailingWhitespace });
+  };
+
+  for (const match of target.sourceText.matchAll(STRUCTURAL_PLACEHOLDER_PATTERN)) {
+    hasPlaceholder = true;
+    addText(target.sourceText.slice(cursor, match.index));
+    parts.push(match[0]);
+    cursor = match.index + match[0].length;
+  }
+  addText(target.sourceText.slice(cursor));
+  return !hasPlaceholder || fragments.length === 0 ? null : { target, fragments, parts };
+};
+
+const assembleFragmentedTarget = (
+  plan: FragmentedTargetPlan,
+  translations: ReadonlyMap<string, string>,
+): { id: string; target: string } | null => {
+  let target = '';
+  for (const part of plan.parts) {
+    if (typeof part === 'string') {
+      target += part;
+      continue;
+    }
+    const translated = translations.get(part.id);
+    if (translated === undefined) return null;
+    target += part.leadingWhitespace + translated.trim() + part.trailingWhitespace;
+  }
+  return { id: plan.target.id, target };
+};
 /**
  * Context-budgeted execution adapter.
  *
@@ -695,6 +772,47 @@ export class LLMTranslationEngine {
     return attempt(retryLimit, INITIAL_RETRY_DELAY_MS, 1);
   }
 
+  private async translatePlaceholderFragments(
+    request: PageTranslationBatchRequest,
+    unresolved: TranslationTarget[],
+    options: TranslateBatchOptions,
+    settings: ResolvedLLMExecutionSettings,
+  ): Promise<{
+    translations: { id: string; target: string }[];
+    attempts: PageTranslationBatchAttempt[];
+  }> {
+    const plans = unresolved.flatMap((target) => {
+      const plan = createFragmentedTargetPlan(target);
+      return plan === null ? [] : [plan];
+    });
+    if (plans.length === 0) return { translations: [], attempts: [] };
+
+    const fragments = plans.flatMap((plan) => plan.fragments);
+    const translations = new Map<string, string>();
+    const attempts: PageTranslationBatchAttempt[] = [];
+    const maximumItems = Math.max(1, settings.translationProfile.batching.maxItems);
+    for (let index = 0; index < fragments.length; index += maximumItems) {
+      const chunk = fragments.slice(index, index + maximumItems);
+      const translated = await this.executePageBatch(
+        { ...request, targets: chunk, retryStage: 'fragmented' },
+        options,
+        settings,
+        (metrics) => {
+          if (metrics.attempts !== undefined) attempts.push(...metrics.attempts);
+        },
+      );
+      for (const item of translated) translations.set(item.id, item.target);
+    }
+
+    return {
+      translations: plans.flatMap((plan) => {
+        const assembled = assembleFragmentedTarget(plan, translations);
+        return assembled === null ? [] : [assembled];
+      }),
+      attempts,
+    };
+  }
+
   private async executePageBatch(
     request: PageTranslationBatchRequest,
     options: TranslateBatchOptions,
@@ -786,7 +904,9 @@ export class LLMTranslationEngine {
             : request.context,
       };
       const attemptProfile: TranslationModelProfile =
-        retryStage === 'isolated' || retryStage === 'simplified-context'
+        retryStage === 'isolated' ||
+        retryStage === 'simplified-context' ||
+        retryStage === 'fragmented'
           ? profile.responseShape === 'objects'
             ? { ...profile, responseShape: 'pairs' }
             : profile
@@ -930,6 +1050,21 @@ export class LLMTranslationEngine {
         }
         preparedAttempts = [];
         plan = planNext(request, attemptHistory, planPolicy);
+      }
+
+      const unresolvedTargets = request.targets.filter(
+        (target) => !accepted.has(target.id),
+      );
+      const fragmented = await this.translatePlaceholderFragments(
+        request,
+        unresolvedTargets,
+        options,
+        settings,
+      );
+      attempts.push(...fragmented.attempts);
+      if (fragmented.translations.length > 0) acceptedRetryStage = 'fragmented';
+      for (const translation of fragmented.translations) {
+        accepted.set(translation.id, translation.target);
       }
 
       const result: { id: string; target: string }[] = [];

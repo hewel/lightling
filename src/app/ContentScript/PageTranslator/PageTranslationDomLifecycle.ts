@@ -159,11 +159,65 @@ export class PageTranslationDomLifecycle {
     }
     const expected = this.appliedChildren.get(mutation.target);
     const current = Array.from(mutation.target.childNodes);
+    if (expected === undefined || expected.length !== current.length) return false;
+    if (expected.every((node, index) => node === current[index])) return true;
+
+    const occurrence = this.findOccurrence(mutation);
     return (
-      expected !== undefined &&
-      expected.length === current.length &&
-      expected.every((node, index) => node === current[index])
+      occurrence !== null &&
+      this.adoptEquivalentTextReplacement(occurrence, mutation.target, expected, current)
     );
+  }
+
+  private adoptEquivalentTextReplacement(
+    occurrence: TextOccurrence,
+    target: Element,
+    expected: Node[],
+    current: Node[],
+  ): boolean {
+    const binding = occurrence.binding;
+    if (binding.type === 'attribute') return false;
+    const originalChildren = binding.originalChildren.get(target);
+    if (originalChildren === undefined || originalChildren.length !== expected.length) {
+      return false;
+    }
+
+    const replacements: {
+      previous: Text;
+      replacement: Text;
+      originalText: string;
+      originalIndex: number;
+    }[] = [];
+    for (let index = 0; index < expected.length; index++) {
+      const previous = expected[index];
+      const replacement = current[index];
+      if (previous === replacement) continue;
+      if (
+        !(previous instanceof Text) ||
+        !(replacement instanceof Text) ||
+        previous.nodeValue !== replacement.nodeValue
+      ) {
+        return false;
+      }
+      const originalText = binding.originalText.get(previous);
+      const originalIndex = originalChildren.indexOf(previous);
+      if (originalText === undefined || originalIndex < 0) return false;
+      replacements.push({ previous, replacement, originalText, originalIndex });
+    }
+    if (replacements.length === 0) return false;
+
+    const adoptedOriginalChildren = [...originalChildren];
+    for (const { previous, replacement, originalText, originalIndex } of replacements) {
+      adoptedOriginalChildren[originalIndex] = replacement;
+      binding.originalText.delete(previous);
+      binding.originalText.set(replacement, originalText);
+      this.appliedText.delete(previous);
+      this.appliedText.set(replacement, replacement.nodeValue ?? '');
+      pageTranslationProvenance.markNodes([replacement]);
+    }
+    binding.originalChildren.set(target, adoptedOriginalChildren);
+    this.appliedChildren.set(target, current);
+    return true;
   }
 
   private isOurMutation(mutation: MutationRecord): boolean {
