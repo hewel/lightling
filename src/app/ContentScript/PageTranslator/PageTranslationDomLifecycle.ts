@@ -1,10 +1,10 @@
 import {
-  adoptSourceMutation,
   applyOccurrenceTranslation,
   restoreOccurrence,
   type TextOccurrence,
   type TranslationUnit,
 } from './domPipeline';
+import { pageTranslationProvenance } from './PageTranslationProvenance';
 
 const PAGE_MUTATION_OBSERVER_OPTIONS: MutationObserverInit = {
   subtree: true,
@@ -109,49 +109,31 @@ export class PageTranslationDomLifecycle {
     const mutationLoopStartedAt = performance.now();
     for (const mutation of mutations) {
       if (this.isVolatileMutationTarget(mutation.target)) continue;
-      if (mutation.type === 'characterData') {
-        const current = mutation.target.nodeValue ?? '';
-        if (this.appliedText.get(mutation.target) === current) continue;
-        const adopted = this.adoptApplicationMutation(mutation);
-        if (adopted !== null) {
-          if (adopted.rescan) roots.add(adopted.root);
-        } else if (mutation.target.parentElement !== null) {
-          roots.add(mutation.target.parentElement);
+      if (this.isAppliedMutation(mutation)) continue;
+      if (pageTranslationProvenance.isOurs(mutation.target)) {
+        const occurrence = this.findOccurrence(mutation);
+        if (occurrence !== null) {
+          const shouldBackOff =
+            this.isSourceReset(occurrence, mutation) ||
+            this.hasRepeatedMutationConflict(occurrence.element);
+          this.restoreExternalMutation(occurrence, mutation);
+          this.options.removeOccurrence(occurrence);
+          if (shouldBackOff) {
+            this.options.onVolatileBackoff?.();
+            this.volatileElements.add(occurrence.element);
+            this.removeQueuedOccurrence(occurrence);
+          } else {
+            this.options.clearProcessedSlot(occurrence);
+            roots.add(occurrence.element);
+          }
+        } else {
+          this.unmarkSubtree(mutation.target);
+          this.addMutationRoot(roots, mutation);
         }
         continue;
       }
-      if (mutation.type === 'attributes' && mutation.target instanceof Element) {
-        const attribute = mutation.attributeName;
-        const expected = this.appliedAttributes
-          .get(mutation.target)
-          ?.get(attribute ?? '');
-        if (attribute !== null && expected === mutation.target.getAttribute(attribute))
-          continue;
-        const adopted = this.adoptApplicationMutation(mutation);
-        if (adopted === null) roots.add(mutation.target);
-        else if (adopted.rescan) roots.add(adopted.root);
-        continue;
-      }
-      if (mutation.type === 'childList' && mutation.target instanceof Element) {
-        const expected = this.appliedChildren.get(mutation.target);
-        const current = Array.from(mutation.target.childNodes);
-        if (
-          expected !== undefined &&
-          expected.length === current.length &&
-          expected.every((node, index) => node === current[index])
-        ) {
-          continue;
-        }
-        const adopted = this.adoptApplicationMutation(mutation);
-        if (adopted !== null) {
-          if (adopted.rescan) roots.add(adopted.root);
-          continue;
-        }
-      }
-      for (const node of Array.from(mutation.addedNodes)) {
-        if (node instanceof Element) roots.add(node);
-        else if (node.parentElement !== null) roots.add(node.parentElement);
-      }
+      if (this.isOurMutation(mutation)) continue;
+      this.addMutationRoot(roots, mutation);
     }
     this.options.onMutationLoop?.(
       mutations.length,
@@ -160,13 +142,151 @@ export class PageTranslationDomLifecycle {
     return roots;
   }
 
-  private restoreOccurrences(): void {
-    for (const occurrence of this.options.getOccurrences().slice().reverse()) {
-      restoreOccurrence(occurrence);
+  private isAppliedMutation(mutation: MutationRecord): boolean {
+    if (mutation.type === 'characterData') {
+      return this.appliedText.get(mutation.target) === mutation.target.nodeValue;
+    }
+    if (mutation.type === 'attributes' && mutation.target instanceof Element) {
+      const attribute = mutation.attributeName;
+      if (attribute === null) return false;
+      return (
+        this.appliedAttributes.get(mutation.target)?.get(attribute) ===
+        mutation.target.getAttribute(attribute)
+      );
+    }
+    if (mutation.type !== 'childList' || !(mutation.target instanceof Element)) {
+      return false;
+    }
+    const expected = this.appliedChildren.get(mutation.target);
+    const current = Array.from(mutation.target.childNodes);
+    return (
+      expected !== undefined &&
+      expected.length === current.length &&
+      expected.every((node, index) => node === current[index])
+    );
+  }
+
+  private isOurMutation(mutation: MutationRecord): boolean {
+    if (mutation.type !== 'childList' || mutation.addedNodes.length === 0) return false;
+    return Array.from(mutation.addedNodes).every((node) =>
+      pageTranslationProvenance.isOurs(node),
+    );
+  }
+
+  private addMutationRoot(roots: Set<Element>, mutation: MutationRecord): void {
+    if (mutation.target instanceof Element) {
+      roots.add(mutation.target);
+      return;
+    }
+    if (mutation.target.parentElement !== null) roots.add(mutation.target.parentElement);
+    for (const node of Array.from(mutation.addedNodes)) {
+      if (node instanceof Element) roots.add(node);
+      else if (node.parentElement !== null) roots.add(node.parentElement);
+    }
+  }
+
+  private findOccurrence(mutation: MutationRecord): TextOccurrence | null {
+    const occurrences = this.options.getOccurrences();
+    for (let index = occurrences.length - 1; index >= 0; index--) {
+      const occurrence = occurrences[index];
+      const binding = occurrence.binding;
+      if (
+        binding.type === 'attribute' &&
+        mutation.type === 'attributes' &&
+        mutation.target === binding.element &&
+        mutation.attributeName === binding.attribute
+      ) {
+        return occurrence;
+      }
+      if (
+        binding.type === 'segment' &&
+        mutation.type === 'characterData' &&
+        mutation.target instanceof Text &&
+        binding.originalText.has(mutation.target)
+      ) {
+        return occurrence;
+      }
+      if (
+        binding.type === 'segment' &&
+        mutation.type === 'childList' &&
+        mutation.target instanceof Element &&
+        binding.originalChildren.has(mutation.target)
+      ) {
+        return occurrence;
+      }
+    }
+    return null;
+  }
+
+  private unmarkSubtree(node: Node): void {
+    pageTranslationProvenance.unmark(node);
+    for (const child of Array.from(node.childNodes)) this.unmarkSubtree(child);
+  }
+
+  private unmarkOccurrence(occurrence: TextOccurrence): void {
+    if (occurrence.binding.type === 'attribute') {
+      pageTranslationProvenance.unmark(occurrence.binding.element);
+      return;
+    }
+    this.unmarkSubtree(occurrence.element);
+    for (const [container, children] of occurrence.binding.originalChildren) {
+      pageTranslationProvenance.unmark(container);
+      for (const child of children) this.unmarkSubtree(child);
+    }
+    for (const node of occurrence.binding.originalText.keys()) {
+      pageTranslationProvenance.unmark(node);
+    }
+    for (const element of occurrence.binding.placeholders.values()) {
+      this.unmarkSubtree(element);
+    }
+  }
+  private restoreExternalMutation(
+    occurrence: TextOccurrence,
+    mutation: MutationRecord,
+  ): void {
+    const externalText =
+      mutation.type === 'characterData' && mutation.target instanceof Text
+        ? mutation.target.nodeValue
+        : null;
+    const externalAttribute =
+      mutation.type === 'attributes' &&
+      mutation.target instanceof Element &&
+      mutation.attributeName !== null
+        ? {
+            name: mutation.attributeName,
+            value: mutation.target.getAttribute(mutation.attributeName),
+          }
+        : null;
+    const externalChildren =
+      mutation.type === 'childList' && mutation.target instanceof Element
+        ? Array.from(mutation.target.childNodes)
+        : null;
+
+    this.unmarkOccurrence(occurrence);
+    restoreOccurrence(occurrence);
+    this.observer?.takeRecords();
+
+    if (externalText !== null && mutation.target instanceof Text) {
+      mutation.target.nodeValue = externalText;
+    } else if (externalAttribute !== null && mutation.target instanceof Element) {
+      if (externalAttribute.value === null) {
+        mutation.target.removeAttribute(externalAttribute.name);
+      } else {
+        mutation.target.setAttribute(externalAttribute.name, externalAttribute.value);
+      }
+    } else if (externalChildren !== null && mutation.target instanceof Element) {
+      mutation.target.replaceChildren(...externalChildren);
     }
     this.observer?.takeRecords();
   }
 
+  private restoreOccurrences(): void {
+    for (const occurrence of this.options.getOccurrences().slice().reverse()) {
+      this.unmarkOccurrence(occurrence);
+      restoreOccurrence(occurrence);
+    }
+    this.observer?.takeRecords();
+  }
   private resetAppliedState(): void {
     this.appliedText = new WeakMap();
     this.appliedAttributes = new WeakMap();
@@ -243,7 +363,6 @@ export class PageTranslationDomLifecycle {
       this.applyPumpRunning = false;
     }
   }
-
   private isVolatileMutationTarget(target: Node): boolean {
     for (const element of this.volatileElements) {
       if (!element.isConnected) {
@@ -302,36 +421,11 @@ export class PageTranslationDomLifecycle {
     return existing.count >= 3;
   }
 
-  private adoptApplicationMutation(
-    mutation: MutationRecord,
-  ): { root: Element; rescan: boolean } | null {
-    const occurrences = this.options.getOccurrences();
-    for (let index = occurrences.length - 1; index >= 0; index--) {
-      const occurrence = occurrences[index];
-      if (!occurrence.element.contains(mutation.target)) continue;
-      const sourceReset = this.isSourceReset(occurrence, mutation);
-      if (!adoptSourceMutation(occurrence, mutation)) continue;
-
-      const shouldBackOff =
-        sourceReset || this.hasRepeatedMutationConflict(occurrence.element);
-      restoreOccurrence(occurrence);
-      this.observer?.takeRecords();
-      this.options.removeOccurrence(occurrence);
-
-      if (shouldBackOff) {
-        this.options.onVolatileBackoff?.();
-        this.volatileElements.add(occurrence.element);
-        for (let queueIndex = this.applyQueue.length - 1; queueIndex >= 0; queueIndex--) {
-          if (this.applyQueue[queueIndex].unit.occurrences.includes(occurrence)) {
-            this.applyQueue.splice(queueIndex, 1);
-          }
-        }
-        return { root: occurrence.element, rescan: false };
+  private removeQueuedOccurrence(occurrence: TextOccurrence): void {
+    for (let index = this.applyQueue.length - 1; index >= 0; index--) {
+      if (this.applyQueue[index].unit.occurrences.includes(occurrence)) {
+        this.applyQueue.splice(index, 1);
       }
-
-      this.options.clearProcessedSlot(occurrence);
-      return { root: occurrence.element, rescan: true };
     }
-    return null;
   }
 }

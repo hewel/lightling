@@ -79,6 +79,37 @@ describe('PageTranslationPipeline dynamic lifecycle', () => {
       Array.from(main.querySelectorAll('button'), (button) => button.textContent),
     ).toEqual(['Save', 'Save']);
   });
+  test('does not resubmit applied translations during a parent rescan', async () => {
+    const main = document.querySelector('main');
+    const button = document.querySelector('button');
+    if (main === null || button === null) throw new Error('fixture missing');
+    const pipeline = createPipeline(main);
+    pipeline.start();
+    await vi.waitFor(() => expect(button.textContent).toBe('Speichern'));
+
+    main.append(document.createElement('span'));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(translatePageBatch).toHaveBeenCalledTimes(1);
+    pipeline.stop();
+  });
+
+  test('does not leak nested applied text when a link parent is rescanned', async () => {
+    document.body.innerHTML = '<main><a><span>Save</span></a></main>';
+    const main = document.querySelector('main');
+    const link = document.querySelector('a');
+    const span = document.querySelector('span');
+    if (main === null || link === null || span === null)
+      throw new Error('fixture missing');
+    const pipeline = createPipeline(main);
+    pipeline.start();
+    await vi.waitFor(() => expect(span.textContent).toBe('Speichern'));
+
+    link.append(document.createElement('i'));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(translatePageBatch).toHaveBeenCalledTimes(1);
+    pipeline.stop();
+    expect(span.textContent).toBe('Save');
+  });
 
   test('retranslates an application-updated label without forcing layout reads', async () => {
     const main = document.querySelector('main');
@@ -99,7 +130,7 @@ describe('PageTranslationPipeline dynamic lifecycle', () => {
     expect(button.textContent).toBe('Close');
   });
 
-  test('backs off when the page framework restores the original source text', async () => {
+  test('recollects external overwrites as new source text', async () => {
     const main = document.querySelector('main');
     const button = document.querySelector('button');
     if (main === null || button === null) throw new Error('fixture missing');
@@ -107,19 +138,17 @@ describe('PageTranslationPipeline dynamic lifecycle', () => {
     pipeline.start();
     await vi.waitFor(() => expect(button.textContent).toBe('Speichern'));
 
-    // A framework-owned node rejects our translation and restores its source.
-    // The translator must stop fighting that node instead of restore/rescan.
-    vi.useFakeTimers();
-    try {
-      button.textContent = 'Save';
-      for (let index = 0; index < 20; index++) await Promise.resolve();
-      await vi.advanceTimersByTimeAsync(20);
-      expect(button.textContent).toBe('Save');
-      expect(translatePageBatch).toHaveBeenCalledTimes(1);
-    } finally {
-      vi.useRealTimers();
-    }
+    const textNode = button.firstChild;
+    if (!(textNode instanceof Text)) throw new Error('fixture text missing');
+    textNode.nodeValue = 'Close';
+    await vi.waitFor(() => expect(button.textContent).toBe('Schließen'));
+    expect(translatePageBatch).toHaveBeenCalledTimes(2);
+    expect(vi.mocked(translatePageBatch).mock.calls[1]?.[0].targets[0]?.sourceText).toBe(
+      'Close',
+    );
+
     pipeline.stop();
+    expect(button.textContent).toBe('Close');
   });
 
   test('never applies a result after the translation session stops', async () => {

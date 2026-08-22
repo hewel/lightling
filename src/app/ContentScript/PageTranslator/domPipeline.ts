@@ -10,6 +10,8 @@ import {
   WEBPAGE_TRANSLATION_PROMPT_VERSION,
 } from '@/lib/pageTranslation/protocol';
 
+import { pageTranslationProvenance } from './PageTranslationProvenance';
+
 const SKIPPED_TAGS = new Set([
   'SCRIPT',
   'STYLE',
@@ -295,6 +297,7 @@ const serializeSegment = (
     originalChildren.set(container, Array.from(container.childNodes));
     let result = '';
     for (const child of Array.from(container.childNodes)) {
+      if (pageTranslationProvenance.isOurs(child)) continue;
       if (child instanceof Text) {
         const text = child.nodeValue ?? '';
         originalText.set(child, text);
@@ -347,15 +350,19 @@ const collectTranslatableSegments = (
   root: Element,
   options: CollectionOptions,
 ): SerializedSegment[] => {
+  if (pageTranslationProvenance.isOurs(root)) return [];
   const hasDirectTranslatableText = Array.from(root.childNodes).some(
     (node) =>
+      !pageTranslationProvenance.isOurs(node) &&
       node instanceof Text &&
       hasTranslatableText((node.nodeValue ?? '').replace(PROTECTED_TEXT_PATTERN, '')),
   );
   if (hasDirectTranslatableText) return [serializeSegment(root, options)];
 
   return Array.from(root.children).flatMap((child) =>
-    ATOMIC_TAGS.has(child.tagName) || isExcluded(child, options)
+    pageTranslationProvenance.isOurs(child) ||
+    ATOMIC_TAGS.has(child.tagName) ||
+    isExcluded(child, options)
       ? []
       : collectTranslatableSegments(child, options),
   );
@@ -499,7 +506,7 @@ export const collectPageOccurrences = (
   };
 
   const visit = (element: Element) => {
-    if (isExcluded(element, options)) return;
+    if (pageTranslationProvenance.isOurs(element) || isExcluded(element, options)) return;
     if (isBoundary(element)) {
       for (const serialized of collectTranslatableSegments(element, options)) {
         addOccurrence(
@@ -524,7 +531,8 @@ export const collectPageOccurrences = (
   ];
   const candidates = [root, ...Array.from(root.querySelectorAll('*'))];
   for (const element of candidates) {
-    if (isExcluded(element, options)) continue;
+    if (pageTranslationProvenance.isOurs(element) || isExcluded(element, options))
+      continue;
     for (const attribute of configuredAttributes) {
       const slot = attributeSlot(attribute);
       const value = element.getAttribute(attribute);
@@ -612,6 +620,10 @@ const parsePlaceholderTree = (text: string): ParsedNode[] | null => {
   return lists.length === 1 ? root : null;
 };
 
+const markNodeTree = (node: Node): void => {
+  pageTranslationProvenance.markNodes([node]);
+  for (const child of Array.from(node.childNodes)) markNodeTree(child);
+};
 const applyNodes = (
   container: Element,
   nodes: ParsedNode[],
@@ -630,6 +642,7 @@ const applyNodes = (
       textNode = document.createTextNode('');
       binding.createdTextNodes.add(textNode);
     }
+    pageTranslationProvenance.markNodes([textNode]);
     textNode.nodeValue = value;
     desired.push(textNode);
   };
@@ -651,8 +664,12 @@ const applyNodes = (
   }
 
   while (textIndex < availableTextNodes.length) {
-    availableTextNodes[textIndex++].nodeValue = '';
+    const textNode = availableTextNodes[textIndex++];
+    pageTranslationProvenance.markNodes([textNode]);
+    textNode.nodeValue = '';
   }
+  pageTranslationProvenance.markNodes([container]);
+  for (const node of desired) markNodeTree(node);
   container.replaceChildren(...desired);
 };
 
@@ -666,6 +683,7 @@ export const applyOccurrenceTranslation = (
   translatedText: string,
 ): void => {
   if (occurrence.binding.type === 'attribute') {
+    pageTranslationProvenance.markNodes([occurrence.binding.element]);
     occurrence.binding.element.setAttribute(occurrence.binding.attribute, translatedText);
     return;
   }
@@ -673,45 +691,6 @@ export const applyOccurrenceTranslation = (
   if (parsed === null)
     throw new Error('Validated placeholder output could not be parsed');
   applyNodes(occurrence.binding.root, parsed, occurrence.binding);
-};
-
-export const adoptSourceMutation = (
-  occurrence: TextOccurrence,
-  mutation: MutationRecord,
-): boolean => {
-  const binding = occurrence.binding;
-  if (binding.type === 'attribute') {
-    if (
-      mutation.type !== 'attributes' ||
-      mutation.target !== binding.element ||
-      mutation.attributeName !== binding.attribute
-    ) {
-      return false;
-    }
-    binding.originalValue = binding.element.getAttribute(binding.attribute) ?? '';
-    return true;
-  }
-
-  if (mutation.type === 'characterData' && mutation.target instanceof Text) {
-    if (!binding.originalText.has(mutation.target)) return false;
-    binding.originalText.set(mutation.target, mutation.target.nodeValue ?? '');
-    return true;
-  }
-
-  if (mutation.type === 'childList' && mutation.target instanceof Element) {
-    if (!binding.originalChildren.has(mutation.target)) return false;
-    const children = Array.from(mutation.target.childNodes);
-    binding.originalChildren.set(mutation.target, children);
-    const rememberNewText = (node: Node) => {
-      if (node instanceof Text && !binding.originalText.has(node)) {
-        binding.originalText.set(node, node.nodeValue ?? '');
-      }
-      for (const child of Array.from(node.childNodes)) rememberNewText(child);
-    };
-    for (const node of children) rememberNewText(node);
-    return true;
-  }
-  return false;
 };
 
 export const restoreOccurrence = (occurrence: TextOccurrence): void => {
