@@ -1,6 +1,7 @@
 import {
   applyOccurrenceTranslation,
   collectPageOccurrences,
+  createPageCollectionContext,
   deduplicateOccurrences,
   restoreOccurrence,
 } from './domPipeline';
@@ -119,5 +120,51 @@ describe('DOM page translation pipeline', () => {
       },
       { normalizedText: 'Username', kind: 'placeholder', slot: 'placeholder' },
     ]);
+  });
+
+  test('keeps canonical heading paths for incremental subtree scans', () => {
+    document.body.innerHTML =
+      '<main><h2>Account</h2><div id="dynamic-root"></div></main>';
+    const main = document.querySelector('main');
+    const dynamicRoot = document.querySelector('#dynamic-root');
+    if (main === null || dynamicRoot === null) throw new Error('fixture missing');
+    const context = createPageCollectionContext(main);
+    dynamicRoot.innerHTML = '<button>Save</button>';
+
+    const page = collectPageOccurrences(
+      dynamicRoot,
+      {
+        sourceLanguage: 'en',
+        targetLanguage: 'de',
+        identity: { provider: 'openai', model: 'small-model' },
+      },
+      3,
+      context,
+    );
+
+    expect(page.occurrences[0]?.section.headingPath).toEqual(['Account']);
+  });
+
+  test('keeps the canonical page profile for incremental subtree scans', () => {
+    document.body.innerHTML =
+      '<main><article><p>Article content</p></article><div id="dynamic-root"></div></main>';
+    const main = document.querySelector('main');
+    const dynamicRoot = document.querySelector('#dynamic-root');
+    if (main === null || dynamicRoot === null) throw new Error('fixture missing');
+    const context = createPageCollectionContext(main);
+    dynamicRoot.innerHTML = '<button>Save</button>';
+
+    const page = collectPageOccurrences(
+      dynamicRoot,
+      {
+        sourceLanguage: 'en',
+        targetLanguage: 'de',
+        identity: { provider: 'openai', model: 'small-model' },
+      },
+      3,
+      context,
+    );
+
+    expect(page.pageProfile.pageType).toBe('document article');
   });
 });

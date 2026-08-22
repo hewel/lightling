@@ -27,12 +27,13 @@ import { buildTokenAwareBatches, type PlannedTarget } from './batching';
 import {
   applyOccurrenceTranslation,
   adoptSourceMutation,
-  buildPageProfile,
   collectPageOccurrences,
+  createPageCollectionContext,
   deduplicateOccurrences,
   getOccurrenceOriginalText,
   restoreOccurrence,
   type CollectionOptions,
+  type PageCollectionContext,
   type TextOccurrence,
   type TranslationUnit,
 } from './domPipeline';
@@ -238,6 +239,7 @@ export class PageTranslationPipeline {
     mutationMaxMs: 0,
   };
   private generation = 0;
+  private pageCollectionContext: PageCollectionContext;
   private pageProfile: PageProfile;
   private currentUrl = location.href;
   private runtimeSessionId: string;
@@ -252,7 +254,8 @@ export class PageTranslationPipeline {
     retriever: TranslationContextRetriever = new DeterministicContextRetriever(),
   ) {
     this.retriever = retriever;
-    this.pageProfile = buildPageProfile(options.root);
+    this.pageCollectionContext = createPageCollectionContext(options.root);
+    this.pageProfile = this.pageCollectionContext.pageProfile;
     this.runtimeSessionId = options.sessionId;
     this.runtimeSignature = options.sessionSignature;
     this.logBatches = options.logEnabled ? [] : null;
@@ -493,7 +496,16 @@ export class PageTranslationPipeline {
     if (!this.isCurrent(generation)) return;
     // [DEBUG-perf1] Temporary real-world freeze probe; remove after diagnosis.
     const collectStartedAt = performance.now();
-    const collected = collectPageOccurrences(root, this.options, priorityOverride);
+    const collectionContext =
+      root === this.options.root
+        ? (this.pageCollectionContext = createPageCollectionContext(root))
+        : this.pageCollectionContext;
+    const collected = collectPageOccurrences(
+      root,
+      this.options,
+      priorityOverride,
+      collectionContext,
+    );
     const collectMs = performance.now() - collectStartedAt;
     this.perfProbe.collectCalls++;
     this.perfProbe.collectTotalMs += collectMs;

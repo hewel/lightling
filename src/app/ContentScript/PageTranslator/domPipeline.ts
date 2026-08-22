@@ -129,6 +129,11 @@ export interface CollectedPage {
   sections: Map<string, SectionContext>;
 }
 
+export interface PageCollectionContext {
+  headings: readonly Element[];
+  pageProfile: PageProfile;
+}
+
 export interface CollectionOptions {
   sourceLanguage: string;
   targetLanguage: string;
@@ -356,7 +361,7 @@ const collectTranslatableSegments = (
   );
 };
 
-const headingPathFor = (element: Element, headings: Element[]): string[] => {
+const headingPathFor = (element: Element, headings: readonly Element[]): string[] => {
   const path: string[] = [];
   for (const heading of headings) {
     if (
@@ -373,7 +378,7 @@ const headingPathFor = (element: Element, headings: Element[]): string[] => {
   return path.filter(Boolean);
 };
 
-const makeSection = (element: Element, headings: Element[]): SectionContext => {
+const makeSection = (element: Element, headings: readonly Element[]): SectionContext => {
   const headingPath = headingPathFor(element, headings);
   const sectionRoot = element.closest(
     'section,article,nav,aside,main,form,dialog,[role]',
@@ -422,6 +427,11 @@ export const buildPageProfile = (root: ParentNode): PageProfile => {
   };
 };
 
+export const createPageCollectionContext = (root: Element): PageCollectionContext => ({
+  headings: Array.from(root.querySelectorAll('h1,h2,h3,h4,h5,h6,[role="heading"]')),
+  pageProfile: buildPageProfile(root),
+});
+
 const attributeSlot = (attribute: string): TranslationSlot | null => {
   if (attribute === 'placeholder') return 'placeholder';
   if (attribute === 'title') return 'title';
@@ -435,12 +445,12 @@ export const collectPageOccurrences = (
   root: Element,
   options: CollectionOptions,
   priorityOverride?: number,
+  collectionContext?: PageCollectionContext,
 ): CollectedPage => {
   const occurrences: TextOccurrence[] = [];
   const sections = new Map<string, SectionContext>();
-  const headings = Array.from(
-    root.querySelectorAll('h1,h2,h3,h4,h5,h6,[role="heading"]'),
-  );
+  const context = collectionContext ?? createPageCollectionContext(root);
+  const headings = context.headings;
   let occurrenceSerial = 0;
 
   const addOccurrence = (
@@ -530,7 +540,7 @@ export const collectPageOccurrences = (
 
   return {
     occurrences,
-    pageProfile: buildPageProfile(root),
+    pageProfile: context.pageProfile,
     sections,
   };
 };
