@@ -1,14 +1,4 @@
-import React, {
-  FC,
-  PropsWithChildren,
-  Ref,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
-import ReactDOM from 'react-dom';
+import { FC, PropsWithChildren, Ref, useMemo, useState } from 'react';
 import { HStack, VStack } from '@astryxdesign/core/Stack';
 import * as stylex from '@stylexjs/stylex';
 import { IconVolume2, IconWand } from '@tabler/icons-react';
@@ -18,21 +8,20 @@ import { DictionaryButton } from '@/components/controls/DictionaryButton/Diction
 import { LanguagePanel } from '@/components/controls/LanguagePanel/LanguagePanel';
 import { Button } from '@/components/primitives/Button/Button.bundle/desktop';
 import { Textarea } from '@/components/primitives/Textarea/Textarea.bundle/desktop';
-import { useDelayCallback } from '@/lib/hooks/useDelayCallback';
-import { useImmutableCallback } from '@/lib/hooks/useImmutableCallback';
-import { useIsFirstRenderRef } from '@/lib/hooks/useIsFirstRenderRef';
 import { useTTS } from '@/lib/hooks/useTTS';
 import { useTTSLanguages } from '@/lib/hooks/useTTSLanguages';
 import { getLanguageNameByCode, getLocalizedNode, getMessage } from '@/lib/language';
-import { TELEMETRY_EVENT_NAME } from '@/lib/telemetry';
-import { addTranslationHistoryEntry } from '@/requests/backend/history/addTranslationHistoryEntry';
-import { TRANSLATION_ORIGIN } from '@/requests/backend/history/constants';
-import { suggestLanguage } from '@/requests/backend/suggestLanguage';
-import { trackClientEvent } from '@/requests/backend/telemetry';
 import { ITranslation } from '@/types/translation/Translation';
 import { MutableValue } from '@/types/utils';
 
 import { TabData } from '../../layout/PopupWindow';
+
+import {
+  useTextTranslationSession,
+  type TranslationState,
+} from './useTextTranslationSession';
+
+export type { TranslationState } from './useTextTranslationSession';
 
 const styles = stylex.create({
   input: {
@@ -89,11 +78,6 @@ const styles = stylex.create({
     gap: 'var(--spacing-1)',
   },
 });
-
-export type TranslationState = {
-  originalText: string;
-  translatedText: string | null;
-};
 
 export interface TextTranslatorProps
   extends
@@ -159,26 +143,47 @@ export const TextTranslator: FC<TextTranslatorProps> = ({
   enableLanguageSuggestionsAlways = true,
   isMobile,
 }) => {
-  const [userInput, setUserInput] = useState(lastTranslation?.originalText ?? '');
-  const [translation, setTranslation] = useState<{
-    text: string;
-    original: string;
-  } | null>(
-    lastTranslation !== null && lastTranslation.translatedText !== null
-      ? {
-          original: lastTranslation.originalText,
-          text: lastTranslation.translatedText,
-        }
-      : null,
+  const {
+    userInput,
+    translation,
+    inTranslateProcess,
+    errorMessage,
+    languageSuggestion,
+    isTranslatedTextRelative,
+    onTextChange,
+    clearState,
+    swapLanguages,
+    applySuggestedLanguage,
+  } = useTextTranslationSession({
+    from,
+    to,
+    setFrom,
+    setTo,
+    lastTranslation,
+    setLastTranslation,
+    translateHook,
+    inputDelay,
+    enableLanguageSuggestions,
+    enableLanguageSuggestionsAlways,
+  });
+
+  const ApplySuggestComponent = useMemo(
+    () =>
+      ({ children }: PropsWithChildren<{}>) => {
+        return (
+          <a
+            href="src/components/layouts/TextTranslator#"
+            onClick={(event) => {
+              event.preventDefault();
+              applySuggestedLanguage();
+            }}
+          >
+            {children}
+          </a>
+        );
+      },
+    [applySuggestedLanguage],
   );
-
-  const [inTranslateProcess, setInTranslateProcess] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
-  const isFirstRenderRef = useIsFirstRenderRef();
-
-  const isTranslatedTextRelative =
-    translation !== null && translation.original === userInput;
 
   const [activeTTS, setActiveTTS] = useState<symbol | null>(null);
   const TTSSignal = {
@@ -188,235 +193,6 @@ export const TextTranslator: FC<TextTranslatorProps> = ({
   const ttsOriginal = useTTS(from, userInput, TTSSignal);
   const ttsTranslate = useTTS(to, translation ? translation.text : null, TTSSignal);
   const ttsModule = useTTSLanguages();
-
-  //
-  // Lang suggestions
-  //
-
-  const [languageSuggestion, setLanguageSuggestion] = useState<null | string>(null);
-
-  const isSuggestLanguage =
-    enableLanguageSuggestions && (enableLanguageSuggestionsAlways || from === 'auto');
-
-  // Hide suggestion while change language
-  useEffect(() => {
-    setLanguageSuggestion(null);
-  }, [from]);
-
-  // Null `languageSuggestion` while disable suggestions
-  useEffect(() => {
-    if (!isSuggestLanguage) {
-      setLanguageSuggestion(null);
-    }
-  }, [isSuggestLanguage]);
-
-  const applySuggestedLanguage: React.MouseEventHandler = useCallback(
-    (evt) => {
-      evt.preventDefault();
-
-      if (languageSuggestion !== null) {
-        setFrom(languageSuggestion);
-        setLanguageSuggestion(null);
-      }
-    },
-    [languageSuggestion, setFrom],
-  );
-
-  const ApplySuggestComponent = useMemo(
-    () =>
-      ({ children }: PropsWithChildren<{}>) => {
-        return (
-          <a
-            href="src/components/layouts/TextTranslator#"
-            onClick={applySuggestedLanguage}
-          >
-            {children}
-          </a>
-        );
-      },
-    [applySuggestedLanguage],
-  );
-
-  //
-  // Translation
-  //
-
-  // Translate manager
-  const textStateContext = useRef(Symbol('TextContext'));
-  const translate = useCallback(() => {
-    const localContext = textStateContext.current;
-
-    translateHook(userInput, from, to)
-      .then((translatedText) => {
-        if (localContext !== textStateContext.current) {
-          return;
-        }
-
-        if (typeof translatedText !== 'string') {
-          throw new Error(`[${getMessage('common_error')}: unexpected response]`);
-        }
-
-        setTranslation({
-          text: translatedText,
-          original: userInput,
-        });
-
-        addTranslationHistoryEntry({
-          origin: TRANSLATION_ORIGIN.USER_INPUT,
-          translation: {
-            from,
-            to,
-            originalText: userInput,
-            translatedText: translatedText,
-          },
-        });
-
-        trackClientEvent(TELEMETRY_EVENT_NAME.TEXT_TRANSLATION_COMPLETED, {
-          scope: 'user input',
-          from,
-          to,
-          sourceTextLength: userInput.length,
-          translationLength: translatedText.length,
-        });
-      })
-      .catch((reason) => {
-        if (localContext !== textStateContext.current) return;
-
-        if (reason instanceof Error) {
-          setErrorMessage(`${getMessage('common_error')}: ${reason.message}`);
-          return;
-        }
-
-        setErrorMessage(getMessage('message_unknownError'));
-      })
-      .finally(() => {
-        if (localContext !== textStateContext.current) return;
-
-        setInTranslateProcess(false);
-      });
-  }, [translateHook, userInput, from, to]);
-
-  const resetTemporaryTextState = useCallback(() => {
-    // Stop translation
-    textStateContext.current = Symbol('TextContext');
-    setInTranslateProcess(false);
-
-    // Clear text states
-    setErrorMessage(null);
-    setLanguageSuggestion(null);
-  }, []);
-
-  // Clear text and stop translation
-  const clearState = useCallback(() => {
-    resetTemporaryTextState();
-
-    // Clear text
-    setUserInput('');
-    setTranslation(null);
-  }, [resetTemporaryTextState]);
-
-  const isPreventClearTranslation = useRef(false);
-  const swapLanguages = useCallback(
-    ({ from, to }: { from: string; to: string }) => {
-      isPreventClearTranslation.current = true;
-
-      ReactDOM.unstable_batchedUpdates(() => {
-        clearState();
-
-        // Set translate as input
-        if (translation !== null) {
-          setUserInput(translation.text);
-          setTranslation({
-            text: userInput,
-            original: translation.text,
-          });
-        }
-
-        setFrom(from);
-        setTo(to);
-      });
-    },
-    [clearState, setFrom, setTo, translation, userInput],
-  );
-
-  const showLanguageSuggestion = useCallback(() => {
-    if (!isSuggestLanguage) return;
-
-    const localContext = textStateContext.current;
-    suggestLanguage(userInput).then((lang) => {
-      if (localContext !== textStateContext.current || !isSuggestLanguage) return;
-      setLanguageSuggestion(lang);
-    });
-  }, [isSuggestLanguage, userInput]);
-
-  const rememberTranslationState = useImmutableCallback(() => {
-    setLastTranslation(
-      userInput.length === 0
-        ? null
-        : {
-            originalText: userInput,
-            translatedText: isTranslatedTextRelative ? translation.text : null,
-          },
-    );
-  }, [isTranslatedTextRelative, setLastTranslation, translation, userInput]);
-
-  const handleText = useImmutableCallback(() => {
-    // Translate
-    if (from !== to && userInput.length > 0) {
-      setInTranslateProcess(true);
-      setErrorMessage(null);
-      translate();
-    }
-
-    showLanguageSuggestion();
-  }, [from, to, userInput, showLanguageSuggestion, translate]);
-
-  // TODO: think about move logic to effect
-  // Translate by changes
-  const [setTranslateTask] = useDelayCallback();
-  const onTextChange = useCallback(
-    (text: string) => {
-      // Clear state
-      if (text.length === 0) {
-        clearState();
-        return;
-      }
-
-      resetTemporaryTextState();
-      setUserInput(text);
-      setTranslateTask(handleText, inputDelay);
-    },
-    [clearState, handleText, inputDelay, resetTemporaryTextState, setTranslateTask],
-  );
-
-  // Translate text from last state if it not have translation
-  const isRequiredInitTranslate = useRef(userInput.length > 0 && translation === null);
-  useEffect(() => {
-    if (!isRequiredInitTranslate.current) return;
-
-    handleText();
-  }, [handleText]);
-
-  // Handle languages changes
-  useEffect(() => {
-    if (isFirstRenderRef.current) return;
-
-    resetTemporaryTextState();
-
-    // Special case for swap langs
-    if (isPreventClearTranslation.current) {
-      isPreventClearTranslation.current = false;
-    } else {
-      setTranslation(null);
-    }
-
-    handleText();
-  }, [from, to, handleText, resetTemporaryTextState, isFirstRenderRef]);
-
-  // Backup state by changes
-  useEffect(() => {
-    rememberTranslationState();
-  }, [rememberTranslationState, userInput, translation]);
 
   const dictionaryData: ITranslation | null = useMemo(() => {
     if (errorMessage !== null || translation === null || !isTranslatedTextRelative)
