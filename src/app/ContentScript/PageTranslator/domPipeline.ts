@@ -1,13 +1,11 @@
 import {
-  createSemanticKey,
-  DEFAULT_GLOSSARY_VERSION,
+  createDedupKey,
   normalizeTranslationText,
   type PageProfile,
   type SectionContext,
   type TranslationKind,
   type TranslationSlot,
   type TranslationTarget,
-  WEBPAGE_TRANSLATION_PROMPT_VERSION,
 } from '@/lib/pageTranslation/protocol';
 
 import { pageTranslationProvenance } from './PageTranslationProvenance';
@@ -84,9 +82,6 @@ const PROTECTED_TEXT_PATTERN =
 export interface PageTranslationIdentity {
   provider: string;
   model: string;
-  glossaryVersion?: string;
-  promptVersion?: string;
-  profileVersion?: string;
 }
 
 interface SegmentBinding {
@@ -473,18 +468,11 @@ export const collectPageOccurrences = (
     const section = makeSection(semanticElement, headings);
     sections.set(section.sectionId, section);
     const normalizedText = normalizeTranslationText(sourceText);
-    const semanticKey = createSemanticKey({
-      sourceLanguage: options.sourceLanguage,
-      targetLanguage: options.targetLanguage,
+    const dedupKey = createDedupKey({
       normalizedText,
       kind,
       slot,
       contextClass,
-      provider: options.identity.provider,
-      model: options.identity.model,
-      glossaryVersion: options.identity.glossaryVersion ?? DEFAULT_GLOSSARY_VERSION,
-      promptVersion: options.identity.promptVersion ?? WEBPAGE_TRANSLATION_PROMPT_VERSION,
-      profileVersion: options.identity.profileVersion ?? 'legacy-profile-v1',
     });
     const occurrenceId = `o-${++occurrenceSerial}`;
     occurrences.push({
@@ -497,7 +485,7 @@ export const collectPageOccurrences = (
       contextClass,
       sectionId: section.sectionId,
       componentId: semanticElement.getAttribute('id') ?? undefined,
-      semanticKey,
+      semanticKey: dedupKey,
       priority: priorityOverride ?? getPriority(semanticElement),
       binding,
       element,

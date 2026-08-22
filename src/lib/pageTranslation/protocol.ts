@@ -79,6 +79,10 @@ export interface TranslationTarget {
   contextClass: string;
   sectionId?: string;
   componentId?: string;
+  /**
+   * Content initially fills this with its local occurrence dedup key.
+   * Background replaces it with the translation-memory identity.
+   */
   semanticKey: string;
   priority: number;
 }
@@ -337,6 +341,13 @@ export interface SemanticKeyInput {
   normalizationVersion?: string;
 }
 
+export interface DedupKeyInput {
+  normalizedText: string;
+  kind: TranslationKind;
+  slot: TranslationSlot;
+  contextClass: string;
+}
+
 export const normalizeTranslationText = (text: string): string =>
   text.normalize('NFC').replace(/\s+/gu, ' ').trim();
 
@@ -352,6 +363,18 @@ const hashString = (value: string): string => {
   return `${first.toString(16).padStart(8, '0')}${second.toString(16).padStart(8, '0')}`;
 };
 
+// Content owns this key for local occurrence deduplication on the current page.
+export const createDedupKey = (input: DedupKeyInput): string => {
+  const canonical = JSON.stringify([
+    input.normalizedText,
+    input.kind,
+    input.slot,
+    input.contextClass,
+  ]);
+  return `pdk:${hashString(canonical)}`;
+};
+
+// Background owns this key as the persistent translation-memory identity.
 export const createSemanticKey = (input: SemanticKeyInput): string => {
   const canonical = JSON.stringify([
     input.sourceLanguage,

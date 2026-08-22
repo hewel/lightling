@@ -84,8 +84,6 @@ export class PageTranslator {
       identity: {
         provider: session.provider,
         model: session.model,
-        promptVersion: session.modelProfile.promptVersion,
-        profileVersion: session.modelProfile.profileVersion,
       },
       sessionId: session.sessionId,
       sessionSignature: session.sessionSignature,

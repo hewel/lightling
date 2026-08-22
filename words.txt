@@ -60,3 +60,4 @@ backoffs
 longtask
 rescan
 rescans
+dedup

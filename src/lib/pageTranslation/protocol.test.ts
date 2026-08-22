@@ -1,4 +1,5 @@
 import {
+  createDedupKey,
   createSemanticKey,
   deriveAttemptMetrics,
   isInvariantTranslationSource,
@@ -72,6 +73,33 @@ describe('page translation protocol', () => {
     expect(createSemanticKey(base)).not.toBe(
       createSemanticKey({ ...base, profileVersion: 'profile-v2' }),
     );
+  });
+
+  test('dedup keys separate local occurrences by text, kind, slot, and context', () => {
+    const base = {
+      normalizedText: 'Open',
+      kind: 'button' as const,
+      slot: 'visible-text' as const,
+      contextClass: 'file-dialog:button',
+    };
+    const withIdentityFields = {
+      ...base,
+      provider: 'openai',
+      model: 'small-model',
+      glossaryVersion: 'glossary-v1',
+      promptVersion: 'prompt-v1',
+      profileVersion: 'profile-v1',
+    };
+
+    expect(createDedupKey(base)).not.toBe(
+      createDedupKey({ ...base, normalizedText: 'Close' }),
+    );
+    expect(createDedupKey(base)).not.toBe(createDedupKey({ ...base, kind: 'status' }));
+    expect(createDedupKey(base)).not.toBe(createDedupKey({ ...base, slot: 'title' }));
+    expect(createDedupKey(base)).not.toBe(
+      createDedupKey({ ...base, contextClass: 'store:status' }),
+    );
+    expect(createDedupKey(base)).toBe(createDedupKey(withIdentityFields));
   });
 
   test('validates balanced placeholder identity while allowing reordering', () => {
