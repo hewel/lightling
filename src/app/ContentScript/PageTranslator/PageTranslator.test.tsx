@@ -45,6 +45,7 @@ describe('PageTranslator lifecycle and cancellation context', () => {
     const pageTranslator = new PageTranslator({});
 
     pageTranslator.run('en', 'de');
+    expect(pageTranslator.getTranslateDirection()).toEqual({ from: 'en', to: 'de' });
     await vi.waitFor(() => expect(translateCalls.length).toBeGreaterThan(0));
 
     const firstContext = translateCalls[0].sessionId;
@@ -57,6 +58,7 @@ describe('PageTranslator lifecycle and cancellation context', () => {
     );
 
     pageTranslator.stop();
+    expect(pageTranslator.getTranslateDirection()).toBeNull();
     expect(document.querySelector('p')?.textContent).toBe('Hello world');
     expect(abortCalls).toEqual([{ context: firstContext }]);
 

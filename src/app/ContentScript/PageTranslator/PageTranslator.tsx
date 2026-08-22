@@ -1,21 +1,13 @@
 import { getContentScriptStyles } from '@/lib/browser';
 import type { PageTranslationLog } from '@/lib/pageTranslation/log';
 import { ShadowDOMContainerManager } from '@/lib/ShadowDOMContainerManager';
-import { getActiveLLMProfile } from '@/lib/translators/llm/LLMTranslator';
-import {
-  createConservativeTranslationModelProfile,
-  resolveTranslationModelProfile,
-} from '@/lib/translators/llm/modelProfile';
-import {
-  conservativeTokenCounter,
-  resolveTranslationTokenizer,
-} from '@/lib/translators/llm/tokenizer';
 import { createUUID } from '@/lib/utils';
 import { abortTranslation } from '@/requests/backend/abortTranslation';
 import type { AppConfigType } from '@/types/runtime';
 
 import { OriginalTextPopup } from './components/OriginalTextPopup/OriginalTextPopup';
 import { PageTranslationPipeline } from './PageTranslationPipeline';
+import { preparePageTranslationSession } from './pageTranslationSession';
 import { pageTranslatorStatsUpdated } from './requests/pageTranslatorStatsUpdated';
 
 export type PageTranslatorStats = {
@@ -75,46 +67,14 @@ export class PageTranslator {
 
     this.translateContext = createUUID();
     const localContext = this.translateContext;
-    const configuredProfile =
-      this.config.translatorModule === 'LLMTranslator' &&
-      this.config.llmTranslator !== undefined
-        ? getActiveLLMProfile(this.config.llmTranslator)
-        : null;
-    const provider =
-      configuredProfile?.provider ?? this.config.translatorModule ?? 'unknown';
-    const model = configuredProfile?.model ?? this.config.translatorModule ?? 'unknown';
-    const profileResolution =
-      configuredProfile === null
-        ? null
-        : resolveTranslationModelProfile(configuredProfile, null);
-    const tokenizerResolution =
-      configuredProfile === null
-        ? null
-        : resolveTranslationTokenizer(configuredProfile, null);
-    const modelProfile =
-      profileResolution === null || tokenizerResolution === null
-        ? createConservativeTranslationModelProfile(model)
-        : {
-            ...profileResolution.profile,
-            tokenizerId: tokenizerResolution.counter.id,
-            tokenizerSource: tokenizerResolution.source,
-            safetyReserveTokens:
-              tokenizerResolution.counter.accuracy === 'estimate'
-                ? Math.max(profileResolution.profile.safetyReserveTokens, 640)
-                : profileResolution.profile.safetyReserveTokens,
-          };
-    const tokenCounter = tokenizerResolution?.counter ?? conservativeTokenCounter;
-    const signature = [
-      location.href,
-      this.documentIdentity,
+    const session = preparePageTranslationSession({
+      config: this.config,
       from,
       to,
-      provider,
-      model,
-      modelProfile.profileVersion,
-      modelProfile.promptVersion,
-      this.config.lazyTranslate ? 'lazy' : 'eager',
-    ].join('\u0000');
+      documentIdentity: this.documentIdentity,
+      pageUrl: location.href,
+      sessionId: localContext,
+    });
 
     this.pageTranslateDirection = { from, to };
     this.pageTranslator = new PageTranslationPipeline({
@@ -122,19 +82,17 @@ export class PageTranslator {
       sourceLanguage: from,
       targetLanguage: to,
       identity: {
-        provider,
-        model,
-        promptVersion: modelProfile.promptVersion,
-        profileVersion: modelProfile.profileVersion,
+        provider: session.provider,
+        model: session.model,
+        promptVersion: session.modelProfile.promptVersion,
+        profileVersion: session.modelProfile.profileVersion,
       },
-      sessionId: localContext,
-      sessionSignature: signature,
-      modelProfile,
-      tokenCounter,
-      logEnabled: this.config.enableLogExport === true,
-      debug:
-        this.config.enableLogExport === true ||
-        configuredProfile?.translationProfile?.debug === true,
+      sessionId: session.sessionId,
+      sessionSignature: session.sessionSignature,
+      modelProfile: session.modelProfile,
+      tokenCounter: session.tokenCounter,
+      logEnabled: session.logEnabled,
+      debug: session.debug,
       translatableAttributes: this.config.translatableAttributes,
       excludeSelectors: (this.config.excludeSelectors ?? []).filter(
         (selector) => !selector.startsWith('!') && selector.trim() !== '',
