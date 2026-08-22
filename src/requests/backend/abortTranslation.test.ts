@@ -1,15 +1,13 @@
 import { abortTranslation, abortTranslationFactory } from './abortTranslation';
 
 describe('abortTranslation', () => {
-  test('calls translateManager.getScheduler().abort with context and resolves', async () => {
+  test('calls translateManager.abort with context and resolves', async () => {
     const abortMock = vi.fn(async (_context: string) => {});
     const cleanup = abortTranslationFactory({
       config: {} as never,
       backgroundContext: {
         getTranslateManager: async () => ({
-          getScheduler: () => ({
-            abort: abortMock,
-          }),
+          abort: abortMock,
         }),
       } as never,
     });

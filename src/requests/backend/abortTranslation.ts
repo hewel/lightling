@@ -12,8 +12,7 @@ export const [abortTranslationFactory, abortTranslation] = buildBackendRequest(
       ({ backgroundContext }) =>
       async ({ context }) => {
         const translateManager = await backgroundContext.getTranslateManager();
-        const scheduler = translateManager.getScheduler();
-        await scheduler.abort(context);
+        await translateManager.abort(context);
       },
   },
 );

@@ -159,9 +159,9 @@ export class Background {
         if (this.translateManager === null) {
           this.translateManager = new TranslatorManager(config, translators, {
             onLLMTokenUsage: this.translationAccounting.recordLLMUsage,
+            onTranslation: this.translationAccounting.recordTranslation,
           });
-
-          // Return a scheduler instance for awaiters
+          // Resolve manager for awaiters
           if (this.translateManagerPromise !== null) {
             this.translateManagerPromise.resolve(this.translateManager);
           }

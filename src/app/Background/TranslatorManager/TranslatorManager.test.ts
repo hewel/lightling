@@ -15,6 +15,8 @@ const createTranslatorMockClass = (translatorName: string) => {
       return Promise.all(texts.map((text) => this.translate(text, from, to)));
     });
 
+    abort = vi.fn((_context: string) => {});
+
     getLengthLimit = () => 4000;
     getRequestsTimeout = () => 300;
     checkLimitExceeding = () => -10000;
@@ -51,7 +53,7 @@ const defaultConfig = {
   },
 };
 
-test('TranslatorManager thrown error when translator module not found', () => {
+test('TranslatorManager thrown error when translator module not found', async () => {
   const translatorManagerConfig = {
     ...defaultConfig,
     translatorModule: 'unknown translator id',
@@ -61,34 +63,84 @@ test('TranslatorManager thrown error when translator module not found', () => {
     createTranslatorsList(),
   );
 
-  expect(translatorManager.getScheduler).toThrow(Error);
+  await expect(translatorManager.translate('Hello world', 'en', 'de')).rejects.toThrow(
+    Error,
+  );
 });
 
 test('TranslatorManager translate text with selected translator', async () => {
   const translators = createTranslatorsList();
   const translatorManager = new TranslatorManager(defaultConfig, translators);
 
-  const scheduler = translatorManager.getScheduler();
-  const translatedText = await scheduler.translate('Hello world', 'en', 'de');
+  const translatedText = await translatorManager.translate('Hello world', 'en', 'de');
 
   const targetTranslator = new translators.translator2();
   const expectedText = await targetTranslator.translate('Hello world', 'en', 'de');
 
   expect(translatedText).toBe(expectedText);
 });
+test('TranslatorManager validates languages and records successful translation once', async () => {
+  const onTranslation = vi.fn();
+  const translatorManager = new TranslatorManager(
+    {
+      ...defaultConfig,
+      scheduler: { ...defaultConfig.scheduler, useCache: false },
+    },
+    createTranslatorsList(),
+    {
+      onTranslation,
+    },
+  );
+
+  await translatorManager.translate('Hello world', 'en', 'de', {
+    context: 'test-context',
+    priority: 1,
+  });
+  expect(onTranslation).toHaveBeenCalledTimes(1);
+
+  await expect(translatorManager.translate('Hello world', 'ru', 'de')).resolves.toBe(
+    'translator2["Hello world"-ru-de]',
+  );
+  expect(onTranslation).toHaveBeenCalledTimes(2);
+
+  await expect(translatorManager.translate('Hello world', 'xx', 'de')).rejects.toThrow(
+    'Source language is not supported by selected translator',
+  );
+  await expect(translatorManager.translate('Hello world', 'en', 'xx')).rejects.toThrow(
+    'Target language is not supported by selected translator',
+  );
+  expect(onTranslation).toHaveBeenCalledTimes(2);
+});
+
+test('TranslatorManager aborts translation with selected translator', async () => {
+  const translatorManager = new TranslatorManager(
+    {
+      ...defaultConfig,
+      scheduler: { ...defaultConfig.scheduler, useCache: false },
+    },
+    createTranslatorsList(),
+  );
+
+  const translation = translatorManager.translate('Hello world', 'en', 'de', {
+    context: 'test-context',
+  });
+  await translatorManager.abort('test-context');
+
+  await expect(translation).rejects.toThrow('Translation is aborted in scheduler');
+});
 
 test('setConfig rebuilds the scheduler with the newly selected translator', async () => {
   const translatorManager = new TranslatorManager(defaultConfig, createTranslatorsList());
 
-  translatorManager.getScheduler();
+  await translatorManager.translate('Hello world', 'en', 'de');
   translatorManager.setConfig({
     ...defaultConfig,
     translatorModule: 'translator3',
   });
 
-  await expect(
-    translatorManager.getScheduler().translate('Hello world', 'en', 'de'),
-  ).resolves.toBe('translator3["Hello world"-en-de]');
+  await expect(translatorManager.translate('Hello world', 'en', 'de')).resolves.toBe(
+    'translator3["Hello world"-en-de]',
+  );
 });
 
 test('TranslatorManager passes llmTranslator config to LLMTranslator', async () => {
@@ -110,20 +162,18 @@ describe('TranslatorManager consider cache preferences', () => {
     const translators = createTranslatorsList();
     const translatorManager = new TranslatorManager(defaultConfig, translators);
 
-    const scheduler = translatorManager.getScheduler();
-    const translateFn = translatorManager.getTranslator().translate;
-
     // Should call translate method first time for each new translation request
-    await scheduler.translate('Hello world', 'en', 'de');
+    await translatorManager.translate('Hello world', 'en', 'de');
+    const translateFn = translatorManager.getTranslator().translate;
     expect(translateFn).toBeCalledTimes(1);
 
-    await scheduler.translate('Another text', 'en', 'de');
+    await translatorManager.translate('Another text', 'en', 'de');
     expect(translateFn).toBeCalledTimes(2);
 
     // Should return translation from cache
     translateFn.mockClear();
 
-    await scheduler.translate('Hello world', 'en', 'de');
+    await translatorManager.translate('Hello world', 'en', 'de');
     expect(translateFn).not.toBeCalled();
   });
 
@@ -140,42 +190,35 @@ describe('TranslatorManager consider cache preferences', () => {
       translators,
     );
 
-    const scheduler = translatorManager.getScheduler();
-    const translateFn = translatorManager.getTranslator().translate;
-
     // Should call translate method first time for each new translation request
-    await scheduler.translate('Hello world', 'en', 'de');
+    await translatorManager.translate('Hello world', 'en', 'de');
+    const translateFn = translatorManager.getTranslator().translate;
     expect(translateFn).toBeCalledTimes(1);
 
-    await scheduler.translate('Another text', 'en', 'de');
+    await translatorManager.translate('Another text', 'en', 'de');
     expect(translateFn).toBeCalledTimes(2);
 
     // Should call translate method
     translateFn.mockClear();
 
-    await scheduler.translate('Hello world', 'en', 'de');
+    await translatorManager.translate('Hello world', 'en', 'de');
     expect(translateFn).toBeCalled();
 
     // Consider config updates
     translatorManager.setConfig(defaultConfig);
 
     // TODO: implement behavior to reuse scheduler
-    const scheduler2 = translatorManager.getScheduler();
+    await translatorManager.translate('Hello world', 'en', 'de');
     const translateFn2 = translatorManager.getTranslator().translate;
-
-    translateFn2.mockClear();
-
-    // Should call translate method first time for each new translation request
-    await scheduler2.translate('Hello world', 'en', 'de');
     expect(translateFn2).toBeCalledTimes(1);
 
-    await scheduler2.translate('Another text', 'en', 'de');
+    await translatorManager.translate('Another text', 'en', 'de');
     expect(translateFn2).toBeCalledTimes(2);
 
     // Should return translation from cache
     translateFn2.mockClear();
 
-    await scheduler2.translate('Hello world', 'en', 'de');
+    await translatorManager.translate('Hello world', 'en', 'de');
     expect(translateFn2).not.toBeCalled();
   });
 });
@@ -199,8 +242,11 @@ describe('TranslatorManager LLM integration', () => {
     model: 'model-2',
   };
 
-  test('setConfig disposes previous LLMScheduler instance', () => {
+  test('setConfig disposes previous LLMScheduler instance', async () => {
     const disposeSpy = vi.spyOn(LLMScheduler.prototype, 'dispose');
+    const translateSpy = vi
+      .spyOn(LLMScheduler.prototype, 'translate')
+      .mockResolvedValue('translated');
     const llmManager = new TranslatorManager(
       {
         ...defaultConfig,
@@ -210,7 +256,7 @@ describe('TranslatorManager LLM integration', () => {
       { LLMTranslator },
     );
 
-    llmManager.getScheduler();
+    await llmManager.translate('apple', 'en', 'de');
     expect(disposeSpy).not.toHaveBeenCalled();
 
     llmManager.setConfig({
@@ -224,6 +270,7 @@ describe('TranslatorManager LLM integration', () => {
     });
 
     expect(disposeSpy).toHaveBeenCalledTimes(1);
+    translateSpy.mockRestore();
     disposeSpy.mockRestore();
   });
 
@@ -248,15 +295,14 @@ describe('TranslatorManager LLM integration', () => {
       { LLMTranslator },
     );
 
-    const scheduler1 = llmManager.getScheduler();
-    const res1 = await scheduler1.translate('apple', 'en', 'de');
+    const res1 = await llmManager.translate('apple', 'en', 'de');
     expect(res1).toBe('llm:apple');
     expect(mockTranslate).toHaveBeenCalledTimes(1);
 
     mockTranslate.mockClear();
 
     // Same model -> hits cache
-    const resCached = await scheduler1.translate('apple', 'en', 'de');
+    const resCached = await llmManager.translate('apple', 'en', 'de');
     expect(resCached).toBe('llm:apple');
     expect(mockTranslate).not.toHaveBeenCalled();
 
@@ -274,8 +320,7 @@ describe('TranslatorManager LLM integration', () => {
       },
     });
 
-    const scheduler2 = llmManager.getScheduler();
-    const res2 = await scheduler2.translate('apple', 'en', 'de');
+    const res2 = await llmManager.translate('apple', 'en', 'de');
     expect(res2).toBe('llm:apple');
     expect(mockTranslate).toHaveBeenCalledTimes(1);
 

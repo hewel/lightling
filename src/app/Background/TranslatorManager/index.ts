@@ -1,5 +1,10 @@
 import { isLanguageCodeISO639v1 } from 'anylang/languages';
-import { IScheduler, Scheduler, SchedulerWithCache } from 'anylang/scheduling';
+import {
+  Scheduler,
+  SchedulerWithCache,
+  type IScheduler,
+  type ISchedulerTranslateOptions,
+} from 'anylang/scheduling';
 
 import {
   createSemanticKey,
@@ -38,6 +43,7 @@ export class TranslatorManager<Translators extends TranslatorsMap = TranslatorsM
   private translators: Translators;
   private readonly managerOptions?: {
     onLLMTokenUsage?: (usage: { inputTokens: number; outputTokens: number }) => void;
+    onTranslation?: () => void;
   };
   private readonly pageTranslationMemory = new PageTranslationMemory();
 
@@ -46,6 +52,7 @@ export class TranslatorManager<Translators extends TranslatorsMap = TranslatorsM
     translators: Translators,
     options?: {
       onLLMTokenUsage?: (usage: { inputTokens: number; outputTokens: number }) => void;
+      onTranslation?: () => void;
     },
   ) {
     this.config = config;
@@ -84,12 +91,38 @@ export class TranslatorManager<Translators extends TranslatorsMap = TranslatorsM
     return this.getTranslatorInstance();
   }
 
-  /**
-   * Return configured translation scheduler
-   */
-  public getScheduler() {
-    return this.getTranslationSchedulerInstance();
+  public async translate(
+    text: string,
+    sourceLanguage: string,
+    targetLanguage: string,
+    options?: ISchedulerTranslateOptions,
+  ): Promise<string> {
+    const { supportedLanguages, isSupportAutodetect } = this.getTranslatorFeatures();
+
+    if (
+      (sourceLanguage === 'auto' && !isSupportAutodetect) ||
+      (sourceLanguage !== 'auto' && !supportedLanguages.includes(sourceLanguage))
+    )
+      throw new Error('Source language is not supported by selected translator');
+    if (!supportedLanguages.includes(targetLanguage))
+      throw new Error('Target language is not supported by selected translator');
+
+    const result = await this.getTranslationSchedulerInstance().translate(
+      text,
+      sourceLanguage,
+      targetLanguage,
+      options,
+    );
+
+    this.managerOptions?.onTranslation?.();
+
+    return result;
   }
+
+  public abort(context: string): Promise<void> {
+    return this.getTranslationSchedulerInstance().abort(context);
+  }
+
   public async translatePageBatch(
     request: PageTranslationBatchRequest,
   ): Promise<PageTranslationBatchResponse> {
@@ -134,7 +167,7 @@ export class TranslatorManager<Translators extends TranslatorsMap = TranslatorsM
       const translated = await createPageBatchExecution({
         translatorClass: this.getTranslatorClass(),
         getLLMTranslator: () => this.getTranslatorInstance() as LLMTranslator,
-        getScheduler: () => this.getScheduler(),
+        getScheduler: () => this.getTranslationSchedulerInstance(),
         retryLimit: this.config.scheduler.translateRetryAttemptLimit,
       }).execute({ ...request, targets: misses }, (increment) => {
         metrics.retryCount += increment.retryCount;
