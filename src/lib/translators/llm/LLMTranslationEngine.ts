@@ -2,12 +2,14 @@ import { Duration, Effect, Schema } from 'effect';
 import type { AiError, Prompt } from 'effect/unstable/ai';
 
 import {
+  deriveAttemptMetrics,
   isPlausibleTargetLanguage,
   parsePageTranslationResponse,
   type PageTranslationBatchRequest,
   type PageTranslationAttemptMetrics,
   type PageTranslationBatchAttempt,
   type TranslationTarget,
+  type TranslationValidationIssue,
 } from '@/lib/pageTranslation/protocol';
 
 import { budgetPageTranslationRequest, estimateMaxOutputTokens } from './budget';
@@ -19,6 +21,7 @@ import {
   type ConfiguredLLMProfile,
   type TranslationModelProfile,
 } from './modelProfile';
+import { planNext, type PageExecutionPlanAttempt } from './pageExecutionPlan';
 import { buildPageTranslationPrompt, getTranslationJsonGrammar } from './prompts';
 
 export const LLM_TRANSLATION_PROMPT_VERSION = 3;
@@ -653,8 +656,13 @@ export class LLMTranslationEngine {
   private buildRetryPolicy(
     makeRequest: () => LLMRequestEffect,
     retryLimit: number,
+    onTransportRetry?: (error: AiError.AiError, attemptNumber: number) => void,
   ): LLMRequestEffect {
-    const attempt = (remainingRetries: number, delayMs: number): LLMRequestEffect =>
+    const attempt = (
+      remainingRetries: number,
+      delayMs: number,
+      attemptNumber: number,
+    ): LLMRequestEffect =>
       // `suspend` so each attempt constructs a fresh request, re-invoking fetch
       Effect.suspend(() => makeRequest()).pipe(
         Effect.catchIf(
@@ -666,20 +674,25 @@ export class LLMTranslationEngine {
             Boolean((error as { isRetryable?: boolean }).isRetryable) &&
             !isContextLengthExceeded(error),
           (error) => {
+            onTransportRetry?.(error, attemptNumber + 1);
             const retryAfter = (error as { retryAfter?: unknown }).retryAfter;
             const waitMs = Duration.isDuration(retryAfter)
               ? Duration.toMillis(retryAfter)
               : delayMs;
             return Effect.sleep(Duration.millis(waitMs)).pipe(
               Effect.flatMap(() =>
-                attempt(remainingRetries - 1, Math.min(MAX_RETRY_DELAY_MS, delayMs * 2)),
+                attempt(
+                  remainingRetries - 1,
+                  Math.min(MAX_RETRY_DELAY_MS, delayMs * 2),
+                  attemptNumber + 1,
+                ),
               ),
             );
           },
         ),
       );
 
-    return attempt(retryLimit, INITIAL_RETRY_DELAY_MS);
+    return attempt(retryLimit, INITIAL_RETRY_DELAY_MS, 1);
   }
 
   private async executePageBatch(
@@ -739,7 +752,10 @@ export class LLMTranslationEngine {
     let acceptedRetryStage: PageTranslationBatchRequest['retryStage'] =
       request.retryStage ?? 'initial';
 
-    type AttemptParseResult = ReturnType<typeof parsePageTranslationResponse>;
+    interface AttemptParseResult {
+      readonly translations: { id: string; target: string }[];
+      readonly issues: TranslationValidationIssue[];
+    }
     interface PreparedAttempt {
       readonly targets: TranslationTarget[];
       readonly inferenceRequest: LLMRequest;
@@ -747,17 +763,14 @@ export class LLMTranslationEngine {
       readonly stage: NonNullable<PageTranslationBatchRequest['retryStage']>;
       readonly contextMode: 'normal' | 'without-retrieved' | 'rich';
     }
+    interface AttemptExecutionResult {
+      readonly parsed: AttemptParseResult;
+      readonly rawResponse: string;
+    }
 
-    /**
-     * One log entry per HTTP attempt (initial + isolated retries), surfaced
-     * on the terminal metrics call so the content script can persist them.
-     */
     const attempts: PageTranslationBatchAttempt[] = [];
+    const attemptHistory: PageExecutionPlanAttempt[] = [];
 
-    /**
-     * Synchronous attempt planning. Throws TOO_SMALL_MESSAGE before any
-     * effect is constructed, preserving the existing error contract.
-     */
     const prepareAttempt = (
       targets: TranslationTarget[],
       retryStage: PageTranslationBatchRequest['retryStage'],
@@ -772,8 +785,6 @@ export class LLMTranslationEngine {
             ? { ...request.context, retrieved: [] }
             : request.context,
       };
-      // Id-based shapes degrade to 'pairs' for isolated retries; 'array'
-      // stays as-is since a single-item array is already the simplest shape.
       const attemptProfile: TranslationModelProfile =
         retryStage === 'isolated' || retryStage === 'simplified-context'
           ? profile.responseShape === 'objects'
@@ -810,13 +821,23 @@ export class LLMTranslationEngine {
       ...request.memory.namedEntities,
     ];
 
-    /** One translation request as an effect: fetch under the retry policy, then parse and validate. */
     const attemptEffect = (
       prepared: PreparedAttempt,
-    ): Effect.Effect<AttemptParseResult, AiError.AiError> =>
+    ): Effect.Effect<AttemptExecutionResult, AiError.AiError> =>
       this.buildRetryPolicy(
         () => this.options.fetch(prepared.inferenceRequest),
         prepared.retryLimit,
+        (error, attemptNumber) => {
+          attempts.push({
+            kind: 'transport-retry',
+            stage: prepared.stage,
+            contextMode: prepared.contextMode,
+            profileId: profile.id,
+            targetIds: prepared.targets.map((target) => target.id),
+            attemptNumber,
+            error: error instanceof Error ? error.message : String(error),
+          });
+        },
       ).pipe(
         Effect.tap((response) => Effect.sync(() => this.reportUsage(response.usage))),
         Effect.map((response) => {
@@ -833,6 +854,7 @@ export class LLMTranslationEngine {
             { repairPlaceholders: true },
           );
           attempts.push({
+            kind: 'parse',
             stage: prepared.stage,
             contextMode: prepared.contextMode,
             profileId: profile.id,
@@ -840,11 +862,12 @@ export class LLMTranslationEngine {
             rawResponse: response.text,
             issues: parsed.issues,
           });
-          return parsed;
+          return { parsed, rawResponse: response.text };
         }),
         Effect.tapError((error) =>
           Effect.sync(() => {
             attempts.push({
+              kind: 'parse',
               stage: prepared.stage,
               contextMode: prepared.contextMode,
               profileId: profile.id,
@@ -854,142 +877,59 @@ export class LLMTranslationEngine {
           }),
         ),
       );
+    const planPolicy = {
+      maxRetries: profile.retry.maxRetries,
+      retryWithSmallerBatch: profile.retry.retryWithSmallerBatch,
+      retryWithoutRetrievedContext: profile.retry.retryWithoutRetrievedContext,
+      retryWithRicherLocalContext: profile.retry.retryWithRicherLocalContext,
+    } as const;
 
-    interface IsolatedRetryPlan {
-      readonly target: TranslationTarget;
-      readonly stages: readonly {
-        stage: PageTranslationBatchRequest['retryStage'];
-        contextMode: 'normal' | 'without-retrieved' | 'rich';
-      }[];
-    }
-
-    interface IsolatedRetryOutcome {
-      readonly id: string;
-      readonly translation?: string;
-      readonly stage?: PageTranslationBatchRequest['retryStage'];
-    }
-
-    /** Walks the stage ladder for one failed unit until a translation validates. */
-    const isolatedRetryEffect = (
-      plan: IsolatedRetryPlan,
-    ): Effect.Effect<IsolatedRetryOutcome, AiError.AiError> => {
-      const loop = (
-        index: number,
-      ): Effect.Effect<IsolatedRetryOutcome, AiError.AiError> => {
-        const retry = plan.stages[index];
-        if (retry === undefined) return Effect.succeed({ id: plan.target.id });
-        return Effect.suspend(() => {
-          onMetrics?.({ retryCount: 1, validationFailures: 0 });
-          return attemptEffect(
-            prepareAttempt([plan.target], retry.stage, retry.contextMode),
-          );
-        }).pipe(
-          Effect.flatMap((parsed) => {
-            if (parsed.issues.length > 0) {
-              onMetrics?.({ retryCount: 0, validationFailures: parsed.issues.length });
-            }
-            const translation = parsed.translations[0];
-            if (translation === undefined) return loop(index + 1);
-            return Effect.succeed({
-              id: plan.target.id,
-              translation: translation.target,
-              stage: retry.stage,
-            });
-          }),
-        );
-      };
-      return loop(0);
-    };
-
+    let preparedAttempts: PreparedAttempt[] = [];
     try {
-      const initial = await Effect.runPromise(
-        attemptEffect(
-          prepareAttempt(
-            initialBudget.request.targets,
-            request.retryStage ?? 'initial',
-            'normal',
+      let plan = planNext(request, attemptHistory, planPolicy);
+      while (plan.kind === 'attempt') {
+        const attemptPlan = plan;
+        preparedAttempts =
+          attemptPlan.stage === 'initial'
+            ? [
+                prepareAttempt(
+                  [...attemptPlan.targets],
+                  attemptPlan.stage,
+                  attemptPlan.contextMode,
+                ),
+              ]
+            : attemptPlan.targets.map((target) =>
+                prepareAttempt([target], attemptPlan.stage, attemptPlan.contextMode),
+              );
+        const executions = await Effect.runPromise(
+          Effect.all(
+            preparedAttempts.map((prepared) => attemptEffect(prepared)),
+            {
+              concurrency: Math.max(1, settings.translationProfile.batching.concurrency),
+            },
           ),
-        ),
-        { signal: controller.signal },
-      );
-      if (initial.issues.length > 0) {
-        onMetrics?.({
-          retryCount: 0,
-          validationFailures: initial.issues.length,
-        });
-      }
-      for (const translation of initial.translations) {
-        accepted.set(translation.id, translation.target);
-      }
-
-      const failuresById = new Map<
-        string,
-        Set<(typeof initial.issues)[number]['failure']>
-      >();
-      for (const issue of initial.issues) {
-        if (issue.id === undefined) continue;
-        const failures = failuresById.get(issue.id) ?? new Set();
-        failures.add(issue.failure);
-        failuresById.set(issue.id, failures);
-      }
-      const failedIds = new Set(
-        initial.issues
-          .filter((issue) => issue.id !== undefined && !accepted.has(issue.id))
-          .map((issue) => issue.id)
-          .filter((id): id is string => id !== undefined),
-      );
-      if (initial.issues.some((issue) => issue.id === undefined)) {
-        for (const target of request.targets) {
-          if (!accepted.has(target.id)) failedIds.add(target.id);
-        }
-      }
-
-      const plans: IsolatedRetryPlan[] = [];
-      for (const id of failedIds) {
-        const target = request.targets.find((candidate) => candidate.id === id);
-        if (target === undefined) continue;
-        const failures = failuresById.get(id);
-        const stages: {
-          stage: PageTranslationBatchRequest['retryStage'];
-          contextMode: 'normal' | 'without-retrieved' | 'rich';
-        }[] = [];
-        if (
-          failures?.has('language-mismatch') &&
-          profile.retry.retryWithRicherLocalContext
-        ) {
-          stages.push({ stage: 'rich-context', contextMode: 'rich' });
-        } else {
-          if (profile.retry.retryWithSmallerBatch) {
-            stages.push({ stage: 'isolated', contextMode: 'normal' });
-          }
-          if (profile.retry.retryWithoutRetrievedContext) {
-            stages.push({
-              stage: 'simplified-context',
-              contextMode: 'without-retrieved',
-            });
-          }
-          if (profile.retry.retryWithRicherLocalContext) {
-            stages.push({ stage: 'rich-context', contextMode: 'rich' });
+          { signal: controller.signal },
+        );
+        for (let index = 0; index < executions.length; index++) {
+          const prepared = preparedAttempts[index];
+          const execution = executions[index];
+          if (prepared === undefined || execution === undefined) continue;
+          const { parsed, rawResponse } = execution;
+          attemptHistory.push({
+            stage: prepared.stage,
+            contextMode: prepared.contextMode,
+            targetIds: prepared.targets.map((target) => target.id),
+            rawResponse,
+            issues: parsed.issues,
+            translations: parsed.translations,
+          });
+          for (const translation of parsed.translations) {
+            accepted.set(translation.id, translation.target);
+            if (prepared.stage !== 'initial') acceptedRetryStage = prepared.stage;
           }
         }
-        plans.push({ target, stages: stages.slice(0, profile.retry.maxRetries) });
-      }
-
-      // Isolated retries are independent single-unit requests; run them in
-      // parallel, capped at the profile's batch concurrency. The first hard
-      // error (auth, quota) interrupts the rest, matching the previous
-      // sequential fail-fast behavior.
-      const outcomes = await Effect.runPromise(
-        Effect.all(
-          plans.map((plan) => isolatedRetryEffect(plan)),
-          { concurrency: Math.max(1, settings.translationProfile.batching.concurrency) },
-        ),
-        { signal: controller.signal },
-      );
-      for (const outcome of outcomes) {
-        if (outcome.translation === undefined) continue;
-        accepted.set(outcome.id, outcome.translation);
-        acceptedRetryStage = outcome.stage;
+        preparedAttempts = [];
+        plan = planNext(request, attemptHistory, planPolicy);
       }
 
       const result: { id: string; target: string }[] = [];
@@ -1003,8 +943,7 @@ export class LLMTranslationEngine {
         result.push({ id: target.id, target: translated });
       }
       onMetrics?.({
-        retryCount: 0,
-        validationFailures: 0,
+        ...deriveAttemptMetrics(attempts),
         acceptedProfileId: profile.id,
         acceptedRetryStage,
         failedIds: unresolvedIds,
@@ -1012,6 +951,16 @@ export class LLMTranslationEngine {
       });
       return result;
     } catch (error) {
+      if (preparedAttempts.length > 0) {
+        for (const prepared of preparedAttempts) {
+          attemptHistory.push({
+            stage: prepared.stage,
+            contextMode: prepared.contextMode,
+            targetIds: prepared.targets.map((target) => target.id),
+            error,
+          });
+        }
+      }
       if (
         this.isDisposed ||
         this.abortedContexts.has(options.context) ||

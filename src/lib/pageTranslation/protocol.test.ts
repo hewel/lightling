@@ -1,5 +1,7 @@
 import {
   createSemanticKey,
+  deriveAttemptMetrics,
+  isInvariantTranslationSource,
   isPlausibleTargetLanguage,
   normalizeTranslationText,
   parsePageTranslationResponse,
@@ -23,6 +25,28 @@ describe('page translation protocol', () => {
   test('normalizes only Unicode and whitespace', () => {
     expect(normalizeTranslationText('  Cafe\u0301   42!  ')).toBe('Café 42!');
     expect(normalizeTranslationText('Save')).not.toBe(normalizeTranslationText('save'));
+  });
+
+  test('classifies protected invariant targets without swallowing UI vocabulary', () => {
+    expect(isInvariantTranslationSource('Discord', ['Discord'])).toBe(true);
+    expect(isInvariantTranslationSource('Figtree', ['Figtree'])).toBe(true);
+    expect(isInvariantTranslationSource('©2026 Meta Platforms, Inc.')).toBe(true);
+    expect(isInvariantTranslationSource('tsx')).toBe(true);
+    expect(isInvariantTranslationSource('bash')).toBe(true);
+
+    for (const text of [
+      'Save',
+      'Close',
+      'Templates',
+      'Docs',
+      'Community',
+      'Changelog',
+      'This is a normal sentence.',
+    ]) {
+      expect(isInvariantTranslationSource(text)).toBe(false);
+    }
+    expect(isInvariantTranslationSource('Discord')).toBe(false);
+    expect(isInvariantTranslationSource('Figtree')).toBe(false);
   });
 
   test('semantic keys separate the same text in different contexts', () => {
@@ -278,5 +302,70 @@ describe('page translation protocol', () => {
     );
     expect(result.translations).toHaveLength(1);
     expect(result.issues).toContainEqual({ id: 'u2', failure: 'placeholder-corruption' });
+  });
+
+  test('derives transport retries without counting the initial parse attempt', () => {
+    expect(
+      deriveAttemptMetrics([
+        {
+          kind: 'parse',
+          stage: 'initial',
+          profileId: 'profile',
+          targetIds: ['u1'],
+          issues: [],
+        },
+        {
+          kind: 'transport-retry',
+          stage: 'initial',
+          profileId: 'profile',
+          targetIds: ['u1'],
+          attemptNumber: 2,
+          error: 'temporary failure',
+        },
+        {
+          kind: 'parse',
+          stage: 'initial',
+          profileId: 'profile',
+          targetIds: ['u1'],
+          issues: [],
+        },
+      ]),
+    ).toEqual({ retryCount: 1, validationFailures: 0 });
+  });
+
+  test('derives ladder retries and validation issues from a mixed journal', () => {
+    expect(
+      deriveAttemptMetrics([
+        {
+          kind: 'parse',
+          stage: 'initial',
+          profileId: 'profile',
+          targetIds: ['u1', 'u2'],
+          issues: [{ id: 'u2', failure: 'placeholder-corruption' }],
+        },
+        {
+          kind: 'parse',
+          stage: 'isolated',
+          profileId: 'profile',
+          targetIds: ['u2'],
+          issues: [{ id: 'u2', failure: 'language-mismatch' }],
+        },
+        {
+          kind: 'transport-retry',
+          stage: 'isolated',
+          profileId: 'profile',
+          targetIds: ['u2'],
+          attemptNumber: 2,
+          error: 'temporary failure',
+        },
+        {
+          kind: 'parse',
+          stage: 'isolated',
+          profileId: 'profile',
+          targetIds: ['u2'],
+          issues: [],
+        },
+      ]),
+    ).toEqual({ retryCount: 3, validationFailures: 2 });
   });
 });

@@ -45,7 +45,6 @@ export interface TranslationRetrySettings {
   retryWithSmallerBatch: boolean;
   retryWithoutRetrievedContext: boolean;
   retryWithRicherLocalContext: boolean;
-  escalateProfile?: string;
 }
 
 export interface TranslationModelCapabilities {
@@ -457,10 +456,7 @@ const userPatch = (configured: ConfiguredLLMProfile): TranslationModelProfilePat
         configured.maxConcurrentRequests === null
           ? {}
           : { concurrency: configured.maxConcurrentRequests },
-      retry:
-        configured.fallbackProfile === undefined || configured.fallbackProfile === null
-          ? {}
-          : { escalateProfile: configured.fallbackProfile },
+      retry: {},
       adaptive: { enabled: configured.adaptiveBatching ?? true },
     };
   }
@@ -538,9 +534,6 @@ const userPatch = (configured: ConfiguredLLMProfile): TranslationModelProfilePat
       ...(retry.retryWithRicherLocalContext === null
         ? {}
         : { retryWithRicherLocalContext: retry.retryWithRicherLocalContext }),
-      ...(configured.fallbackProfile === null
-        ? {}
-        : { escalateProfile: configured.fallbackProfile }),
     },
     adaptive: {
       enabled: overrides.adaptiveBatching ?? configured.adaptiveBatching,

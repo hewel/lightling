@@ -9,6 +9,8 @@ import {
 import {
   createSemanticKey,
   DEFAULT_GLOSSARY_VERSION,
+  deriveAttemptMetrics,
+  isInvariantTranslationSource,
   type PageTranslationBatchRequest,
   type PageTranslationAttemptMetrics,
   type PageTranslationBatchResponse,
@@ -149,8 +151,22 @@ export class TranslatorManager<Translators extends TranslatorsMap = TranslatorsM
       retryCount: 0,
       validationFailures: 0,
     };
+    const invariantTerms = [
+      ...request.memory.protectedTerms,
+      ...request.memory.namedEntities,
+    ];
 
     for (const target of targets) {
+      if (isInvariantTranslationSource(target.sourceText, invariantTerms)) {
+        results.set(target.id, {
+          id: target.id,
+          target: target.sourceText,
+          cacheKey: target.semanticKey,
+          cacheHit: false,
+        });
+        continue;
+      }
+
       const entry = await this.pageTranslationMemory.get(target.semanticKey);
       if (entry === null) {
         misses.push(target);
@@ -169,28 +185,35 @@ export class TranslatorManager<Translators extends TranslatorsMap = TranslatorsM
         getLLMTranslator: () => this.getTranslatorInstance() as LLMTranslator,
         getScheduler: () => this.getTranslationSchedulerInstance(),
         retryLimit: this.config.scheduler.translateRetryAttemptLimit,
-      }).execute({ ...request, targets: misses }, (increment) => {
-        metrics.retryCount += increment.retryCount;
-        if (increment.acceptedProfileId !== undefined) {
-          metrics.acceptedProfileId = increment.acceptedProfileId;
+      }).execute({ ...request, targets: misses }, (terminal) => {
+        if (terminal.acceptedProfileId !== undefined) {
+          metrics.acceptedProfileId = terminal.acceptedProfileId;
         }
-        if (increment.acceptedRetryStage !== undefined) {
-          metrics.acceptedRetryStage = increment.acceptedRetryStage;
+        if (terminal.acceptedRetryStage !== undefined) {
+          metrics.acceptedRetryStage = terminal.acceptedRetryStage;
         }
-        if (increment.failedIds !== undefined) {
-          metrics.failedIds = increment.failedIds;
+        if (terminal.failedIds !== undefined) {
+          metrics.failedIds = terminal.failedIds;
         }
-        if (increment.attempts !== undefined) {
-          metrics.attempts = [...(metrics.attempts ?? []), ...increment.attempts];
+        if (terminal.attempts !== undefined) {
+          metrics.attempts = [...(metrics.attempts ?? []), ...terminal.attempts];
         }
-        metrics.validationFailures += increment.validationFailures;
       });
 
       for (const translation of translated) {
         const target = misses.find((candidate) => candidate.id === translation.id);
         if (target === undefined) continue;
         if (!validatePlaceholderIntegrity(target.sourceText, translation.target)) {
-          metrics.validationFailures++;
+          metrics.attempts = [
+            ...(metrics.attempts ?? []),
+            {
+              kind: 'parse',
+              stage: 'initial',
+              profileId: metrics.acceptedProfileId ?? identity.profileVersion,
+              targetIds: [target.id],
+              issues: [{ id: target.id, failure: 'placeholder-corruption' }],
+            },
+          ];
           metrics.failedIds = [...(metrics.failedIds ?? []), target.id];
           continue;
         }
@@ -230,6 +253,9 @@ export class TranslatorManager<Translators extends TranslatorsMap = TranslatorsM
     metrics.failedIds = targets
       .filter((target) => !results.has(target.id))
       .map((target) => target.id);
+    const derivedMetrics = deriveAttemptMetrics(metrics.attempts ?? []);
+    metrics.retryCount = derivedMetrics.retryCount;
+    metrics.validationFailures = derivedMetrics.validationFailures;
     return { translations, metrics };
   }
 

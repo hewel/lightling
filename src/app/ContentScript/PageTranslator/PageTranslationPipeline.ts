@@ -45,7 +45,7 @@ export interface PagePipelineMetrics {
   memoryMisses: number;
   sourceTokens: number;
   contextTokens: number;
-  batches: number;
+  plannedBatches: number;
   retries: number;
   validationFailures: number;
   staleCancellations: number;
@@ -156,7 +156,7 @@ const createMetrics = (): PagePipelineMetrics => ({
   memoryMisses: 0,
   sourceTokens: 0,
   contextTokens: 0,
-  batches: 0,
+  plannedBatches: 0,
   retries: 0,
   validationFailures: 0,
   staleCancellations: 0,
@@ -322,7 +322,10 @@ export class PageTranslationPipeline {
         startedAt: this.sessionStartedAt,
       },
       pageProfile: structuredClone(this.pageProfile),
-      metrics: { ...this.metrics },
+      metrics: {
+        ...this.metrics,
+        batches: this.logBatches.length,
+      },
       batches: structuredClone(this.logBatches),
       droppedBatches: this.droppedLogBatches,
       debugPerf: { ...this.perfProbe },
@@ -559,7 +562,7 @@ export class PageTranslationPipeline {
         preferredSourceTokens,
       });
       for (const batch of batches) {
-        this.metrics.batches++;
+        this.metrics.plannedBatches++;
         this.metrics.sourceTokens += batch.sourceTokens;
         this.metrics.contextTokens +=
           batch.budget.localContextTokens + batch.budget.retrievedContextTokens;

@@ -1,26 +1,21 @@
 import type {
   PageProfile,
+  PageTranslationBatchAttempt,
+  RetryStage,
   TranslationKind,
   TranslationRequestContext,
   TranslationSlot,
+  TranslationTarget,
+  TranslationValidationIssue,
 } from './protocol';
 
 export const PAGE_TRANSLATION_LOG_SCHEMA_VERSION = 'lightling.page-translation-log.v2';
 
-export interface PageTranslationLogTarget {
-  id: string;
-  semanticKey: string;
-  sourceText: string;
+export type PageTranslationLogTarget = Omit<TranslationTarget, 'normalizedText'> & {
   translatedText?: string;
-  kind: TranslationKind;
-  slot: TranslationSlot;
-  contextClass: string;
-  sectionId?: string;
-  componentId?: string;
-  priority: number;
   cacheHit?: boolean;
   status: 'pending' | 'translated' | 'failed' | 'stale';
-}
+};
 
 export interface PageTranslationLogProfile {
   id: string;
@@ -51,17 +46,9 @@ export interface PageTranslationLogTokenBudget {
   totalEstimatedTokens: number;
 }
 
-export interface PageTranslationLogAttempt {
-  stage: 'initial' | 'isolated' | 'simplified-context' | 'rich-context';
-  contextMode?: 'normal' | 'without-retrieved' | 'rich';
-  profileId: string;
-  targetIds: string[];
-  /** Verbatim model output; absent when the fetch itself failed. */
-  rawResponse?: string;
-  issues?: { id?: string; failure: string }[];
-  /** Fetch-level failure message after internal retries were exhausted. */
-  error?: string;
-}
+export type PageTranslationLogIssue = TranslationValidationIssue;
+
+export type PageTranslationLogAttempt = PageTranslationBatchAttempt;
 
 export interface PageTranslationLogBatch {
   batchId: number;
@@ -82,8 +69,8 @@ export interface PageTranslationLogBatch {
   tokenBudget: PageTranslationLogTokenBudget;
   reductions: string[];
   acceptedProfileId?: string;
-  acceptedRetryStage?: 'initial' | 'isolated' | 'simplified-context' | 'rich-context';
-  /** One entry per HTTP attempt; present when the engine reported metrics. */
+  acceptedRetryStage?: RetryStage;
+  /** Append-only parse and transport-retry journal emitted by the engine. */
   attempts?: PageTranslationLogAttempt[];
   error?: {
     name: string;
@@ -100,6 +87,9 @@ export interface PageTranslationLogMetrics {
   memoryMisses: number;
   sourceTokens: number;
   contextTokens: number;
+  /** Number of planned provider batches, before actual log events are recorded. */
+  plannedBatches?: number;
+  /** Number of recorded log batches; derived from `PageTranslationLog.batches`. */
   batches: number;
   retries: number;
   validationFailures: number;

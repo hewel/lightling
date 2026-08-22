@@ -1,9 +1,13 @@
+import { Scheduler } from 'anylang/scheduling';
+
+import type { PageTranslationBatchRequest } from '@/lib/pageTranslation/protocol';
 import { clearAllMocks } from '@/lib/tests';
 import { LLMScheduler } from '@/lib/translators/llm/LLMScheduler';
 import { LLMTranslator } from '@/lib/translators/llm/LLMTranslator';
 import { llmProviderPresets } from '@/lib/translators/llm/presets';
 
 import { TranslatorManager } from '.';
+import { PageTranslationMemory } from './PageTranslationMemory';
 
 const createTranslatorMockClass = (translatorName: string) => {
   return class MockTranslator {
@@ -109,7 +113,73 @@ test('TranslatorManager validates languages and records successful translation o
   await expect(translatorManager.translate('Hello world', 'en', 'xx')).rejects.toThrow(
     'Target language is not supported by selected translator',
   );
+
   expect(onTranslation).toHaveBeenCalledTimes(2);
+});
+test('translatePageBatch resolves invariant targets without execution or memory writes', async () => {
+  const translators = createTranslatorsList();
+  const translatorManager = new TranslatorManager(defaultConfig, translators);
+  const memoryGet = vi.spyOn(PageTranslationMemory.prototype, 'get');
+  const memorySet = vi.spyOn(PageTranslationMemory.prototype, 'set');
+  const schedulerTranslate = vi.spyOn(Scheduler.prototype, 'translate');
+  const request: PageTranslationBatchRequest = {
+    sourceLanguage: 'en',
+    targetLanguage: 'de',
+    sessionId: 'invariant-test',
+    memory: {
+      languageDirection: 'en>de',
+      glossary: [],
+      protectedTerms: ['Discord'],
+      namedEntities: ['Figtree'],
+    },
+    context: {
+      headingPath: [],
+      previous: [],
+      following: [],
+      retrieved: [],
+    },
+    group: {
+      kind: 'body',
+      slot: 'visible-text',
+      contextClass: 'main:body',
+    },
+    targets: ['Discord', 'Figtree', '©2026 Meta Platforms, Inc.', 'tsx', 'bash'].map(
+      (sourceText, index) => ({
+        id: `u${index + 1}`,
+        sourceText,
+        normalizedText: sourceText,
+        kind: 'body' as const,
+        slot: 'visible-text' as const,
+        contextClass: 'main:body',
+        semanticKey: `u${index + 1}`,
+        priority: 4,
+      }),
+    ),
+  };
+
+  const response = await translatorManager.translatePageBatch(request);
+
+  expect(
+    response.translations.map(({ id, target, cacheHit }) => ({ id, target, cacheHit })),
+  ).toEqual([
+    { id: 'u1', target: 'Discord', cacheHit: false },
+    { id: 'u2', target: 'Figtree', cacheHit: false },
+    { id: 'u3', target: '©2026 Meta Platforms, Inc.', cacheHit: false },
+    { id: 'u4', target: 'tsx', cacheHit: false },
+    { id: 'u5', target: 'bash', cacheHit: false },
+  ]);
+  expect(response.metrics).toMatchObject({
+    retryCount: 0,
+    validationFailures: 0,
+    failedIds: [],
+  });
+  expect(memoryGet).not.toHaveBeenCalled();
+  expect(memorySet).not.toHaveBeenCalled();
+  expect(schedulerTranslate).not.toHaveBeenCalled();
+
+  memoryGet.mockRestore();
+  memorySet.mockRestore();
+  schedulerTranslate.mockRestore();
 });
 
 test('TranslatorManager aborts translation with selected translator', async () => {

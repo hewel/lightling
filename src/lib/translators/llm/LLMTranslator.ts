@@ -253,7 +253,6 @@ export class LLMTranslator implements TranslatorInstanceMembers {
       targets: PageTranslationBatchRequest['targets'],
     ): Promise<{ id: string; target: string }[]> => {
       if (fallback === undefined || targets.length === 0) return [];
-      onMetrics?.({ retryCount: 1, validationFailures: 0 });
       const fallbackTranslator = new LLMTranslator(
         {
           activeProfile: fallback.name,
@@ -302,14 +301,6 @@ export class LLMTranslator implements TranslatorInstanceMembers {
     const result = request.targets.flatMap((target) => {
       const item = merged.get(target.id);
       return item === undefined ? [] : [item];
-    });
-    const resolvedIds = new Set(result.map((item) => item.id));
-    onMetrics?.({
-      retryCount: 0,
-      validationFailures: 0,
-      failedIds: request.targets
-        .filter((target) => !resolvedIds.has(target.id))
-        .map((target) => target.id),
     });
     return result;
   }

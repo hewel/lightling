@@ -1,4 +1,5 @@
-import { Effect } from 'effect';
+import { Duration, Effect } from 'effect';
+import { AiError } from 'effect/unstable/ai';
 
 import type {
   PageTranslationAttemptMetrics,
@@ -96,16 +97,15 @@ describe('LLM webpage request contract', () => {
     expect(JSON.stringify(calls[1].messages)).not.toContain('u1');
     expect(JSON.stringify(calls[1].messages)).toContain('u2');
     expect(metrics).toEqual([
-      { retryCount: 0, validationFailures: 1 },
-      { retryCount: 1, validationFailures: 0 },
       {
-        retryCount: 0,
-        validationFailures: 0,
+        retryCount: 1,
+        validationFailures: 1,
         acceptedProfileId: settings.translationProfile.id,
         acceptedRetryStage: 'isolated',
         failedIds: [],
         attempts: [
           {
+            kind: 'parse',
             stage: 'initial',
             contextMode: 'normal',
             profileId: settings.translationProfile.id,
@@ -114,6 +114,7 @@ describe('LLM webpage request contract', () => {
             issues: [{ id: 'u2', failure: 'placeholder-corruption' }],
           },
           {
+            kind: 'parse',
             stage: 'isolated',
             contextMode: 'normal',
             profileId: settings.translationProfile.id,
@@ -124,6 +125,65 @@ describe('LLM webpage request contract', () => {
         ],
       },
     ]);
+  });
+
+  test('records transport retries in the terminal journal', async () => {
+    vi.useFakeTimers();
+    try {
+      let calls = 0;
+      const metrics: PageTranslationAttemptMetrics[] = [];
+      const engine = new LLMTranslationEngine({
+        loadSettings: () => Promise.resolve(settings),
+        fetch: () => {
+          calls++;
+          if (calls === 1) {
+            return Effect.fail(
+              AiError.make({
+                module: 'test',
+                method: 'generateText',
+                reason: new AiError.RateLimitError({ retryAfter: Duration.millis(50) }),
+              }),
+            );
+          }
+          return Effect.succeed({
+            text: JSON.stringify({ translations: [{ id: 'u1', target: 'Speichern' }] }),
+            usage: { inputTokens: null, outputTokens: null },
+          });
+        },
+      });
+      const promise = engine.translatePageBatch(
+        { ...request, targets: [request.targets[0]] },
+        {
+          context: 'session',
+          priority: 4,
+          retryLimit: 1,
+          isolateInvalidBatches: true,
+        },
+        (terminal) => metrics.push(terminal),
+      );
+      await vi.advanceTimersByTimeAsync(100);
+      await expect(promise).resolves.toEqual([{ id: 'u1', target: 'Speichern' }]);
+      expect(metrics).toHaveLength(1);
+      expect(metrics[0]).toMatchObject({
+        retryCount: 1,
+        validationFailures: 0,
+        attempts: [
+          {
+            kind: 'transport-retry',
+            stage: 'initial',
+            targetIds: ['u1'],
+            attemptNumber: 2,
+          },
+          {
+            kind: 'parse',
+            stage: 'initial',
+            targetIds: ['u1'],
+          },
+        ],
+      });
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   test('repairs renamed placeholder ids without a retry', async () => {

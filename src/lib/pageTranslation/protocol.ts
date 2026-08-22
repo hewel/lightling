@@ -83,6 +83,8 @@ export interface TranslationTarget {
   priority: number;
 }
 
+export type RetryStage = 'initial' | 'isolated' | 'simplified-context' | 'rich-context';
+
 export interface PageTranslationBatchRequest {
   sourceLanguage: string;
   targetLanguage: string;
@@ -96,18 +98,24 @@ export interface PageTranslationBatchRequest {
     contextClass: string;
   };
   targets: TranslationTarget[];
-  retryStage?: 'initial' | 'isolated' | 'simplified-context' | 'rich-context';
+  retryStage?: RetryStage;
 }
 
+export type PageTranslationBatchAttemptKind = 'parse' | 'transport-retry';
+
 export interface PageTranslationBatchAttempt {
-  stage: NonNullable<PageTranslationBatchRequest['retryStage']>;
+  /** Parse-evaluated response or an internal fetch-level retry event. */
+  kind: PageTranslationBatchAttemptKind;
+  stage: RetryStage;
   contextMode?: 'normal' | 'without-retrieved' | 'rich';
   profileId: string;
   targetIds: string[];
+  /** One-based attempt number within the transport retry loop. */
+  attemptNumber?: number;
   /** Verbatim model output; absent when the fetch itself failed. */
   rawResponse?: string;
   issues?: TranslationValidationIssue[];
-  /** Fetch-level failure message after internal retries were exhausted. */
+  /** Fetch-level failure message after internal retries are exhausted. */
   error?: string;
 }
 
@@ -115,14 +123,32 @@ export interface PageTranslationAttemptMetrics {
   retryCount: number;
   validationFailures: number;
   acceptedProfileId?: string;
-  acceptedRetryStage?: PageTranslationBatchRequest['retryStage'];
+  acceptedRetryStage?: RetryStage;
   failedIds?: string[];
   /**
-   * One entry per HTTP attempt (initial + every isolated retry), emitted on
-   * the terminal metrics call of each engine execution.
+   * Append-only journal of parse evaluations and transport retry events.
+   * Counts in this object are derived from this journal.
    */
   attempts?: PageTranslationBatchAttempt[];
 }
+
+export interface DerivedPageTranslationAttemptMetrics {
+  retryCount: number;
+  validationFailures: number;
+}
+
+export const deriveAttemptMetrics = (
+  attempts: readonly PageTranslationBatchAttempt[],
+): DerivedPageTranslationAttemptMetrics =>
+  attempts.reduce(
+    (metrics, attempt) => ({
+      retryCount:
+        metrics.retryCount +
+        (attempt.kind === 'transport-retry' || attempt.stage !== 'initial' ? 1 : 0),
+      validationFailures: metrics.validationFailures + (attempt.issues?.length ?? 0),
+    }),
+    { retryCount: 0, validationFailures: 0 },
+  );
 
 export interface PageTranslationResult {
   id: string;
@@ -241,10 +267,12 @@ const TranslationValidationIssueSchema = Schema.Struct({
 });
 
 const PageTranslationBatchAttemptSchema = Schema.Struct({
+  kind: Schema.Literals(['parse', 'transport-retry']),
   stage: RetryStageSchema,
   contextMode: Schema.optional(Schema.Literals(['normal', 'without-retrieved', 'rich'])),
   profileId: Schema.String,
   targetIds: Schema.mutable(Schema.Array(Schema.String)),
+  attemptNumber: Schema.optional(Schema.Finite),
   rawResponse: Schema.optional(Schema.String),
   issues: Schema.optional(Schema.mutable(Schema.Array(TranslationValidationIssueSchema))),
   error: Schema.optional(Schema.String),
@@ -558,10 +586,68 @@ const comparableText = (text: string): string =>
   normalizeTranslationText(text.replace(PLACEHOLDER_PATTERN, ''));
 
 const LIKELY_INVARIANT_SOURCE_PATTERN = /(?:[_/]|::|[a-z][A-Z]|[A-Z]{2})/u;
+const COPYRIGHT_SOURCE_PATTERN = /^©\s*\d{4}(?:[-–]\d{4})?\b/u;
+const IDENTIFIER_SOURCE_PATTERN = /^[A-Za-z][A-Za-z0-9_+#./:-]{1,15}$/u;
+const CODE_LANGUAGE_IDENTIFIERS: Record<string, true> = {
+  bash: true,
+  bat: true,
+  c: true,
+  'c#': true,
+  'c++': true,
+  css: true,
+  csv: true,
+  go: true,
+  html: true,
+  ini: true,
+  java: true,
+  js: true,
+  json: true,
+  jsonc: true,
+  jsx: true,
+  md: true,
+  php: true,
+  py: true,
+  python: true,
+  rb: true,
+  rust: true,
+  sh: true,
+  shell: true,
+  sql: true,
+  svg: true,
+  ts: true,
+  tsx: true,
+  txt: true,
+  xml: true,
+  yaml: true,
+  yml: true,
+  zsh: true,
+};
+
 const isLikelyInvariantSource = (text: string): boolean => {
   const words = text.match(/\p{L}+/gu);
   return (
     words !== null && words.length <= 3 && LIKELY_INVARIANT_SOURCE_PATTERN.test(text)
+  );
+};
+
+const isIdentifierLikeSource = (text: string): boolean =>
+  IDENTIFIER_SOURCE_PATTERN.test(text) &&
+  (/[0-9_+#./:-]/u.test(text) ||
+    Object.hasOwn(CODE_LANGUAGE_IDENTIFIERS, text.toLowerCase()));
+
+export const isInvariantTranslationSource = (
+  sourceText: string,
+  invariantTerms: readonly string[] = [],
+): boolean => {
+  const comparableSource = comparableText(sourceText);
+  if (comparableSource === '') return false;
+  if (invariantTerms.some((term) => comparableText(term) === comparableSource)) {
+    return true;
+  }
+  return (
+    isLikelyInvariantSource(comparableSource) ||
+    COPYRIGHT_SOURCE_PATTERN.test(comparableSource) ||
+    isIdentifierLikeSource(comparableSource)
   );
 };
 
@@ -579,10 +665,7 @@ export const isPlausibleTargetLanguage = (
 
   const comparableSource = comparableText(sourceText);
   if (comparableText(text) !== comparableSource) return false;
-  return (
-    isLikelyInvariantSource(comparableSource) ||
-    invariantTerms.some((term) => comparableText(term) === comparableSource)
-  );
+  return isInvariantTranslationSource(comparableSource, invariantTerms);
 };
 
 const CODE_FENCE_PATTERN = /^```[^\n`]*\n([\s\S]*?)\n?\s*```$/u;
