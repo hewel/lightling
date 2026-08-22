@@ -3,13 +3,9 @@ import { isDeepEqual } from '@/lib/utils';
 
 import { onHotkeysPressed } from '../../components/controls/Hotkey/utils';
 import { getPageLanguage } from '../../lib/browser';
-import { isRequireTranslateBySitePreferences } from '../../pages/popup/tabs/PageTranslator/PageTranslator.utils/utils';
-import { getLanguagePreferences } from '../../requests/backend/autoTranslation/languagePreferences/getLanguagePreferences';
-// Requests
-import { getSitePreferences } from '../../requests/backend/autoTranslation/sitePreferences/getSitePreferences';
-import { getTranslatorFeatures } from '../../requests/backend/getTranslatorFeatures';
 import type { AppConfigType } from '../../types/runtime';
 
+import { shouldAutoTranslate } from './PageTranslator/autoTranslationDecision';
 import { PageTranslatorController } from './PageTranslator/PageTranslatorController';
 import { PageTranslatorManager } from './PageTranslator/PageTranslatorManager';
 import { SelectTranslatorController } from './SelectTranslator/SelectTranslatorController';
@@ -195,66 +191,20 @@ export class PageTranslationContext {
       config.pageTranslator.detectLanguageByContent,
     );
     this.$context.setState({ pageData: { language: pageLanguage } });
-    await this.initTranslation(this.$context.getState());
-  };
 
-  private readonly initTranslation = async ({
-    config,
-    pageTranslation,
-    pageData,
-  }: PageContextState) => {
-    // Skip if page already in translating
-    if (pageTranslation !== null) return;
-
-    // TODO: make it option
-    const isAllowTranslateSameLanguages = true;
-
-    const pageLanguage = pageData.language;
-    const userLanguage = config.language;
-
-    // Skip by language directions
-    if (pageLanguage === null) return;
-    if (pageLanguage === userLanguage && !isAllowTranslateSameLanguages) return;
-
-    let isNeedAutoTranslate = false;
-
-    // Consider site preferences
-    const pageHost = location.host;
-    const sitePreferences = await getSitePreferences(pageHost);
-    const isSiteRequireTranslate = isRequireTranslateBySitePreferences(
-      pageLanguage,
-      sitePreferences,
-    );
-    if (isSiteRequireTranslate !== null) {
-      // Never translate this site
-      if (!isSiteRequireTranslate) return;
-
-      // Otherwise translate
-      isNeedAutoTranslate = true;
-    }
-
-    // Consider common language preferences
-    const isLanguageRequireTranslate = await getLanguagePreferences(pageLanguage);
-    if (isLanguageRequireTranslate !== null) {
-      // Never translate this language
-      if (!isLanguageRequireTranslate) return;
-
-      // Otherwise translate
-      isNeedAutoTranslate = true;
-    }
-
-    if (isNeedAutoTranslate) {
-      const { supportedLanguages } = await getTranslatorFeatures();
-      const isLanguagesSupportedByTranslator = [pageLanguage, userLanguage].every(
-        (language) => supportedLanguages.includes(language),
-      );
-
-      if (isLanguagesSupportedByTranslator) {
-        this.updatePageTranslationState({
-          from: pageLanguage,
-          to: userLanguage,
-        });
-      }
+    const { config: updatedConfig, pageTranslation } = this.$context.getState();
+    if (
+      pageLanguage !== null &&
+      (await shouldAutoTranslate({
+        isTranslating: pageTranslation !== null,
+        pageLanguage,
+        userLanguage: updatedConfig.language,
+      }))
+    ) {
+      this.updatePageTranslationState({
+        from: pageLanguage,
+        to: updatedConfig.language,
+      });
     }
   };
 }
