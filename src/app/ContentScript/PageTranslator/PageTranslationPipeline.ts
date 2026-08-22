@@ -25,18 +25,16 @@ import { translatePageBatch } from '@/requests/backend/translatePageBatch';
 
 import { buildTokenAwareBatches, type PlannedTarget } from './batching';
 import {
-  applyOccurrenceTranslation,
-  adoptSourceMutation,
   collectPageOccurrences,
   createPageCollectionContext,
   deduplicateOccurrences,
   getOccurrenceOriginalText,
-  restoreOccurrence,
   type CollectionOptions,
   type PageCollectionContext,
   type TextOccurrence,
   type TranslationUnit,
 } from './domPipeline';
+import { PageTranslationDomLifecycle } from './PageTranslationDomLifecycle';
 
 export interface PagePipelineMetrics {
   occurrences: number;
@@ -169,31 +167,6 @@ const createMetrics = (): PagePipelineMetrics => ({
 const groupKey = (unit: TranslationUnit): string =>
   `${unit.kind}\\u0000${unit.slot}\\u0000${unit.contextClass}\\u0000${unit.sectionId ?? ''}`;
 
-/**
- * Yields to the event loop so bulk DOM writes never monopolize the main
- * thread. Prefers `scheduler.yield()` (no clamping) where available.
- */
-const yieldToMain = (): Promise<void> => {
-  if (
-    'scheduler' in globalThis &&
-    typeof globalThis.scheduler === 'object' &&
-    globalThis.scheduler !== null &&
-    'yield' in globalThis.scheduler &&
-    typeof globalThis.scheduler.yield === 'function'
-  ) {
-    return globalThis.scheduler.yield();
-  }
-  return new Promise((resolve) => setTimeout(resolve, 0));
-};
-
-const PAGE_MUTATION_OBSERVER_OPTIONS: MutationObserverInit = {
-  subtree: true,
-  childList: true,
-  characterData: true,
-  attributes: true,
-  attributeFilter: ['placeholder', 'title', 'aria-label', 'alt', 'value', 'hidden'],
-};
-
 export class PageTranslationPipeline {
   private readonly pageMemory = new Map<string, string>();
   private readonly inFlight = new Map<string, Promise<string>>();
@@ -202,22 +175,14 @@ export class PageTranslationPipeline {
     { values: (string | undefined)[]; unit: TranslationUnit }
   >();
   private processedSlots = new WeakMap<Element, Set<string>>();
-  private appliedText = new WeakMap<Node, string>();
-  private appliedAttributes = new WeakMap<Element, Map<string, string>>();
-  private appliedChildren = new WeakMap<Element, Node[]>();
-  private mutationConflicts = new WeakMap<
-    Element,
-    { count: number; windowStartedAt: number }
-  >();
-  private readonly volatileElements = new Set<Element>();
   private readonly accepted: AcceptedTranslation[] = [];
   private readonly terminology = new TerminologyMemory();
   private readonly ratioTracker = new OutputRatioTracker();
   private readonly adaptiveTuner = new AdaptiveBatchTuner();
   private readonly retriever: TranslationContextRetriever;
+  private readonly domLifecycle: PageTranslationDomLifecycle;
   private metrics = createMetrics();
   private occurrences: TextOccurrence[] = [];
-  private observer: MutationObserver | null = null;
   /** [DEBUG-perf1] Temporary real-world freeze probe; remove after diagnosis. */
   private perfObserver: PerformanceObserver | null = null;
   /** [DEBUG-perf1] Temporary real-world freeze probe; remove after diagnosis. */
@@ -259,15 +224,52 @@ export class PageTranslationPipeline {
     this.runtimeSessionId = options.sessionId;
     this.runtimeSignature = options.sessionSignature;
     this.logBatches = options.logEnabled ? [] : null;
+    this.domLifecycle = new PageTranslationDomLifecycle({
+      root: options.root,
+      getOccurrences: () => this.occurrences,
+      removeOccurrence: (occurrence) => {
+        const index = this.occurrences.indexOf(occurrence);
+        if (index >= 0) this.occurrences.splice(index, 1);
+      },
+      clearProcessedSlot: (occurrence) => {
+        this.processedSlots.get(occurrence.element)?.delete(occurrence.slot);
+      },
+      isCurrent: (generation) => this.isCurrent(generation),
+      onMutations: (mutations) => this.onMutations(mutations),
+      onUnitResolved: (count) => this.options.onUnitResolved?.(count),
+      onApplied: (unit) => {
+        if (this.metrics.firstVisibleTranslationAt === undefined && unit.priority >= 4) {
+          this.metrics.firstVisibleTranslationAt = performance.now();
+        }
+      },
+      onApplyChunk: (elapsed) => {
+        this.perfProbe.applyChunks++;
+        this.perfProbe.applyTotalMs += elapsed;
+        this.perfProbe.applyMaxChunkMs = Math.max(
+          this.perfProbe.applyMaxChunkMs,
+          elapsed,
+        );
+      },
+      onMutationLoop: (records, elapsed) => {
+        this.perfProbe.mutationCallbacks++;
+        this.perfProbe.mutationRecords += records;
+        this.perfProbe.mutationMaxRecords = Math.max(
+          this.perfProbe.mutationMaxRecords,
+          records,
+        );
+        this.perfProbe.mutationTotalMs += elapsed;
+        this.perfProbe.mutationMaxMs = Math.max(this.perfProbe.mutationMaxMs, elapsed);
+      },
+      onVolatileBackoff: () => {
+        this.perfProbe.volatileBackoffs++;
+      },
+    });
   }
 
   public start(): void {
     const generation = ++this.generation;
     void this.scanAndTranslate(this.options.root, generation);
-    this.observer = new MutationObserver((mutations) => {
-      void this.onMutations(mutations);
-    });
-    this.observer.observe(this.options.root, PAGE_MUTATION_OBSERVER_OPTIONS);
+    this.domLifecycle.start();
     // [DEBUG-perf1] Temporary real-world freeze probe; remove after diagnosis.
     if (this.logBatches !== null) {
       try {
@@ -290,15 +292,9 @@ export class PageTranslationPipeline {
 
   public stop(): void {
     ++this.generation;
-    this.observer?.disconnect();
-    this.observer = null;
+    this.domLifecycle.stop();
     this.perfObserver?.disconnect();
     this.perfObserver = null;
-    this.applyQueue.length = 0;
-    this.mutationConflicts = new WeakMap();
-    this.volatileElements.clear();
-    for (const occurrence of this.occurrences.slice().reverse())
-      restoreOccurrence(occurrence);
     this.occurrences = [];
     this.inFlight.clear();
   }
@@ -359,36 +355,6 @@ export class PageTranslationPipeline {
       };
       console.debug('[page-translation]', payload);
     }
-  }
-
-  private markApplied(occurrence: TextOccurrence): void {
-    if (occurrence.binding.type === 'attribute') {
-      let attributes = this.appliedAttributes.get(occurrence.binding.element);
-      if (attributes === undefined) {
-        attributes = new Map();
-        this.appliedAttributes.set(occurrence.binding.element, attributes);
-      }
-      attributes.set(
-        occurrence.binding.attribute,
-        occurrence.binding.element.getAttribute(occurrence.binding.attribute) ?? '',
-      );
-      return;
-    }
-    this.appliedChildren.set(
-      occurrence.element,
-      Array.from(occurrence.element.childNodes),
-    );
-    for (const node of Array.from(occurrence.element.childNodes)) {
-      this.markAppliedNode(node);
-    }
-  }
-
-  private markAppliedNode(node: Node): void {
-    if (node instanceof Text) this.appliedText.set(node, node.nodeValue ?? '');
-    if (node instanceof Element) {
-      this.appliedChildren.set(node, Array.from(node.childNodes));
-    }
-    for (const child of Array.from(node.childNodes)) this.markAppliedNode(child);
   }
 
   private appendLogBatch(batch: PageTranslationLogBatch): void {
@@ -926,186 +892,13 @@ export class PageTranslationPipeline {
     }
   }
 
-  private applyUnit(unit: TranslationUnit, translation: string): void {
-    for (const occurrence of unit.occurrences) {
-      applyOccurrenceTranslation(occurrence, translation);
-      this.markApplied(occurrence);
-    }
-    if (this.metrics.firstVisibleTranslationAt === undefined && unit.priority >= 4) {
-      this.metrics.firstVisibleTranslationAt = performance.now();
-    }
-  }
-
-  private readonly applyQueue: {
-    unit: TranslationUnit;
-    translation: string;
-    generation: number;
-    resolvedParts?: number;
-  }[] = [];
-  private applyPumpRunning = false;
-
-  /**
-   * Bulk DOM application goes through a chunked pump: at most
-   * APPLY_CHUNK_OCCURRENCES occurrences per macrotask, then the main thread
-   * is yielded. Applying a warm-cache replay or a large batch in one
-   * synchronous run froze the host page.
-   */
-  private static readonly APPLY_CHUNK_OCCURRENCES = 24;
-
   private scheduleApply(
     unit: TranslationUnit,
     translation: string,
     generation: number,
     resolvedParts?: number,
   ): void {
-    this.applyQueue.push({ unit, translation, generation, resolvedParts });
-    if (this.applyPumpRunning) return;
-    this.applyPumpRunning = true;
-    // Deferred to a microtask so all units enqueued by the same synchronous
-    // batch-completion loop accumulate into one chunked run.
-    queueMicrotask(() => {
-      void this.pumpApplies();
-    });
-  }
-
-  private async pumpApplies(): Promise<void> {
-    try {
-      while (this.applyQueue.length > 0) {
-        // Preserve mutations queued before this chunk; records generated by
-        // the synchronous apply itself are drained immediately afterwards.
-        const pendingExternalMutations = this.observer?.takeRecords() ?? [];
-        const chunkStartedAt = performance.now();
-        let chunkOccurrences = 0;
-
-        while (
-          this.applyQueue.length > 0 &&
-          chunkOccurrences < PageTranslationPipeline.APPLY_CHUNK_OCCURRENCES
-        ) {
-          const item = this.applyQueue.shift();
-          if (item === undefined) break;
-          if (!this.isCurrent(item.generation)) continue;
-          // Parse-safe: validatePlaceholderIntegrity ran before enqueueing.
-          this.applyUnit(item.unit, item.translation);
-          if (item.resolvedParts !== undefined) {
-            this.options.onUnitResolved?.(item.resolvedParts);
-          }
-          chunkOccurrences += Math.max(1, item.unit.occurrences.length);
-        }
-
-        // MutationObserver delivery is deferred until this synchronous chunk
-        // returns. Drain our own writes now so they cannot be misclassified
-        // as source-page changes and trigger restore -> rescan feedback.
-        this.observer?.takeRecords();
-
-        const elapsed = performance.now() - chunkStartedAt;
-        this.perfProbe.applyChunks++;
-        this.perfProbe.applyTotalMs += elapsed;
-        this.perfProbe.applyMaxChunkMs = Math.max(
-          this.perfProbe.applyMaxChunkMs,
-          elapsed,
-        );
-
-        if (pendingExternalMutations.length > 0) {
-          await this.onMutations(pendingExternalMutations);
-        }
-        if (this.applyQueue.length > 0) await yieldToMain();
-      }
-    } finally {
-      this.applyPumpRunning = false;
-    }
-  }
-
-  private isVolatileMutationTarget(target: Node): boolean {
-    for (const element of this.volatileElements) {
-      if (!element.isConnected) {
-        this.volatileElements.delete(element);
-        continue;
-      }
-      if (element === target || element.contains(target)) return true;
-    }
-    return false;
-  }
-
-  private isSourceReset(occurrence: TextOccurrence, mutation: MutationRecord): boolean {
-    const binding = occurrence.binding;
-    if (binding.type === 'attribute') {
-      return (
-        mutation.type === 'attributes' &&
-        mutation.target === binding.element &&
-        mutation.attributeName === binding.attribute &&
-        binding.element.getAttribute(binding.attribute) === binding.originalValue
-      );
-    }
-    if (
-      mutation.type === 'characterData' &&
-      mutation.target instanceof Text &&
-      binding.originalText.get(mutation.target) === mutation.target.nodeValue
-    ) {
-      return true;
-    }
-    if (mutation.type !== 'childList' || !(mutation.target instanceof Element)) {
-      return false;
-    }
-    const originalChildren = binding.originalChildren.get(mutation.target);
-    if (originalChildren === undefined) return false;
-    const readOriginalText = (node: Node): string => {
-      if (node instanceof Text) {
-        return binding.originalText.get(node) ?? node.nodeValue ?? '';
-      }
-      if (!(node instanceof Element)) return '';
-      const children = binding.originalChildren.get(node);
-      if (children === undefined) return node.textContent ?? '';
-      return children.map(readOriginalText).join('');
-    };
-    return (
-      mutation.target.textContent === originalChildren.map(readOriginalText).join('')
-    );
-  }
-
-  private hasRepeatedMutationConflict(element: Element): boolean {
-    const now = performance.now();
-    const existing = this.mutationConflicts.get(element);
-    if (existing === undefined || now - existing.windowStartedAt > 1000) {
-      this.mutationConflicts.set(element, { count: 1, windowStartedAt: now });
-      return false;
-    }
-    existing.count++;
-    return existing.count >= 3;
-  }
-
-  private adoptApplicationMutation(
-    mutation: MutationRecord,
-  ): { root: Element; rescan: boolean } | null {
-    for (let index = this.occurrences.length - 1; index >= 0; index--) {
-      const occurrence = this.occurrences[index];
-      if (!occurrence.element.contains(mutation.target)) continue;
-      const sourceReset = this.isSourceReset(occurrence, mutation);
-      if (!adoptSourceMutation(occurrence, mutation)) continue;
-
-      const shouldBackOff =
-        sourceReset || this.hasRepeatedMutationConflict(occurrence.element);
-      restoreOccurrence(occurrence);
-      // restoreOccurrence is our own write; never feed it back into adoption.
-      this.observer?.takeRecords();
-      this.occurrences.splice(index, 1);
-
-      if (shouldBackOff) {
-        this.perfProbe.volatileBackoffs++;
-        this.volatileElements.add(occurrence.element);
-        for (let queueIndex = this.applyQueue.length - 1; queueIndex >= 0; queueIndex--) {
-          if (this.applyQueue[queueIndex].unit.occurrences.includes(occurrence)) {
-            this.applyQueue.splice(queueIndex, 1);
-          }
-        }
-        // Keep the processed slot: the page owns this volatile node and must
-        // not enter another translate -> framework reset loop.
-        return { root: occurrence.element, rescan: false };
-      }
-
-      this.processedSlots.get(occurrence.element)?.delete(occurrence.slot);
-      return { root: occurrence.element, rescan: true };
-    }
-    return null;
+    this.domLifecycle.scheduleApply(unit, translation, generation, resolvedParts);
   }
 
   private async onMutations(mutations: MutationRecord[]): Promise<void> {
@@ -1118,10 +911,7 @@ export class PageTranslationPipeline {
       // Restore generates the same childList/characterData records as apply.
       // Observe only after the synchronous restore completes so those writes
       // cannot trigger a second restore -> rescan cycle.
-      this.observer?.disconnect();
-      for (const occurrence of this.occurrences.slice().reverse())
-        restoreOccurrence(occurrence);
-      this.observer?.observe(this.options.root, PAGE_MUTATION_OBSERVER_OPTIONS);
+      this.domLifecycle.resetForNavigation();
       this.metrics = createMetrics();
       this.logBatches?.splice(0);
       this.droppedLogBatches = 0;
@@ -1133,11 +923,6 @@ export class PageTranslationPipeline {
       this.pendingParts.clear();
       this.accepted.length = 0;
       this.processedSlots = new WeakMap();
-      this.appliedText = new WeakMap();
-      this.appliedAttributes = new WeakMap();
-      this.appliedChildren = new WeakMap();
-      this.mutationConflicts = new WeakMap();
-      this.volatileElements.clear();
       this.runtimeSessionId = createUUID();
       this.runtimeSignature = `${this.currentUrl}\u0000${this.options.sourceLanguage}\u0000${this.options.targetLanguage}\u0000${this.options.identity.provider}\u0000${this.options.identity.model}\u0000${this.runtimeSessionId}`;
       const generation = ++this.generation;
@@ -1145,65 +930,7 @@ export class PageTranslationPipeline {
       return;
     }
 
-    const roots = new Set<Element>();
-    // [DEBUG-perf1] Temporary real-world freeze probe; remove after diagnosis.
-    const mutationLoopStartedAt = performance.now();
-    for (const mutation of mutations) {
-      if (this.isVolatileMutationTarget(mutation.target)) continue;
-      if (mutation.type === 'characterData') {
-        const current = mutation.target.nodeValue ?? '';
-        if (this.appliedText.get(mutation.target) === current) continue;
-        const adopted = this.adoptApplicationMutation(mutation);
-        if (adopted !== null) {
-          if (adopted.rescan) roots.add(adopted.root);
-        } else if (mutation.target.parentElement !== null) {
-          roots.add(mutation.target.parentElement);
-        }
-        continue;
-      }
-      if (mutation.type === 'attributes' && mutation.target instanceof Element) {
-        const attribute = mutation.attributeName;
-        const expected = this.appliedAttributes
-          .get(mutation.target)
-          ?.get(attribute ?? '');
-        if (attribute !== null && expected === mutation.target.getAttribute(attribute))
-          continue;
-        const adopted = this.adoptApplicationMutation(mutation);
-        if (adopted === null) roots.add(mutation.target);
-        else if (adopted.rescan) roots.add(adopted.root);
-        continue;
-      }
-      if (mutation.type === 'childList' && mutation.target instanceof Element) {
-        const expected = this.appliedChildren.get(mutation.target);
-        const current = Array.from(mutation.target.childNodes);
-        if (
-          expected !== undefined &&
-          expected.length === current.length &&
-          expected.every((node, index) => node === current[index])
-        ) {
-          continue;
-        }
-        const adopted = this.adoptApplicationMutation(mutation);
-        if (adopted !== null) {
-          if (adopted.rescan) roots.add(adopted.root);
-          continue;
-        }
-      }
-      for (const node of Array.from(mutation.addedNodes)) {
-        if (node instanceof Element) roots.add(node);
-        else if (node.parentElement !== null) roots.add(node.parentElement);
-      }
-    }
-    // [DEBUG-perf1] Temporary real-world freeze probe; remove after diagnosis.
-    const mutationLoopMs = performance.now() - mutationLoopStartedAt;
-    this.perfProbe.mutationCallbacks++;
-    this.perfProbe.mutationRecords += mutations.length;
-    this.perfProbe.mutationMaxRecords = Math.max(
-      this.perfProbe.mutationMaxRecords,
-      mutations.length,
-    );
-    this.perfProbe.mutationTotalMs += mutationLoopMs;
-    this.perfProbe.mutationMaxMs = Math.max(this.perfProbe.mutationMaxMs, mutationLoopMs);
+    const roots = this.domLifecycle.collectRescanRoots(mutations);
 
     const scanRoots: Element[] = [];
     if (roots.size > 16) {
