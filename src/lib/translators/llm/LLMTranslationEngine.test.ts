@@ -161,14 +161,6 @@ const createDeferred = <T>() => {
   return deferred;
 };
 
-/**
- * Flushes settings resolution plus the deferred pump dispatch. The pump runs
- * one macrotask after settings resolve, so two macrotask hops are required
- * before the first provider call can be observed.
- */
-const flushDispatch = () =>
-  new Promise<void>((resolve) => setTimeout(() => setTimeout(resolve, 0), 0));
-
 /** One macrotask hop: enough for promise continuations after a resolve. */
 const microtasks = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
 
@@ -672,50 +664,6 @@ describe('LLMTranslationEngine', () => {
       expect(attempts).toBe(5);
     });
 
-    test('releases the slot so bisect children run before lower-priority work', async () => {
-      const startOrder: string[][] = [];
-      const deferreds = new Map<string, ReturnType<typeof createDeferred<string>>>();
-      const getKey = (texts: string[]) => JSON.stringify(texts);
-
-      const engine = new LLMTranslationEngine({
-        loadSettings: () => Promise.resolve(makeSettings({ maxConcurrentRequests: 1 })),
-        fetch: (request) => {
-          const texts = textsOf(request);
-          startOrder.push(texts);
-          const key = getKey(texts);
-          const deferred = createDeferred<string>();
-          deferreds.set(key, deferred);
-          return Effect.promise(() => deferred.promise).pipe(Effect.map(makeResponse));
-        },
-      });
-
-      const low3 = engine.translateBatch(['low3'], 'en', 'es', batchOptions());
-      const high = engine.translateBatch(['h1', 'h2'], 'en', 'es', {
-        ...batchOptions(),
-        priority: 10,
-      });
-      await flushDispatch();
-
-      // High priority starts first despite arriving second
-      expect(startOrder).toEqual([['h1', 'h2']]);
-
-      // Malformed high-priority output: release the slot and bisect
-      deferreds.get(getKey(['h1', 'h2']))?.resolve('not json at all');
-      await microtasks();
-
-      // Children inherit priority 10 and start before the waiting priority-0 job
-      deferreds.get(getKey(['h1']))?.resolve(JSON.stringify(['tr:h1']));
-      await microtasks();
-      deferreds.get(getKey(['h2']))?.resolve(JSON.stringify(['tr:h2']));
-      await microtasks();
-      deferreds.get(getKey(['low3']))?.resolve(JSON.stringify(['tr:low3']));
-
-      await expect(high).resolves.toEqual(['tr:h1', 'tr:h2']);
-      await expect(low3).resolves.toEqual(['tr:low3']);
-
-      expect(startOrder).toEqual([['h1', 'h2'], ['h1'], ['h2'], ['low3']]);
-    });
-
     test('malformed single item attempts one correction then fails with InvalidLLMResponseError', async () => {
       let attempts = 0;
       const engine = createEngine(() => {
@@ -756,135 +704,6 @@ describe('LLMTranslationEngine', () => {
         engine.translateBatch(['a'], 'en', 'es', batchOptions()),
       ).resolves.toEqual(['recovered']);
       expect(attempts).toBe(2);
-    });
-  });
-
-  describe('concurrency and priority', () => {
-    test('runs at most two concurrent requests and preserves result order', async () => {
-      const active = new Set<string>();
-      let maxActive = 0;
-      const deferreds = new Map<string, ReturnType<typeof createDeferred<string>>>();
-
-      const engine = new LLMTranslationEngine({
-        loadSettings: () => Promise.resolve(makeSettings({ maxConcurrentRequests: 2 })),
-        fetch: (request) => {
-          const [key] = textsOf(request);
-          active.add(key);
-          maxActive = Math.max(maxActive, active.size);
-          const deferred = createDeferred<string>();
-          deferreds.set(key, deferred);
-          return Effect.promise(() => deferred.promise).pipe(
-            Effect.map(makeResponse),
-            Effect.tap(() => Effect.sync(() => active.delete(key))),
-          );
-        },
-      });
-
-      const promises = ['a', 'b', 'c', 'd', 'e'].map((text) =>
-        engine.translateBatch([text], 'en', 'es', batchOptions()),
-      );
-      await flushDispatch();
-
-      expect(maxActive).toBe(2);
-      expect([...active].sort()).toEqual(['a', 'b']);
-
-      deferreds.get('a')?.resolve(JSON.stringify(['tr:a']));
-      deferreds.get('b')?.resolve(JSON.stringify(['tr:b']));
-      await microtasks();
-
-      expect(maxActive).toBe(2);
-
-      deferreds.get('c')?.resolve(JSON.stringify(['tr:c']));
-      deferreds.get('d')?.resolve(JSON.stringify(['tr:d']));
-      await microtasks();
-
-      deferreds.get('e')?.resolve(JSON.stringify(['tr:e']));
-
-      const results = await Promise.all(promises);
-      expect(results.map((result) => result[0])).toEqual([
-        'tr:a',
-        'tr:b',
-        'tr:c',
-        'tr:d',
-        'tr:e',
-      ]);
-    });
-
-    test('higher numeric priority starts before lower priority', async () => {
-      const startOrder: string[] = [];
-      const deferreds = new Map<string, ReturnType<typeof createDeferred<string>>>();
-
-      const engine = new LLMTranslationEngine({
-        loadSettings: () => Promise.resolve(makeSettings({ maxConcurrentRequests: 1 })),
-        fetch: (request) => {
-          const [key] = textsOf(request);
-          startOrder.push(key);
-          const deferred = createDeferred<string>();
-          deferreds.set(key, deferred);
-          return Effect.promise(() => deferred.promise).pipe(Effect.map(makeResponse));
-        },
-      });
-
-      const low = engine.translateBatch(['low'], 'en', 'es', batchOptions());
-      const high = engine.translateBatch(['high'], 'en', 'es', {
-        ...batchOptions(),
-        priority: 5,
-      });
-      await flushDispatch();
-
-      // Both jobs queue up before dispatch: the higher numeric priority
-      // starts first even though it arrived later
-      expect(startOrder).toEqual(['high']);
-
-      deferreds.get('high')?.resolve(JSON.stringify(['tr:high']));
-      await microtasks();
-      expect(startOrder).toEqual(['high', 'low']);
-
-      deferreds.get('low')?.resolve(JSON.stringify(['tr:low']));
-
-      await expect(Promise.all([low, high])).resolves.toEqual([['tr:low'], ['tr:high']]);
-    });
-
-    test('a higher-priority job queued before the low one starts next', async () => {
-      const startOrder: string[] = [];
-      const deferreds = new Map<string, ReturnType<typeof createDeferred<string>>>();
-
-      const engine = new LLMTranslationEngine({
-        loadSettings: () => Promise.resolve(makeSettings({ maxConcurrentRequests: 1 })),
-        fetch: (request) => {
-          const [key] = textsOf(request);
-          startOrder.push(key);
-          const deferred = createDeferred<string>();
-          deferreds.set(key, deferred);
-          return Effect.promise(() => deferred.promise).pipe(Effect.map(makeResponse));
-        },
-      });
-
-      const blocker = engine.translateBatch(['blocker'], 'en', 'es', batchOptions());
-      await flushDispatch();
-
-      const low = engine.translateBatch(['low'], 'en', 'es', batchOptions());
-      const high = engine.translateBatch(['high'], 'en', 'es', {
-        ...batchOptions(),
-        priority: 5,
-      });
-      await microtasks();
-
-      deferreds.get('blocker')?.resolve(JSON.stringify(['tr:blocker']));
-      await microtasks();
-
-      // High priority overtakes the earlier low-priority job
-      expect(startOrder).toEqual(['blocker', 'high']);
-
-      deferreds.get('high')?.resolve(JSON.stringify(['tr:high']));
-      await microtasks();
-      deferreds.get('low')?.resolve(JSON.stringify(['tr:low']));
-
-      await expect(Promise.all([blocker, low, high])).resolves.toEqual([
-        ['tr:blocker'],
-        ['tr:low'],
-        ['tr:high'],
-      ]);
     });
   });
 
@@ -941,45 +760,9 @@ describe('LLMTranslationEngine', () => {
       await expect(surviving).resolves.toEqual(['tr:stay']);
     });
 
-    test('abort rejects queued and active work of the context only', async () => {
-      const deferreds = new Map<string, ReturnType<typeof createDeferred<string>>>();
-
-      const engine = new LLMTranslationEngine({
-        loadSettings: () => Promise.resolve(makeSettings({ maxConcurrentRequests: 1 })),
-        fetch: (request) => {
-          const [key] = textsOf(request);
-          const deferred = createDeferred<string>();
-          deferreds.set(key, deferred);
-          return Effect.promise(() => deferred.promise).pipe(Effect.map(makeResponse));
-        },
-      });
-
-      const active = engine.translateBatch(['page-A-1'], 'en', 'es', {
-        ...batchOptions(),
-        context: 'page-A',
-      });
-      const queued = engine.translateBatch(['page-A-2'], 'en', 'es', {
-        ...batchOptions(),
-        context: 'page-A',
-      });
-      const other = engine.translateBatch(['page-B'], 'en', 'es', {
-        ...batchOptions(),
-        context: 'page-B',
-      });
-      await flushDispatch();
-
-      engine.abort('page-A');
-
-      await expect(active).rejects.toBeInstanceOf(TranslationAbortedError);
-      await expect(queued).rejects.toBeInstanceOf(TranslationAbortedError);
-
-      deferreds.get('page-B')?.resolve(JSON.stringify(['tr:page-B']));
-      await expect(other).resolves.toEqual(['tr:page-B']);
-    });
-
     test('dispose rejects pending and future work', async () => {
       const engine = new LLMTranslationEngine({
-        loadSettings: () => Promise.resolve(makeSettings({ maxConcurrentRequests: 1 })),
+        loadSettings: () => Promise.resolve(makeSettings()),
         fetch: () => {
           const deferred = createDeferred<string>();
           return Effect.promise(() => deferred.promise).pipe(Effect.map(makeResponse));

@@ -225,14 +225,6 @@ const createDeferred = <T>(): Deferred<T> => {
   return deferred;
 };
 
-interface QueueJob {
-  readonly serial: number;
-  readonly priority: number;
-  readonly context: string;
-  readonly units: TranslationUnit[];
-  readonly run: () => Promise<void>;
-}
-
 /**
  * One source string to translate, with both UTF-8 cost measures of its
  * JSON-encoded form precomputed once.
@@ -251,24 +243,17 @@ interface PromptBudget {
   /** Estimated token cost of the fixed prompt plus framing */
   readonly baseEst: number;
 }
-
 /**
- * Context-budgeted translation engine.
+ * Context-budgeted execution adapter.
  *
- * Owns one priority queue and bounded provider concurrency for its lifetime:
- * higher numeric priority starts first, FIFO within equal priority, and at
- * most `resolved.maxConcurrentRequests` provider calls are in flight. Callers
- * await per-item deferreds, so result order always matches input order.
+ * Scheduling, grouping, priority, and cancellation ownership live in
+ * LLMScheduler. This class only prepares prompts and executes provider work.
  */
 export class LLMTranslationEngine {
   private isDisposed = false;
   private readonly abortedContexts = new Set<string>();
   private readonly contextWaiters = new Map<string, Set<(error: Error) => void>>();
   private readonly activeControllers = new Map<string, Set<AbortController>>();
-  private readonly queue: QueueJob[] = [];
-  private activeRequests = 0;
-  private serialCounter = 0;
-  private pumpScheduled = false;
   private settingsPromise: Promise<ResolvedLLMExecutionSettings> | null = null;
 
   constructor(private readonly options: LLMTranslationEngineOptions) {}
@@ -337,50 +322,29 @@ export class LLMTranslationEngine {
 
   public abort(context: string): void {
     this.abortedContexts.add(context);
-
     const waiters = this.contextWaiters.get(context);
     if (waiters) {
       this.contextWaiters.delete(context);
       const error = TranslationAbortedError.new();
       for (const waiter of waiters) waiter(error);
     }
-
-    const error = TranslationAbortedError.new();
-    for (let i = this.queue.length - 1; i >= 0; i--) {
-      if (this.queue[i].context === context) {
-        const [job] = this.queue.splice(i, 1);
-        for (const unit of job.units) unit.onRejected(error);
-      }
-    }
-
     const controllers = this.activeControllers.get(context);
     if (controllers) {
       this.activeControllers.delete(context);
-      for (const controller of controllers) {
-        controller.abort();
-      }
+      for (const controller of controllers) controller.abort();
     }
   }
 
   public dispose(): void {
     if (this.isDisposed) return;
     this.isDisposed = true;
-
     const error = TranslationSchedulerReplacedError.new();
-
     for (const waiters of this.contextWaiters.values()) {
       for (const waiter of waiters) waiter(error);
     }
     this.contextWaiters.clear();
-    while (this.queue.length > 0) {
-      const job = this.queue.shift()!;
-      for (const unit of job.units) unit.onRejected(error);
-    }
-
     for (const controllers of this.activeControllers.values()) {
-      for (const controller of controllers) {
-        controller.abort();
-      }
+      for (const controller of controllers) controller.abort();
     }
     this.activeControllers.clear();
   }
@@ -398,38 +362,8 @@ export class LLMTranslationEngine {
     if (this.isDisposed) throw TranslationSchedulerReplacedError.new();
     if (this.abortedContexts.has(options.context)) throw TranslationAbortedError.new();
 
-    const deferred = createDeferred<{ id: string; target: string }[]>();
-    const sourceBytes = request.targets.reduce(
-      (total, target) => total + getUtf8ByteLength(target.sourceText),
-      0,
-    );
-    const unit: TranslationUnit = {
-      text: '',
-      estTokens: Math.ceil(sourceBytes / 3),
-      upperTokens: sourceBytes,
-      onResolved: () => {},
-      onRejected: (error) => deferred.reject(error),
-    };
-    const job: QueueJob = {
-      serial: this.serialCounter++,
-      priority: options.priority,
-      context: options.context,
-      units: [unit],
-      run: async () => {
-        try {
-          deferred.resolve(
-            await this.executePageBatch(request, options, settings, onMetrics),
-          );
-        } catch (error) {
-          deferred.reject(error);
-        }
-      },
-    };
-    this.queue.push(job);
-    this.schedulePump(settings.translationProfile.batching.concurrency);
-    return deferred.promise;
+    return this.executePageBatch(request, options, settings, onMetrics);
   }
-
   public async translateBatch(
     texts: string[],
     from: string,
@@ -440,9 +374,6 @@ export class LLMTranslationEngine {
     if (this.abortedContexts.has(options.context)) throw TranslationAbortedError.new();
     if (texts.length === 0) return [];
 
-    // Register an abort waiter for this context BEFORE awaiting shared
-    // capability discovery, so aborting one waiter rejects it immediately
-    // without canceling discovery needed by other contexts.
     let waiter: ((error: Error) => void) | null = null;
     const abortPromise = new Promise<never>((_, reject) => {
       waiter = reject;
@@ -487,10 +418,6 @@ export class LLMTranslationEngine {
         continue;
       }
 
-      // Split at line boundaries before budgeting: some providers treat a
-      // newline inside a string as an item boundary and return more outputs
-      // than inputs, breaking the strict count contract. Newline-free items
-      // keep the contract deterministic; separators rejoin verbatim.
       const parts = text.split(/(\r\n|\r|\n)/);
       const slots: string[][] = [];
       const pendingPieces: {
@@ -501,7 +428,6 @@ export class LLMTranslationEngine {
 
       for (let partIndex = 0; partIndex < parts.length; partIndex++) {
         const part = parts[partIndex];
-        // Odd indices are separators; empty segments are never sent
         if (partIndex % 2 === 1 || part === '') {
           slots.push([part]);
           continue;
@@ -516,12 +442,10 @@ export class LLMTranslationEngine {
       }
 
       if (pendingPieces.length === 0) {
-        // The text consists only of line separators
         deferreds[i].resolve(slots.map((slot) => slot.join('')).join(''));
         continue;
       }
 
-      // Pieces must be reassembled in their original order
       let resolvedCount = 0;
       let failed = false;
       for (const { slotIndex, pieceIndex, piece } of pendingPieces) {
@@ -544,14 +468,22 @@ export class LLMTranslationEngine {
       }
     }
 
-    if (units.length === 0) {
-      return Promise.all(deferreds.map((d) => d.promise));
-    }
+    if (units.length === 0) return Promise.all(deferreds.map((d) => d.promise));
 
-    for (const batch of this.packUnitsIntoBatches(units, settings, budget)) {
-      this.enqueueBatchJob(batch, from, to, options, settings, budget);
-    }
-
+    const batches = this.packUnitsIntoBatches(units, settings, budget);
+    let nextBatch = 0;
+    const workerCount = Math.min(
+      batches.length,
+      Math.max(1, settings.translationProfile.batching.concurrency),
+    );
+    await Promise.all(
+      Array.from({ length: workerCount }, async () => {
+        while (nextBatch < batches.length) {
+          const batch = batches[nextBatch++];
+          await this.executeBatch(batch, from, to, options, settings, budget);
+        }
+      }),
+    );
     return Promise.all(deferreds.map((d) => d.promise));
   }
 
@@ -709,73 +641,6 @@ export class LLMTranslationEngine {
 
     if (current.length > 0) batches.push(current);
     return batches;
-  }
-
-  private enqueueBatchJob(
-    units: TranslationUnit[],
-    from: string,
-    to: string,
-    options: TranslateBatchOptions,
-    settings: ResolvedLLMExecutionSettings,
-    budget: PromptBudget,
-  ): void {
-    if (units.length === 0 || this.isDisposed) return;
-
-    const job: QueueJob = {
-      serial: this.serialCounter++,
-      priority: options.priority,
-      context: options.context,
-      units,
-      run: () => this.executeBatch(units, from, to, options, settings, budget),
-    };
-    this.queue.push(job);
-    this.schedulePump(settings.translationProfile.batching.concurrency);
-  }
-
-  /**
-   * Dispatch is deferred by one macrotask so arrivals made in the same turn
-   * queue up before priority selection runs.
-   */
-  private schedulePump(maxConcurrency: number): void {
-    if (this.pumpScheduled || this.isDisposed) return;
-    this.pumpScheduled = true;
-    setTimeout(() => {
-      this.pumpScheduled = false;
-      this.pump(maxConcurrency);
-    }, 0);
-  }
-
-  private pump(maxConcurrency: number): void {
-    while (
-      !this.isDisposed &&
-      this.activeRequests < maxConcurrency &&
-      this.queue.length > 0
-    ) {
-      // Higher numeric priority first; FIFO (lower serial) within equal priority
-      let bestIdx = 0;
-      for (let i = 1; i < this.queue.length; i++) {
-        const best = this.queue[bestIdx];
-        const candidate = this.queue[i];
-        if (
-          candidate.priority > best.priority ||
-          (candidate.priority === best.priority && candidate.serial < best.serial)
-        ) {
-          bestIdx = i;
-        }
-      }
-
-      const [job] = this.queue.splice(bestIdx, 1);
-      if (this.abortedContexts.has(job.context)) {
-        // Aborted work never runs; its deferreds reject at abort time
-        continue;
-      }
-
-      this.activeRequests++;
-      void job.run().finally(() => {
-        this.activeRequests--;
-        this.pump(maxConcurrency);
-      });
-    }
   }
 
   /**
@@ -1362,8 +1227,8 @@ export class LLMTranslationEngine {
       const left = units.slice(0, mid);
       const right = units.slice(mid);
       if (left.length === 0 || right.length === 0) return false;
-      this.enqueueBatchJob(left, from, to, options, settings, budget);
-      this.enqueueBatchJob(right, from, to, options, settings, budget);
+      void this.executeBatch(left, from, to, options, settings, budget);
+      void this.executeBatch(right, from, to, options, settings, budget);
       return true;
     }
 
@@ -1405,7 +1270,7 @@ export class LLMTranslationEngine {
       left: null,
       right: null,
     };
-    this.enqueueBatchJob(
+    void this.executeBatch(
       [makeChild(codePoints.slice(0, mid).join(''), results, 'left')],
       from,
       to,
@@ -1413,7 +1278,7 @@ export class LLMTranslationEngine {
       settings,
       budget,
     );
-    this.enqueueBatchJob(
+    void this.executeBatch(
       [makeChild(codePoints.slice(mid).join(''), results, 'right')],
       from,
       to,

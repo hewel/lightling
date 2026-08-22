@@ -28,6 +28,7 @@ import { getMessage } from '../../language';
 
 import { mapTranslationInferenceRequest } from './inference';
 import type { LLMBatchRequestOptions } from './LLMBatchTranslator';
+import { LLMScheduler } from './LLMScheduler';
 import {
   InvalidLLMResponseError,
   LLMTranslationEngine,
@@ -84,9 +85,9 @@ export class LLMTranslator implements TranslatorInstanceMembers {
   static isRequiredKey = () => false;
   static isSupportedAutoFrom = () => true;
   static getSupportedLanguages = () => getLanguageCodesISO639('v1');
-
   private readonly profile: LLMProfile;
   private readonly engine: LLMTranslationEngine;
+  private readonly scheduler: LLMScheduler;
   private resolvedSettings: ResolvedLLMExecutionSettings | null = null;
   private readonly config: LLMTranslatorConfig;
   private readonly translatorOptions: {
@@ -137,8 +138,32 @@ export class LLMTranslator implements TranslatorInstanceMembers {
       fetch: (request) => this.buildFetchEffect(request),
       onUsage: options.onTokenUsage,
     });
+    this.scheduler = new LLMScheduler(
+      {
+        translateBatchWithOptions: (texts, from, to, batchOptions) =>
+          this.engine.translateBatch(texts, from, to, {
+            ...batchOptions,
+            isolateInvalidBatches: true,
+          }),
+        executeBatchWithOptions: (texts, from, to, batchOptions) =>
+          this.engine.translateBatch(texts, from, to, {
+            ...batchOptions,
+            isolateInvalidBatches: true,
+          }),
+        executePageBatch: (request, batchOptions, onMetrics) =>
+          this.executePageBatchWithFallback(request, batchOptions, onMetrics),
+        abort: (context) => this.engine.abort(context),
+        dispose: () => this.engine.dispose(),
+      },
+      {
+        translateRetryAttemptLimit: 2,
+        directTranslateLength: null,
+        translatePoolDelay: 300,
+        chunkSizeForInstantTranslate: null,
+      },
+      () => {},
+    );
   }
-
   public translate(
     text: string,
     sourceLanguage: string,
@@ -148,20 +173,35 @@ export class LLMTranslator implements TranslatorInstanceMembers {
       (results) => results[0],
     );
   }
-
   public translateBatch(
     texts: string[],
     sourceLanguage: string,
     targetLanguage: string,
   ): Promise<string[]> {
-    return this.translateBatchWithOptions(texts, sourceLanguage, targetLanguage, {
+    if (this.profile.model === '') {
+      return Promise.reject(new Error('LLM translator model is not configured'));
+    }
+    return this.engine.translateBatch(texts, sourceLanguage, targetLanguage, {
       context: createUUID(),
       priority: 0,
       retryLimit: 2,
+      isolateInvalidBatches: true,
     });
   }
 
   public translateBatchWithOptions(
+    texts: string[],
+    sourceLanguage: string,
+    targetLanguage: string,
+    options: LLMBatchRequestOptions,
+  ): Promise<string[]> {
+    if (this.profile.model === '') {
+      return Promise.reject(new Error('LLM translator model is not configured'));
+    }
+    return this.scheduler.translateBatch(texts, sourceLanguage, targetLanguage, options);
+  }
+
+  public executeBatchWithOptions(
     texts: string[],
     sourceLanguage: string,
     targetLanguage: string,
@@ -176,7 +216,26 @@ export class LLMTranslator implements TranslatorInstanceMembers {
     });
   }
 
-  public async translatePageBatch(
+  public translatePageBatch(
+    request: PageTranslationBatchRequest,
+    options: LLMBatchRequestOptions,
+    onMetrics?: (metrics: PageTranslationAttemptMetrics) => void,
+  ): Promise<{ id: string; target: string }[]> {
+    if (this.profile.model === '') {
+      return Promise.reject(new Error('LLM translator model is not configured'));
+    }
+    return this.scheduler.translatePageBatch(request, options, onMetrics);
+  }
+
+  public executePageBatch(
+    request: PageTranslationBatchRequest,
+    options: LLMBatchRequestOptions,
+    onMetrics?: (metrics: PageTranslationAttemptMetrics) => void,
+  ): Promise<{ id: string; target: string }[]> {
+    return this.executePageBatchWithFallback(request, options, onMetrics);
+  }
+
+  private async executePageBatchWithFallback(
     request: PageTranslationBatchRequest,
     options: LLMBatchRequestOptions,
     onMetrics?: (metrics: PageTranslationAttemptMetrics) => void,
@@ -256,11 +315,18 @@ export class LLMTranslator implements TranslatorInstanceMembers {
   }
 
   public abort(context: string): void {
-    this.engine.abort(context);
+    void this.scheduler.abort(context);
   }
 
   public dispose(): void {
-    this.engine.dispose();
+    this.scheduler.dispose();
+  }
+
+  public getMaxConcurrentRequests(): number {
+    if (this.profile.maxConcurrentRequests !== null) {
+      return this.profile.maxConcurrentRequests;
+    }
+    return this.profile.qualityMode === 'accurate' ? 1 : 2;
   }
 
   public checkLimitExceeding(): number {

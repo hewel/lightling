@@ -1,15 +1,20 @@
+import type { PageTranslationBatchRequest } from '@/lib/pageTranslation/protocol';
+
 import type { LLMBatchRequestOptions, LLMBatchTranslator } from './LLMBatchTranslator';
 import { LLMScheduler, type LLMSchedulerConfig } from './LLMScheduler';
 import {
   TranslationAbortedError,
   TranslationSchedulerReplacedError,
 } from './LLMTranslationEngine';
-
 class StubLLMTranslator implements LLMBatchTranslator {
   calls: Array<{
     texts: string[];
     from: string;
     to: string;
+    options: LLMBatchRequestOptions;
+  }> = [];
+  pageCalls: Array<{
+    request: PageTranslationBatchRequest;
     options: LLMBatchRequestOptions;
   }> = [];
   abortedContexts: string[] = [];
@@ -24,6 +29,19 @@ class StubLLMTranslator implements LLMBatchTranslator {
     ): Promise<string[]> => {
       this.calls.push({ texts, from, to, options });
       return texts.map((t) => `tr:${t}`);
+    },
+  );
+
+  executePageBatch = vi.fn(
+    async (
+      request: PageTranslationBatchRequest,
+      options: LLMBatchRequestOptions,
+    ): Promise<{ id: string; target: string }[]> => {
+      this.pageCalls.push({ request, options });
+      return request.targets.map((target) => ({
+        id: target.id,
+        target: `tr:${target.sourceText}`,
+      }));
     },
   );
 
@@ -87,6 +105,137 @@ describe('LLMScheduler', () => {
     });
   });
 
+  test('dispatches queued ordinary batches by priority and preserves FIFO ties', async () => {
+    const stubTranslator = new StubLLMTranslator();
+    const started: string[] = [];
+    let releaseFirst: ((value: string[]) => void) | undefined;
+    stubTranslator.translateBatchWithOptions.mockImplementation(
+      async (texts: string[]) => {
+        started.push(texts[0]);
+        if (texts[0] === 'first') {
+          return new Promise<string[]>((resolve) => {
+            releaseFirst = resolve;
+          });
+        }
+        return texts.map((text) => `tr:${text}`);
+      },
+    );
+    const scheduler = new LLMScheduler(stubTranslator, defaultConfig, vi.fn());
+
+    const first = scheduler.translate('first', 'en', 'es', { directTranslate: true });
+    const low = scheduler.translate('low', 'en', 'es', {
+      directTranslate: true,
+      priority: 1,
+    });
+    const high = scheduler.translate('high', 'en', 'es', {
+      directTranslate: true,
+      priority: 5,
+    });
+
+    expect(started).toEqual(['first']);
+    releaseFirst?.(['tr:first']);
+    await Promise.resolve();
+    await expect(high).resolves.toBe('tr:high');
+    await expect(low).resolves.toBe('tr:low');
+    await expect(first).resolves.toBe('tr:first');
+    expect(started).toEqual(['first', 'high', 'low']);
+  });
+  test('limits concurrent ordinary executions to configured profile concurrency', async () => {
+    const stubTranslator = new StubLLMTranslator();
+    const deferreds: Array<{
+      promise: Promise<string[]>;
+      resolve(value: string[]): void;
+    }> = [];
+    let active = 0;
+    let maxActive = 0;
+    stubTranslator.translateBatchWithOptions.mockImplementation(
+      async (_texts: string[]) => {
+        active++;
+        maxActive = Math.max(maxActive, active);
+        const deferred = Promise.withResolvers<string[]>();
+        deferreds.push(deferred);
+        const result = await deferred.promise;
+        active--;
+        return result;
+      },
+    );
+    const scheduler = new LLMScheduler(
+      stubTranslator,
+      { ...defaultConfig, maxConcurrentRequests: 2 },
+      vi.fn(),
+    );
+
+    const first = scheduler.translate('first', 'en', 'es', { directTranslate: true });
+    const second = scheduler.translate('second', 'en', 'es', { directTranslate: true });
+    const third = scheduler.translate('third', 'en', 'es', { directTranslate: true });
+
+    expect(maxActive).toBe(2);
+    deferreds[0].resolve(['tr:first']);
+    deferreds[1].resolve(['tr:second']);
+    for (let i = 0; i < 10 && deferreds.length < 3; i++) {
+      await Promise.resolve();
+    }
+    deferreds[2].resolve(['tr:third']);
+    await expect(Promise.all([first, second, third])).resolves.toEqual([
+      'tr:first',
+      'tr:second',
+      'tr:third',
+    ]);
+    expect(maxActive).toBe(2);
+  });
+
+  test('dispatches page batches by priority through the shared scheduler', async () => {
+    const stubTranslator = new StubLLMTranslator();
+    const scheduler = new LLMScheduler(stubTranslator, defaultConfig, vi.fn());
+    const makeRequest = (id: string): PageTranslationBatchRequest => ({
+      sourceLanguage: 'en',
+      targetLanguage: 'es',
+      sessionId: 'session',
+      memory: {
+        languageDirection: 'auto',
+        glossary: [],
+        protectedTerms: [],
+        namedEntities: [],
+      },
+      context: {
+        headingPath: [],
+        previous: [],
+        following: [],
+        retrieved: [],
+      },
+      group: { kind: 'body', slot: 'visible-text', contextClass: 'main:body' },
+      targets: [
+        {
+          id,
+          sourceText: id,
+          normalizedText: id,
+          kind: 'body',
+          slot: 'visible-text',
+          contextClass: 'main:body',
+          semanticKey: id,
+          priority: 1,
+        },
+      ],
+    });
+
+    const low = scheduler.translatePageBatch(makeRequest('low'), {
+      context: 'page-low',
+      priority: 1,
+      retryLimit: 2,
+    });
+    const high = scheduler.translatePageBatch(makeRequest('high'), {
+      context: 'page-high',
+      priority: 5,
+      retryLimit: 2,
+    });
+
+    await Promise.all([low, high]);
+    expect(stubTranslator.pageCalls.map(({ request }) => request.targets[0].id)).toEqual([
+      'high',
+      'low',
+    ]);
+  });
+
   test('differing priority or context prevents pooling', async () => {
     const stubTranslator = new StubLLMTranslator();
     const onFinalError = vi.fn();
@@ -114,9 +263,9 @@ describe('LLMScheduler', () => {
     expect(r3).toBe('tr:text3');
     expect(stubTranslator.calls.length).toBe(3);
     expect(stubTranslator.calls.map((c) => c.texts)).toEqual([
+      ['text3'],
       ['text1'],
       ['text2'],
-      ['text3'],
     ]);
   });
 
