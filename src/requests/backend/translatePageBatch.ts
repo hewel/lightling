@@ -1,6 +1,8 @@
-import type {
-  PageTranslationBatchRequest,
-  PageTranslationBatchResponse,
+import {
+  PageTranslationBatchRequestSchema,
+  PageTranslationBatchResponseSchema,
+  type PageTranslationBatchRequest,
+  type PageTranslationBatchResponse,
 } from '@/lib/pageTranslation/protocol';
 
 import { buildBackendRequest } from '../utils/requestBuilder';
@@ -9,6 +11,8 @@ export const [translatePageBatchFactory, translatePageBatch] = buildBackendReque
   PageTranslationBatchRequest,
   PageTranslationBatchResponse
 >('translatePageBatch', {
+  requestValidator: PageTranslationBatchRequestSchema,
+  responseValidator: PageTranslationBatchResponseSchema,
   factoryHandler:
     ({ backgroundContext }) =>
     async (request) => {

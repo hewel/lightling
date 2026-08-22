@@ -28,6 +28,18 @@ export const buildBackendRequest = <O = void, R = void, C = RequestHandlerFactor
     handler: (options: O) => Promise<R>;
     filter?: (options: O) => boolean;
   } | null = null;
+  const handleRequest = async (handler: (options: O) => Promise<R>, options: O) => {
+    if (requestValidator !== undefined) {
+      tryDecode(requestValidator, options);
+    }
+
+    const response = await handler(options);
+    if (responseValidator !== undefined) {
+      tryDecode(responseValidator, response);
+    }
+
+    return response;
+  };
 
   const hook = (options: O) => {
     // TODO: throw exceptions for attempts to call not ready handlers
@@ -53,7 +65,7 @@ export const buildBackendRequest = <O = void, R = void, C = RequestHandlerFactor
           );
       }
 
-      return preparedRequestHandler.handler(options);
+      return handleRequest(preparedRequestHandler.handler, options);
     }
 
     return sendBackgroundRequest(endpoint, options).then((response): R => {
@@ -82,14 +94,7 @@ export const buildBackendRequest = <O = void, R = void, C = RequestHandlerFactor
         if (!shouldBeHandled) return;
       }
 
-      return Promise.resolve().then(async () => {
-        // Validate request props
-        if (requestValidator !== undefined) {
-          tryDecode(requestValidator, reqProps);
-        }
-
-        return requestHandler(reqProps);
-      });
+      return Promise.resolve().then(() => handleRequest(requestHandler, reqProps));
     });
 
     return () => {

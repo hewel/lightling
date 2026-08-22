@@ -1,3 +1,5 @@
+import { Schema } from 'effect';
+
 export const WEBPAGE_TRANSLATION_PROMPT_VERSION = 'page-v1';
 export const WEBPAGE_NORMALIZATION_VERSION = 'nfc-whitespace-v1';
 export const DEFAULT_GLOSSARY_VERSION = 'none';
@@ -116,6 +118,117 @@ export interface PageTranslationBatchResponse {
   translations: PageTranslationResult[];
   metrics?: PageTranslationAttemptMetrics;
 }
+
+const TranslationSlotSchema = Schema.Literals([
+  'visible-text',
+  'placeholder',
+  'title',
+  'aria-label',
+  'alt',
+  'value',
+]);
+
+const TranslationKindSchema = Schema.Literals([
+  'button',
+  'menu-item',
+  'tab',
+  'navigation-item',
+  'heading',
+  'form-label',
+  'placeholder',
+  'tooltip',
+  'accessible-label',
+  'image-alt',
+  'table-header',
+  'status',
+  'body',
+]);
+
+const RetryStageSchema = Schema.Literals([
+  'initial',
+  'isolated',
+  'simplified-context',
+  'rich-context',
+]);
+
+const TranslationContextItemSchema = Schema.Struct({
+  source: Schema.String,
+  translation: Schema.optional(Schema.String),
+});
+
+const TranslationTargetSchema = Schema.Struct({
+  id: Schema.String,
+  sourceText: Schema.String,
+  normalizedText: Schema.String,
+  kind: TranslationKindSchema,
+  slot: TranslationSlotSchema,
+  contextClass: Schema.String,
+  sectionId: Schema.optional(Schema.String),
+  componentId: Schema.optional(Schema.String),
+  semanticKey: Schema.String,
+  priority: Schema.Finite,
+});
+
+export const PageTranslationBatchRequestSchema = Schema.Struct({
+  sourceLanguage: Schema.String,
+  targetLanguage: Schema.String,
+  sessionId: Schema.String,
+  memory: Schema.Struct({
+    pageTitle: Schema.optional(Schema.String),
+    pageType: Schema.optional(Schema.String),
+    domain: Schema.optional(Schema.String),
+    targetStyle: Schema.optional(Schema.String),
+    languageDirection: Schema.String,
+    glossary: Schema.mutable(
+      Schema.Array(Schema.mutable(Schema.Tuple([Schema.String, Schema.String]))),
+    ),
+    protectedTerms: Schema.mutable(Schema.Array(Schema.String)),
+    namedEntities: Schema.mutable(Schema.Array(Schema.String)),
+  }),
+  section: Schema.optional(
+    Schema.Struct({
+      sectionId: Schema.String,
+      headingPath: Schema.mutable(Schema.Array(Schema.String)),
+      componentType: Schema.optional(Schema.String),
+      summary: Schema.optional(Schema.String),
+    }),
+  ),
+  context: Schema.Struct({
+    headingPath: Schema.mutable(Schema.Array(Schema.String)),
+    previous: Schema.mutable(Schema.Array(TranslationContextItemSchema)),
+    following: Schema.mutable(Schema.Array(TranslationContextItemSchema)),
+    retrieved: Schema.mutable(Schema.Array(TranslationContextItemSchema)),
+  }),
+  group: Schema.Struct({
+    kind: TranslationKindSchema,
+    slot: TranslationSlotSchema,
+    contextClass: Schema.String,
+  }),
+  targets: Schema.mutable(Schema.Array(TranslationTargetSchema)),
+  retryStage: Schema.optional(RetryStageSchema),
+});
+
+const PageTranslationAttemptMetricsSchema = Schema.Struct({
+  retryCount: Schema.Finite,
+  validationFailures: Schema.Finite,
+  acceptedProfileId: Schema.optional(Schema.String),
+  acceptedRetryStage: Schema.optional(RetryStageSchema),
+  failedIds: Schema.optional(Schema.mutable(Schema.Array(Schema.String))),
+});
+
+export const PageTranslationBatchResponseSchema = Schema.Struct({
+  translations: Schema.mutable(
+    Schema.Array(
+      Schema.Struct({
+        id: Schema.String,
+        target: Schema.String,
+        cacheKey: Schema.String,
+        cacheHit: Schema.Boolean,
+      }),
+    ),
+  ),
+  metrics: Schema.optional(PageTranslationAttemptMetricsSchema),
+});
 
 export interface TranslationMemoryEntry {
   key: string;
