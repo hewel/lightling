@@ -83,7 +83,7 @@ export type SelectTranslatorPopupRenderOptions = {
 };
 
 type PopupRenderer = {
-  getRootNode: () => HTMLElement | null;
+  contains: (node: Node | null) => boolean;
   show: (options: SelectTranslatorPopupRenderOptions) => void;
   hide: () => void;
   destroy: () => void;
@@ -94,16 +94,6 @@ export const getSelectedTextOfInput = (elm: HTMLInputElement | HTMLTextAreaEleme
 
   if (selectionStart === null || selectionEnd === null) return '';
   return elm.value.slice(selectionStart, selectionEnd);
-};
-
-export const getAbsolutePositionOfElement = (element: HTMLElement) => {
-  const bounds = element.getBoundingClientRect();
-  // oxlint-disable-next-line typescript/no-useless-default-assignment
-  const { scrollX = 0, scrollY = 0 } = window;
-  return {
-    x: bounds.x + scrollX,
-    y: bounds.y + scrollY,
-  };
 };
 
 /**
@@ -217,7 +207,7 @@ export class SelectTranslator {
 
   private readonly getSelectedText = () =>
     new Promise<{ selection: Selection; text: string } | null>((res) => {
-      const root = this.popupRenderer?.getRootNode() ?? null;
+      const renderer = this.popupRenderer;
 
       this.context = Symbol('context');
       const context = this.context;
@@ -239,8 +229,8 @@ export class SelectTranslator {
         }
 
         if (
-          root !== null &&
-          (root.contains(selection.anchorNode) || root.contains(selection.focusNode))
+          renderer?.contains(selection.anchorNode) ||
+          renderer?.contains(selection.focusNode)
         ) {
           res(null);
           return;
@@ -256,8 +246,8 @@ export class SelectTranslator {
    * Close popup by click outside the root
    */
   private readonly pointerDown = (evt: PointerEvent | TouchEvent) => {
-    const root = this.popupRenderer?.getRootNode() ?? null;
-    if (root !== null && evt.target instanceof Node && root.contains(evt.target)) return;
+    if (evt.target instanceof Node && this.popupRenderer?.contains(evt.target) === true)
+      return;
 
     this.hidePopup();
   };
@@ -298,10 +288,9 @@ export class SelectTranslator {
       return;
 
     const target = evt.target;
-    const root = this.popupRenderer?.getRootNode() ?? null;
 
     // Skip events inside root node
-    if (root !== null && target instanceof Node && root.contains(target)) return;
+    if (target instanceof Node && this.popupRenderer?.contains(target) === true) return;
 
     this.getSelectedText().then((selectedTextObj) => {
       let text: string | null = null;
@@ -346,10 +335,6 @@ export class SelectTranslator {
     const renderer = await this.getPopupRenderer();
     if (renderer === null || popupContext !== this.popupContext) return;
 
-    const rootNode = renderer.getRootNode();
-    if (rootNode === null) throw new Error('Root node is not found');
-
-    const rootPosition = getAbsolutePositionOfElement(rootNode);
     const {
       pageLanguage,
       quickTranslate,
@@ -375,8 +360,8 @@ export class SelectTranslator {
       timeoutForHideButton,
       focusOnTranslateButton,
       text: trimmedText,
-      x: x - rootPosition.x,
-      y: y - rootPosition.y,
+      x,
+      y,
     });
 
     trackClientEvent(TELEMETRY_EVENT_NAME.SELECTED_TEXT_POPUP_SHOWN, {

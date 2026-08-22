@@ -15,16 +15,25 @@ export class SelectTranslatorPopupRenderer {
     this.shadowRoot.getRootNode()?.addEventListener('keydown', this.handleKeyDown);
   }
 
-  public getRootNode() {
-    return this.shadowRoot.getRootNode();
+  public contains(node: Node | null) {
+    return this.shadowRoot.getRootNode()?.contains(node) ?? false;
   }
 
-  public show({ closeHandler, ...options }: SelectTranslatorPopupRenderOptions) {
+  public show({ closeHandler, x, y, ...options }: SelectTranslatorPopupRenderOptions) {
+    const rootNode = this.shadowRoot.getRootNode();
+    if (rootNode === null) throw new Error('Root node is not found');
+
+    const bounds = rootNode.getBoundingClientRect();
+    // oxlint-disable-next-line typescript/no-useless-default-assignment
+    const { scrollX = 0, scrollY = 0 } = window;
+
     this.shadowRoot.mountComponent(
       <TextTranslatorPopup
         closeHandler={closeHandler}
         translate={translate}
         {...options}
+        x={x - (bounds.x + scrollX)}
+        y={y - (bounds.y + scrollY)}
       />,
     );
   }
