@@ -180,6 +180,9 @@ export class TranslatorManager<Translators extends TranslatorsMap = TranslatorsM
         if (increment.failedIds !== undefined) {
           metrics.failedIds = increment.failedIds;
         }
+        if (increment.attempts !== undefined) {
+          metrics.attempts = [...(metrics.attempts ?? []), ...increment.attempts];
+        }
         metrics.validationFailures += increment.validationFailures;
       });
 

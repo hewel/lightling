@@ -99,12 +99,29 @@ export interface PageTranslationBatchRequest {
   retryStage?: 'initial' | 'isolated' | 'simplified-context' | 'rich-context';
 }
 
+export interface PageTranslationBatchAttempt {
+  stage: NonNullable<PageTranslationBatchRequest['retryStage']>;
+  contextMode?: 'normal' | 'without-retrieved' | 'rich';
+  profileId: string;
+  targetIds: string[];
+  /** Verbatim model output; absent when the fetch itself failed. */
+  rawResponse?: string;
+  issues?: TranslationValidationIssue[];
+  /** Fetch-level failure message after internal retries were exhausted. */
+  error?: string;
+}
+
 export interface PageTranslationAttemptMetrics {
   retryCount: number;
   validationFailures: number;
   acceptedProfileId?: string;
   acceptedRetryStage?: PageTranslationBatchRequest['retryStage'];
   failedIds?: string[];
+  /**
+   * One entry per HTTP attempt (initial + every isolated retry), emitted on
+   * the terminal metrics call of each engine execution.
+   */
+  attempts?: PageTranslationBatchAttempt[];
 }
 
 export interface PageTranslationResult {
@@ -208,12 +225,40 @@ export const PageTranslationBatchRequestSchema = Schema.Struct({
   retryStage: Schema.optional(RetryStageSchema),
 });
 
+const TranslationValidationIssueSchema = Schema.Struct({
+  id: Schema.optional(Schema.String),
+  failure: Schema.Literals([
+    'invalid-json',
+    'missing-item',
+    'extra-item',
+    'duplicate-item',
+    'placeholder-corruption',
+    'language-mismatch',
+    'truncation',
+    'empty-translation',
+    'count-mismatch',
+  ]),
+});
+
+const PageTranslationBatchAttemptSchema = Schema.Struct({
+  stage: RetryStageSchema,
+  contextMode: Schema.optional(Schema.Literals(['normal', 'without-retrieved', 'rich'])),
+  profileId: Schema.String,
+  targetIds: Schema.mutable(Schema.Array(Schema.String)),
+  rawResponse: Schema.optional(Schema.String),
+  issues: Schema.optional(Schema.mutable(Schema.Array(TranslationValidationIssueSchema))),
+  error: Schema.optional(Schema.String),
+});
+
 const PageTranslationAttemptMetricsSchema = Schema.Struct({
   retryCount: Schema.Finite,
   validationFailures: Schema.Finite,
   acceptedProfileId: Schema.optional(Schema.String),
   acceptedRetryStage: Schema.optional(RetryStageSchema),
   failedIds: Schema.optional(Schema.mutable(Schema.Array(Schema.String))),
+  attempts: Schema.optional(
+    Schema.mutable(Schema.Array(PageTranslationBatchAttemptSchema)),
+  ),
 });
 
 export const PageTranslationBatchResponseSchema = Schema.Struct({

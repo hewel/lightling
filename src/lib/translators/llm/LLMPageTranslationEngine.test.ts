@@ -53,17 +53,16 @@ const request: PageTranslationBatchRequest = {
 describe('LLM webpage request contract', () => {
   test('retries only the unit with placeholder corruption', async () => {
     const calls: LLMRequest[] = [];
-    const responses = [
-      JSON.stringify({
-        translations: [
-          { id: 'u1', target: 'Speichern' },
-          { id: 'u2', target: 'Nutze den Code.' },
-        ],
-      }),
-      JSON.stringify({
-        translations: [{ id: 'u2', target: 'Nutze <x id="code"/>.' }],
-      }),
-    ];
+    const initialResponse = JSON.stringify({
+      translations: [
+        { id: 'u1', target: 'Speichern' },
+        { id: 'u2', target: 'Nutze den Code.' },
+      ],
+    });
+    const retryResponse = JSON.stringify({
+      translations: [{ id: 'u2', target: 'Nutze <x id="code"/>.' }],
+    });
+    const responses = [initialResponse, retryResponse];
     const engine = new LLMTranslationEngine({
       loadSettings: () => Promise.resolve(settings),
       fetch: (llmRequest) => {
@@ -105,6 +104,24 @@ describe('LLM webpage request contract', () => {
         acceptedProfileId: settings.translationProfile.id,
         acceptedRetryStage: 'isolated',
         failedIds: [],
+        attempts: [
+          {
+            stage: 'initial',
+            contextMode: 'normal',
+            profileId: settings.translationProfile.id,
+            targetIds: ['u1', 'u2'],
+            rawResponse: initialResponse,
+            issues: [{ id: 'u2', failure: 'placeholder-corruption' }],
+          },
+          {
+            stage: 'isolated',
+            contextMode: 'normal',
+            profileId: settings.translationProfile.id,
+            targetIds: ['u2'],
+            rawResponse: retryResponse,
+            issues: [],
+          },
+        ],
       },
     ]);
   });

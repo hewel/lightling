@@ -749,6 +749,9 @@ export class PageTranslationPipeline {
           logBatch.validationFailures = response.metrics.validationFailures;
           logBatch.acceptedProfileId = response.metrics.acceptedProfileId;
           logBatch.acceptedRetryStage = response.metrics.acceptedRetryStage;
+          if (response.metrics.attempts !== undefined) {
+            logBatch.attempts = response.metrics.attempts;
+          }
         }
       }
       const completedUnits = new Set<string>();

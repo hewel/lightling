@@ -6,6 +6,7 @@ import {
   parsePageTranslationResponse,
   type PageTranslationBatchRequest,
   type PageTranslationAttemptMetrics,
+  type PageTranslationBatchAttempt,
   type TranslationTarget,
 } from '@/lib/pageTranslation/protocol';
 
@@ -743,7 +744,15 @@ export class LLMTranslationEngine {
       readonly targets: TranslationTarget[];
       readonly inferenceRequest: LLMRequest;
       readonly retryLimit: number;
+      readonly stage: NonNullable<PageTranslationBatchRequest['retryStage']>;
+      readonly contextMode: 'normal' | 'without-retrieved' | 'rich';
     }
+
+    /**
+     * One log entry per HTTP attempt (initial + isolated retries), surfaced
+     * on the terminal metrics call so the content script can persist them.
+     */
+    const attempts: PageTranslationBatchAttempt[] = [];
 
     /**
      * Synchronous attempt planning. Throws TOO_SMALL_MESSAGE before any
@@ -791,6 +800,8 @@ export class LLMTranslationEngine {
           getTranslationJsonGrammar(attemptProfile),
         ),
         retryLimit: Math.min(options.retryLimit, attemptProfile.retry.maxRetries),
+        stage: retryStage ?? 'initial',
+        contextMode,
       };
     };
 
@@ -808,8 +819,8 @@ export class LLMTranslationEngine {
         prepared.retryLimit,
       ).pipe(
         Effect.tap((response) => Effect.sync(() => this.reportUsage(response.usage))),
-        Effect.map((response) =>
-          parsePageTranslationResponse(
+        Effect.map((response) => {
+          const parsed = parsePageTranslationResponse(
             response.text,
             prepared.targets,
             (text, source) =>
@@ -820,7 +831,27 @@ export class LLMTranslationEngine {
                 invariantTerms,
               ),
             { repairPlaceholders: true },
-          ),
+          );
+          attempts.push({
+            stage: prepared.stage,
+            contextMode: prepared.contextMode,
+            profileId: profile.id,
+            targetIds: prepared.targets.map((target) => target.id),
+            rawResponse: response.text,
+            issues: parsed.issues,
+          });
+          return parsed;
+        }),
+        Effect.tapError((error) =>
+          Effect.sync(() => {
+            attempts.push({
+              stage: prepared.stage,
+              contextMode: prepared.contextMode,
+              profileId: profile.id,
+              targetIds: prepared.targets.map((target) => target.id),
+              error: error instanceof Error ? error.message : String(error),
+            });
+          }),
         ),
       );
 
@@ -977,6 +1008,7 @@ export class LLMTranslationEngine {
         acceptedProfileId: profile.id,
         acceptedRetryStage,
         failedIds: unresolvedIds,
+        attempts,
       });
       return result;
     } catch (error) {

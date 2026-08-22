@@ -51,6 +51,18 @@ export interface PageTranslationLogTokenBudget {
   totalEstimatedTokens: number;
 }
 
+export interface PageTranslationLogAttempt {
+  stage: 'initial' | 'isolated' | 'simplified-context' | 'rich-context';
+  contextMode?: 'normal' | 'without-retrieved' | 'rich';
+  profileId: string;
+  targetIds: string[];
+  /** Verbatim model output; absent when the fetch itself failed. */
+  rawResponse?: string;
+  issues?: { id?: string; failure: string }[];
+  /** Fetch-level failure message after internal retries were exhausted. */
+  error?: string;
+}
+
 export interface PageTranslationLogBatch {
   batchId: number;
   queuedAt: number;
@@ -71,6 +83,8 @@ export interface PageTranslationLogBatch {
   reductions: string[];
   acceptedProfileId?: string;
   acceptedRetryStage?: 'initial' | 'isolated' | 'simplified-context' | 'rich-context';
+  /** One entry per HTTP attempt; present when the engine reported metrics. */
+  attempts?: PageTranslationLogAttempt[];
   error?: {
     name: string;
     message: string;
