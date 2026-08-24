@@ -1,5 +1,7 @@
 # Lightling
 
+![Lightling — Translate the web. Keep your privacy.](./assets/stores/chrome/promo-tile-marquee.png)
+
 Lightling is a privacy-first browser extension for translating web pages, selected text, subtitles, messages, and custom input. It supports offline translation, custom translation backends, text-to-speech, translation history, and a personal dictionary.
 
 ## Features
@@ -37,10 +39,20 @@ Use `npm test`, `npm run typecheck`, and `npm run lint` for validation.
 
 ## Screenshots
 
-![](./packages/site/src/features/Landing/screenshots/page-translation.png)
-![](./packages/site/src/features/Landing/screenshots/text-translation.png)
-![](./packages/site/src/features/Landing/screenshots/selected-text-translation.png)
-![](./packages/site/src/features/Landing/screenshots/settings.png)
+<table>
+  <tr>
+    <td><img src="./assets/stores/chrome/screenshots/01-popup.png" alt="Translate any page, in one click"></td>
+    <td><img src="./assets/stores/chrome/screenshots/02-selection-popup.png" alt="Select text, get the translation"></td>
+  </tr>
+  <tr>
+    <td><img src="./assets/stores/chrome/screenshots/03-full-page-translation.png" alt="One click translates the whole page"></td>
+    <td><img src="./assets/stores/chrome/screenshots/05-settings.png" alt="Choose how every word is translated"></td>
+  </tr>
+  <tr>
+    <td><img src="./assets/stores/chrome/screenshots/06-dictionary.png" alt="Turn quick lookups into lasting vocabulary"></td>
+    <td><img src="./assets/stores/chrome/screenshots/07-history.png" alt="Every translation, remembered"></td>
+  </tr>
+</table>
 
 ## Upstream and license
 
