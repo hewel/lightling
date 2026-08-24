@@ -24,6 +24,10 @@ import {
 export type { TranslationState } from './useTextTranslationSession';
 
 const styles = stylex.create({
+  // Cap intrinsic width so long translation text wraps instead of stretching the popup
+  root: {
+    maxWidth: '30rem',
+  },
   input: {
     width: '100%',
   },
@@ -223,7 +227,7 @@ export const TextTranslator: FC<TextTranslatorProps> = ({
         : null;
 
   return (
-    <VStack gap={3}>
+    <VStack gap={3} xstyle={styles.root}>
       <LanguagePanel
         auto={translatorFeatures.isSupportAutodetect}
         languages={translatorFeatures.supportedLanguages}
