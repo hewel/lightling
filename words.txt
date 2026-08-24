@@ -7,11 +7,13 @@ Customizer
 Defaultize
 Figtree
 Horiz
+Klicken
 IDBP
 Inited
 Monako
 Prefs
 Rybbit
+Speichern
 Scrollfix
 Segoe
 Svgs
@@ -36,6 +38,7 @@ longtask
 macrotask
 magick
 millis
+msgbox
 nocollapse
 oklch
 ollama

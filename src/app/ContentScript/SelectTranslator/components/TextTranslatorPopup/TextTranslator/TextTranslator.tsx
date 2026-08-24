@@ -10,12 +10,19 @@ import { IconChevronDown, IconVolume2, IconX } from '@tabler/icons-react';
 import { CopyButton } from '@/components/controls/CopyButton/CopyButton';
 import { DictionaryButton } from '@/components/controls/DictionaryButton/DictionaryButton';
 import { LanguagePanel } from '@/components/controls/LanguagePanel/LanguagePanel';
+import { RichTranslationView } from '@/components/controls/RichTranslation/RichTranslationView';
 // Components
 import { Button } from '@/components/primitives/Button/Button.bundle/desktop';
 import { isMobileBrowser } from '@/lib/browser';
 import { useTTS } from '@/lib/hooks/useTTS';
 import { useTTSLanguages } from '@/lib/hooks/useTTSLanguages';
 import { detectLanguage, getMessage } from '@/lib/language';
+import {
+  repairPlaceholderIntegrity,
+  validatePlaceholderIntegrity,
+} from '@/lib/pageTranslation/protocol';
+import type { RichMarkup } from '@/lib/richTranslation/model';
+import { richMarkupToPlainText } from '@/lib/richTranslation/plainText';
 import { TELEMETRY_EVENT_NAME } from '@/lib/telemetry';
 import { TranslatorFeatures } from '@/pages/popup/layout/PopupWindow';
 import { getTranslatorFeatures } from '@/requests/backend/getTranslatorFeatures';
@@ -75,6 +82,7 @@ export interface TextTranslatorComponentProps {
   updatePopup: () => void;
   pageLanguage?: string;
   showOriginalText?: boolean;
+  richSource?: RichMarkup | null;
 }
 
 // TODO: rename component and move to element dir
@@ -88,6 +96,7 @@ export const TextTranslator: FC<TextTranslatorComponentProps> = ({
   translate,
   updatePopup,
   showOriginalText,
+  richSource,
 }) => {
   const [from, setFrom] = useState<string>();
   const [to, setTo] = useState<string>();
@@ -95,6 +104,8 @@ export const TextTranslator: FC<TextTranslatorComponentProps> = ({
 
   const [originalText, setOriginalText] = useState<string>(text);
   const [translatedText, setTranslatedText] = useState<string | null>(null);
+  const [translatedMarkup, setTranslatedMarkup] = useState<string | null>(null);
+  const [isRichMode, setIsRichMode] = useState(richSource != null);
   const [error, setError] = useState<string | null>(null);
 
   const translateContext = useRef(Symbol('TranslateContext'));
@@ -108,13 +119,41 @@ export const TextTranslator: FC<TextTranslatorComponentProps> = ({
     const context = translateContext.current;
 
     setTranslatedText(null);
+    setTranslatedMarkup(null);
     setError(null);
 
-    translate(originalText, from, to)
-      .then((translatedText) => {
+    const translationInput =
+      isRichMode && richSource !== null && richSource !== undefined
+        ? richSource.markup
+        : originalText;
+
+    translate(translationInput, from, to)
+      .then((raw) => {
         if (context !== translateContext.current) return;
 
-        setTranslatedText(translatedText);
+        let completedText = raw;
+        let completedMarkup: string | null = null;
+
+        if (isRichMode && richSource !== null && richSource !== undefined) {
+          if (validatePlaceholderIntegrity(richSource.markup, raw)) {
+            completedMarkup = raw;
+            completedText = richMarkupToPlainText(raw, richSource.nodes);
+          } else {
+            const repairedMarkup = repairPlaceholderIntegrity(richSource.markup, raw);
+            if (
+              repairedMarkup !== null &&
+              validatePlaceholderIntegrity(richSource.markup, repairedMarkup)
+            ) {
+              completedMarkup = repairedMarkup;
+              completedText = richMarkupToPlainText(repairedMarkup, richSource.nodes);
+            } else {
+              completedText = richMarkupToPlainText(raw, richSource.nodes);
+            }
+          }
+        }
+
+        setTranslatedMarkup(completedMarkup);
+        setTranslatedText(completedText);
         setError(null);
 
         addTranslationHistoryEntry({
@@ -123,7 +162,7 @@ export const TextTranslator: FC<TextTranslatorComponentProps> = ({
             from,
             to,
             originalText,
-            translatedText,
+            translatedText: completedText,
           },
         });
 
@@ -132,7 +171,7 @@ export const TextTranslator: FC<TextTranslatorComponentProps> = ({
           from,
           to,
           sourceTextLength: originalText.length,
-          translationLength: translatedText.length,
+          translationLength: completedText.length,
         });
       })
       .catch((reason) => {
@@ -145,6 +184,7 @@ export const TextTranslator: FC<TextTranslatorComponentProps> = ({
           error = reason.message;
         }
 
+        setTranslatedMarkup(null);
         setTranslatedText(null);
         setError(error);
         console.error(error);
@@ -159,7 +199,7 @@ export const TextTranslator: FC<TextTranslatorComponentProps> = ({
 
         translateContext.current = Symbol('TranslateContext');
       });
-  }, [from, originalText, to, translate]);
+  }, [from, isRichMode, originalText, richSource, to, translate]);
 
   const swapHandler = useCallback(
     ({ from, to }: { from: string; to: string }) => {
@@ -168,6 +208,8 @@ export const TextTranslator: FC<TextTranslatorComponentProps> = ({
       setFrom(from);
       setTo(to);
       setOriginalText(translatedText);
+      setIsRichMode(false);
+      setTranslatedMarkup(null);
       setTranslatedText(null);
     },
     [translatedText],
@@ -406,7 +448,11 @@ export const TextTranslator: FC<TextTranslatorComponentProps> = ({
         {error === null ? (
           <>
             <StackItem size="fill" xstyle={styles.body}>
-              {translatedText}
+              {translatedMarkup !== null && richSource ? (
+                <RichTranslationView markup={translatedMarkup} nodes={richSource.nodes} />
+              ) : (
+                translatedText
+              )}
             </StackItem>
             <HStack width="100%" align="center" justify="between">
               <HStack gap={0.5} align="center">

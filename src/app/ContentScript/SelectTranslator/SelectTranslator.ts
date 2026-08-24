@@ -1,3 +1,5 @@
+import type { RichMarkup } from '@/lib/richTranslation/model';
+import { serializeSelectionFragment } from '@/lib/richTranslation/serializeFragment';
 import { TELEMETRY_EVENT_NAME } from '@/lib/telemetry';
 import { trackClientEvent } from '@/requests/backend/telemetry';
 
@@ -80,6 +82,7 @@ export type SelectTranslatorPopupRenderOptions = {
   text: string;
   x: number;
   y: number;
+  richSource?: RichMarkup | null;
 };
 
 type PopupRenderer = {
@@ -191,7 +194,11 @@ export class SelectTranslator {
       // TODO: #refactor move this logic to one method `getSelectedText(target?: Node)`
       if (selection !== null) {
         text = selection.text;
-      } else if (
+        void this.showPopup(text, x, y, selection.richSource);
+        return;
+      }
+
+      if (
         this.selectionTarget !== null &&
         (this.selectionTarget instanceof HTMLTextAreaElement ||
           this.selectionTarget instanceof HTMLInputElement)
@@ -206,7 +213,11 @@ export class SelectTranslator {
   };
 
   private readonly getSelectedText = () =>
-    new Promise<{ selection: Selection; text: string } | null>((res) => {
+    new Promise<{
+      selection: Selection;
+      text: string;
+      richSource: RichMarkup | null;
+    } | null>((res) => {
       const renderer = this.popupRenderer;
 
       this.context = Symbol('context');
@@ -237,7 +248,26 @@ export class SelectTranslator {
         }
 
         const selectedText = selection.toString();
-        res(selectedText.length > 0 ? { selection, text: selectedText } : null);
+        if (selectedText.length === 0) {
+          res(null);
+          return;
+        }
+
+        let richSource: RichMarkup | null = null;
+        try {
+          const fragmentRoot = document.createElement('div');
+          for (let index = 0; index < selection.rangeCount; index += 1) {
+            if (index > 0) {
+              fragmentRoot.append(document.createTextNode('\n'));
+            }
+            fragmentRoot.append(selection.getRangeAt(index).cloneContents());
+          }
+          richSource = serializeSelectionFragment(fragmentRoot);
+        } catch {
+          richSource = null;
+        }
+
+        res({ selection, text: selectedText, richSource });
       });
     });
 
@@ -293,13 +323,8 @@ export class SelectTranslator {
     if (target instanceof Node && this.popupRenderer?.contains(target) === true) return;
 
     this.getSelectedText().then((selectedTextObj) => {
-      let text: string | null = null;
-
       if (selectedTextObj !== null) {
-        // Use selected text on page
-        text = selectedTextObj.text;
-
-        const { selection } = selectedTextObj;
+        const { selection, text, richSource } = selectedTextObj;
 
         // Skip when pointerdown not on the selected text
         if (this.options.strictSelection && selection.focusNode instanceof Text) {
@@ -309,22 +334,28 @@ export class SelectTranslator {
 
         // Skip if it shown not first time
         if (this.options.showOnceForSelection && !this.unhandledSelection) return;
-      } else if (
+
+        void this.showPopup(text, pageX, pageY, richSource);
+        return;
+      }
+
+      if (
         this.selectionTarget !== null &&
         (this.selectionTarget instanceof HTMLTextAreaElement ||
           this.selectionTarget instanceof HTMLInputElement)
       ) {
-        // Use selected text in input
-        text = getSelectedTextOfInput(this.selectionTarget);
-      }
-
-      if (text !== null) {
+        const text = getSelectedTextOfInput(this.selectionTarget);
         void this.showPopup(text, pageX, pageY);
       }
     });
   };
 
-  private readonly showPopup = async (text: string, x: number, y: number) => {
+  private readonly showPopup = async (
+    text: string,
+    x: number,
+    y: number,
+    richSource?: RichMarkup | null,
+  ) => {
     const trimmedText = text.trim();
     if (trimmedText.length === 0) return;
 
@@ -362,6 +393,7 @@ export class SelectTranslator {
       text: trimmedText,
       x,
       y,
+      richSource: richSource ?? null,
     });
 
     trackClientEvent(TELEMETRY_EVENT_NAME.SELECTED_TEXT_POPUP_SHOWN, {
