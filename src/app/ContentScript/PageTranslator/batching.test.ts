@@ -110,6 +110,28 @@ describe('token-aware page batching', () => {
     ).toThrow(/safe sentence boundary/u);
   });
 
+  test('keeps wire targets plain and structured-cloneable', () => {
+    // Firefox structured-clones extension messages; any DOM/non-cloneable
+    // reference leaking from the unit into target breaks every batch with
+    // DataCloneError.
+    const unit = {
+      ...makeUnit('dom', 'First sentence here. Second sentence here.'),
+      occurrences: [{ nonCloneable: () => undefined }],
+      section: { sectionId: 'section', headingPath: [], nonCloneable: () => undefined },
+    } as unknown as TranslationUnit;
+    const batches = buildTokenAwareBatches([unit], {
+      ...options,
+      preferredSourceTokens: 4,
+    });
+    const parts = batches.flatMap((batch) => batch.targets);
+    expect(parts.length).toBeGreaterThan(1);
+    for (const part of parts) {
+      expect(part.target).not.toHaveProperty('occurrences');
+      expect(part.target).not.toHaveProperty('section');
+      expect(() => structuredClone(part.target)).not.toThrow();
+    }
+  });
+
   test('updates output ratios with a bounded moving average', () => {
     const tracker = new OutputRatioTracker();
     tracker.observe(modelProfile.id, 'en', 'ja', 'body', 10, 1000);

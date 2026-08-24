@@ -44,6 +44,26 @@ export interface PlannedTarget {
   partCount: number;
 }
 
+// TranslationUnit carries DOM references (occurrences[].element, binding) that
+// must never reach the background message: Firefox structured-clones extension
+// messages and throws DataCloneError on DOM nodes. Keep wire targets plain.
+const toWireTarget = (
+  unit: TranslationUnit,
+  overrides?: Pick<TranslationTarget, 'id' | 'sourceText' | 'normalizedText'>,
+): TranslationTarget => ({
+  id: unit.id,
+  sourceText: unit.sourceText,
+  normalizedText: unit.normalizedText,
+  kind: unit.kind,
+  slot: unit.slot,
+  contextClass: unit.contextClass,
+  ...(unit.sectionId === undefined ? {} : { sectionId: unit.sectionId }),
+  ...(unit.componentId === undefined ? {} : { componentId: unit.componentId }),
+  semanticKey: unit.semanticKey,
+  priority: unit.priority,
+  ...overrides,
+});
+
 export interface PlannedBatch {
   targets: PlannedTarget[];
   sourceTokens: number;
@@ -107,12 +127,11 @@ const splitAtSafeSentenceBoundaries = (
   }
 
   return chunks.map((sourceText, partIndex) => ({
-    target: {
-      ...unit,
+    target: toWireTarget(unit, {
       id: `${unit.id}:part-${partIndex + 1}`,
       sourceText,
       normalizedText: sourceText.normalize('NFC').replace(/\s+/gu, ' ').trim(),
-    },
+    }),
     unit,
     partIndex,
     partCount: chunks.length,
@@ -200,7 +219,7 @@ export const buildTokenAwareBatches = (
   for (const unit of units) {
     const sourceTokens = counter.count(unit.sourceText);
     if (sourceTokens <= sourceBudget) {
-      planned.push({ target: unit, unit, partIndex: 0, partCount: 1 });
+      planned.push({ target: toWireTarget(unit), unit, partIndex: 0, partCount: 1 });
       continue;
     }
     const parts = splitAtSafeSentenceBoundaries(unit, sourceBudget, counter);
