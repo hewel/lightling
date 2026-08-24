@@ -128,29 +128,39 @@ export const TextTranslator: FC<TextTranslatorComponentProps> = ({
         : originalText;
 
     translate(translationInput, from, to)
-      .then((raw) => {
-        if (context !== translateContext.current) return;
-
-        let completedText = raw;
-        let completedMarkup: string | null = null;
-
+      .then((raw): Promise<{ text: string; markup: string | null }> => {
         if (isRichMode && richSource !== null && richSource !== undefined) {
           if (validatePlaceholderIntegrity(richSource.markup, raw)) {
-            completedMarkup = raw;
-            completedText = richMarkupToPlainText(raw, richSource.nodes);
-          } else {
-            const repairedMarkup = repairPlaceholderIntegrity(richSource.markup, raw);
-            if (
-              repairedMarkup !== null &&
-              validatePlaceholderIntegrity(richSource.markup, repairedMarkup)
-            ) {
-              completedMarkup = repairedMarkup;
-              completedText = richMarkupToPlainText(repairedMarkup, richSource.nodes);
-            } else {
-              completedText = richMarkupToPlainText(raw, richSource.nodes);
-            }
+            return Promise.resolve({
+              text: richMarkupToPlainText(raw, richSource.nodes),
+              markup: raw,
+            });
           }
+
+          const repairedMarkup = repairPlaceholderIntegrity(richSource.markup, raw);
+          if (
+            repairedMarkup !== null &&
+            validatePlaceholderIntegrity(richSource.markup, repairedMarkup)
+          ) {
+            return Promise.resolve({
+              text: richMarkupToPlainText(repairedMarkup, richSource.nodes),
+              markup: repairedMarkup,
+            });
+          }
+
+          // Irreparable corruption: retry once with placeholder-free text.
+          // The plain input gives the translator no reason to emit markup
+          // residue (e.g. hallucinated angle brackets) into the result.
+          return translate(originalText, from, to).then((retryText) => ({
+            text: retryText,
+            markup: null,
+          }));
         }
+
+        return Promise.resolve({ text: raw, markup: null });
+      })
+      .then(({ text: completedText, markup: completedMarkup }) => {
+        if (context !== translateContext.current) return;
 
         setTranslatedMarkup(completedMarkup);
         setTranslatedText(completedText);

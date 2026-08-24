@@ -52,24 +52,37 @@ Object.defineProperty(globalThis, 'IS_REACT_ACT_ENVIRONMENT', {
 
 type RenderOptions = {
   richSource?: RichMarkup;
-  translateResult: string;
+  translateResult: string | string[];
+};
+
+type TestTranslatorProps = Omit<TextTranslatorComponentProps, 'translate'> & {
+  translate: ReturnType<
+    typeof vi.fn<(text: string, from: string, to: string) => Promise<string>>
+  >;
 };
 
 const createProps = ({
   richSource,
   translateResult,
-}: RenderOptions): TextTranslatorComponentProps => ({
-  detectedLangFirst: true,
-  isUseAutoForDetectLang: false,
-  rememberDirection: false,
-  text: 'Click Save',
-  translate: vi.fn().mockResolvedValue(translateResult),
-  closeHandler: vi.fn(),
-  updatePopup: vi.fn(),
-  pageLanguage: 'en',
-  showOriginalText: false,
-  richSource,
-});
+}: RenderOptions): TestTranslatorProps => {
+  const queue = Array.isArray(translateResult) ? [...translateResult] : [translateResult];
+
+  return {
+    detectedLangFirst: true,
+    isUseAutoForDetectLang: false,
+    rememberDirection: false,
+    text: 'Click Save',
+    translate: vi.fn((_text: string, _from: string, _to: string) => {
+      const next = queue.length > 1 ? queue.shift() : queue[0];
+      return Promise.resolve(next ?? '');
+    }),
+    closeHandler: vi.fn(),
+    updatePopup: vi.fn(),
+    pageLanguage: 'en',
+    showOriginalText: false,
+    richSource,
+  };
+};
 
 const flushPromises = async () => {
   await Promise.resolve();
@@ -141,7 +154,7 @@ describe('TextTranslator rich translation integration', () => {
     expect(container.textContent).toContain('Klicken Sie auf Speichern');
   });
 
-  test('falls back to stripped plain text when translated markup cannot be repaired', async () => {
+  test('retries with placeholder-free text when translated markup cannot be repaired', async () => {
     const richSource: RichMarkup = {
       markup: '<g id="r1">Click <g id="r2">Save</g></g>',
       nodes: {
@@ -150,14 +163,26 @@ describe('TextTranslator rich translation integration', () => {
       },
     };
 
-    await renderTranslator({
+    const props = await renderTranslator({
       richSource,
-      translateResult: 'Klicken Sie <g id="xx">Speichern</g>',
+      translateResult: [
+        '<Klicken Sie Speichern> <corrupted',
+        'Klicken Sie auf Speichern',
+      ],
+    });
+    await act(async () => {
+      await vi.waitFor(() =>
+        expect(props.translate.mock.calls.some(([input]) => input === 'Click Save')).toBe(
+          true,
+        ),
+      );
+      await flushPromises();
     });
 
+    expect(props.translate).toHaveBeenNthCalledWith(1, richSource.markup, 'en', 'de');
     expect(container.querySelector('strong')).toBeNull();
-    expect(container.textContent).toContain('Klicken Sie Speichern');
-    expect(container.textContent).not.toContain('<g');
+    expect(container.textContent).toContain('Klicken Sie auf Speichern');
+    expect(container.textContent).not.toContain('<');
   });
 
   test('keeps the plain-text rendering path when richSource is undefined', async () => {
