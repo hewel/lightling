@@ -6,7 +6,9 @@
  * without relaxing its local-file sandbox. Re-running is idempotent and
  * replaces only generated files (svg/*.svg and the rendered PNGs).
  *
- * Usage: bun run assets/stores/chrome/render.ts
+ * Usage: bun run assets/stores/chrome/render.ts [--out <dir>]
+ * Renders into the script directory by default; --out targets another
+ * store's asset directory (e.g. assets/stores/firefox).
  * Requires: rsvg-convert, magick, identify.
  */
 
@@ -29,8 +31,6 @@ const run = promisify(execFile);
 const HERE = fileURLToPath(new URL('.', import.meta.url));
 const REPO = join(HERE, '..', '..', '..');
 const RAW = join(REPO, 'assets/stores/chrome/screenshots-raw');
-const SVG_DIR = join(HERE, 'svg');
-const SHOT_DIR = join(HERE, 'screenshots');
 const LOGO = join(REPO, 'src/static/logo.png');
 
 const COLORS = {
@@ -386,30 +386,26 @@ ${grainOverlay(1400, 560)}
 </svg>
 `;
 
-const generateSvgs = (): string[] => {
-  mkdirSync(SVG_DIR, { recursive: true });
-  for (const stale of readdirSync(SVG_DIR)) {
-    if (stale.endsWith('.svg')) unlinkSync(join(SVG_DIR, stale));
+const generateSvgs = (svgDir: string): string[] => {
+  mkdirSync(svgDir, { recursive: true });
+  for (const stale of readdirSync(svgDir)) {
+    if (stale.endsWith('.svg')) unlinkSync(join(svgDir, stale));
   }
   const logoUri = dataUri(LOGO);
   const names: string[] = [];
   SHOTS.forEach((shot, index) => {
     writeFileSync(
-      join(SVG_DIR, `${shot.name}.svg`),
+      join(svgDir, `${shot.name}.svg`),
       shotSvg(shot, index + 1, logoUri),
       'utf8',
     );
     names.push(shot.name);
   });
-  writeFileSync(join(SVG_DIR, 'promo-tile-small.svg'), promoSmallSvg(logoUri), 'utf8');
+  writeFileSync(join(svgDir, 'promo-tile-small.svg'), promoSmallSvg(logoUri), 'utf8');
   names.push('promo-tile-small');
-  writeFileSync(
-    join(SVG_DIR, 'promo-tile-marquee.svg'),
-    promoMarqueeSvg(logoUri),
-    'utf8',
-  );
+  writeFileSync(join(svgDir, 'promo-tile-marquee.svg'), promoMarqueeSvg(logoUri), 'utf8');
   names.push('promo-tile-marquee');
-  console.log(`Generated ${names.length} SVG compositions in ${SVG_DIR}`);
+  console.log(`Generated ${names.length} SVG compositions in ${svgDir}`);
   return names;
 };
 
@@ -472,45 +468,53 @@ const main = async (): Promise<void> => {
     }
   }
 
-  const names = generateSvgs();
-  mkdirSync(SHOT_DIR, { recursive: true });
-  for (const stale of readdirSync(SHOT_DIR)) {
-    if (stale.endsWith('.png')) unlinkSync(join(SHOT_DIR, stale));
+  const outFlag = process.argv.indexOf('--out');
+  const outDir =
+    outFlag >= 0 && process.argv[outFlag + 1] !== undefined
+      ? join(process.cwd(), process.argv[outFlag + 1])
+      : HERE;
+  const svgDir = join(outDir, 'svg');
+  const shotDir = join(outDir, 'screenshots');
+
+  const names = generateSvgs(svgDir);
+  mkdirSync(shotDir, { recursive: true });
+  for (const stale of readdirSync(shotDir)) {
+    if (stale.endsWith('.png')) unlinkSync(join(shotDir, stale));
   }
-  rmSync(join(HERE, 'promo-tile-small.png'), { force: true });
-  rmSync(join(HERE, 'promo-tile-marquee.png'), { force: true });
+  rmSync(join(outDir, 'promo-tile-small.png'), { force: true });
+  rmSync(join(outDir, 'promo-tile-marquee.png'), { force: true });
 
   const shotNames = names.filter((name) => !name.startsWith('promo-'));
   for (const name of shotNames) {
     await renderOpaque(
-      join(SVG_DIR, `${name}.svg`),
-      join(SHOT_DIR, `${name}.png`),
+      join(svgDir, `${name}.svg`),
+      join(shotDir, `${name}.png`),
       1280,
       800,
     );
   }
   await renderOpaque(
-    join(SVG_DIR, 'promo-tile-small.svg'),
-    join(HERE, 'promo-tile-small.png'),
+    join(svgDir, 'promo-tile-small.svg'),
+    join(outDir, 'promo-tile-small.png'),
     440,
     280,
   );
   await renderOpaque(
-    join(SVG_DIR, 'promo-tile-marquee.svg'),
-    join(HERE, 'promo-tile-marquee.png'),
+    join(svgDir, 'promo-tile-marquee.svg'),
+    join(outDir, 'promo-tile-marquee.png'),
     1400,
     560,
   );
-  copyFileSync(LOGO, join(HERE, 'icon-128.png'));
+  copyFileSync(LOGO, join(outDir, 'icon-128.png'));
 
-  const shots = readdirSync(SHOT_DIR).filter((file) => file.endsWith('.png'));
+  const shots = readdirSync(shotDir).filter((file) => file.endsWith('.png'));
   if (shots.length !== 7)
     throw new Error(`ERROR: expected exactly 7 screenshots, found ${shots.length}`);
-  for (const shot of shots) await checkPng(join(SHOT_DIR, shot), '1280x800');
-  await checkPng(join(HERE, 'promo-tile-small.png'), '440x280');
-  await checkPng(join(HERE, 'promo-tile-marquee.png'), '1400x560');
+  for (const shot of shots) await checkPng(join(shotDir, shot), '1280x800');
+  await checkPng(join(outDir, 'promo-tile-small.png'), '440x280');
+  await checkPng(join(outDir, 'promo-tile-marquee.png'), '1400x560');
 
-  const iconDims = await identifyField(join(HERE, 'icon-128.png'), '%wx%h');
+  const iconDims = await identifyField(join(outDir, 'icon-128.png'), '%wx%h');
   if (iconDims !== '128x128')
     throw new Error(`ERROR: icon is ${iconDims}, expected 128x128`);
 
