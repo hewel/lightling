@@ -1,9 +1,9 @@
 import { FC, useCallback, useEffect, useMemo, useState } from 'react';
 import { IconButton } from '@astryxdesign/core/IconButton';
-import { Selector } from '@astryxdesign/core/Selector';
 import { HStack, VStack } from '@astryxdesign/core/Stack';
 import { IconArrowsExchange } from '@tabler/icons-react';
 
+import { Selector } from '@/components/astryx/Selector';
 import { getLanguageNameByCode, getMessage } from '@/lib/language';
 import { addRecentUsedLanguage } from '@/requests/backend/recentUsedLanguages/addRecentUsedLanguage';
 import { getRecentUsedLanguages } from '@/requests/backend/recentUsedLanguages/getRecentUsedLanguages';
@@ -135,6 +135,7 @@ export const LanguagePanel: FC<LanguagePanelProps> = ({
         searchPlaceholder={getMessage('lang_searchPlaceholder')}
         width={mobile ? '100%' : 'max-content'}
         size="sm"
+        virtualize
       />
       <IconButton
         label={getMessage('lang_swap')}
@@ -156,6 +157,7 @@ export const LanguagePanel: FC<LanguagePanelProps> = ({
         searchPlaceholder={getMessage('lang_searchPlaceholder')}
         width={mobile ? '100%' : 'max-content'}
         size="sm"
+        virtualize
       />
     </Stack>
   );

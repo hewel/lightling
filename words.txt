@@ -18,6 +18,7 @@ Scrollfix
 Segoe
 Svgs
 Textinput
+affordances
 antling
 anylang
 astryxdesign
@@ -27,6 +28,7 @@ childs
 dedup
 deferreds
 domtranslator
+focusability
 hocs
 indexeddb
 labelledby
@@ -44,6 +46,7 @@ oklch
 ollama
 openrouter
 opensource
+overscan
 oxfmt
 oxlint
 papaparse
@@ -61,11 +64,13 @@ statusdot
 stylex
 stylexjs
 tabler
+targetable
 thirdparty
 tspans
 unparse
 unplugin
 unserialize
 unstub
+untargetable
 webextension
 xstyle
