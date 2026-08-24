@@ -66,6 +66,11 @@ export interface Options {
    */
   showOriginalText: boolean;
 
+  /**
+   * Allow user to drag the translation popup
+   */
+  draggablePopup: boolean;
+
   enableTranslateFromContextMenu?: boolean;
 }
 export type SelectTranslatorPopupRenderOptions = {
@@ -73,6 +78,7 @@ export type SelectTranslatorPopupRenderOptions = {
   quickTranslate: boolean;
   pageLanguage?: string;
   showOriginalText: boolean;
+  draggablePopup: boolean;
   detectedLangFirst: boolean;
   isUseAutoForDetectLang: boolean;
   rememberDirection: boolean;
@@ -111,6 +117,7 @@ export class SelectTranslator {
     rememberDirection: false,
     showOnceForSelection: true,
     showOriginalText: true,
+    draggablePopup: false,
     isUseAutoForDetectLang: true,
     enableTranslateFromContextMenu: false,
   };
@@ -376,6 +383,7 @@ export class SelectTranslator {
       timeoutForHideButton,
       focusOnTranslateButton,
       showOriginalText,
+      draggablePopup,
       enableTranslateFromContextMenu,
     } = this.options;
 
@@ -384,6 +392,7 @@ export class SelectTranslator {
       quickTranslate: enableTranslateFromContextMenu === true || quickTranslate,
       pageLanguage,
       showOriginalText,
+      draggablePopup,
       detectedLangFirst,
       isUseAutoForDetectLang,
       rememberDirection,

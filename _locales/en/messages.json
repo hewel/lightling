@@ -570,6 +570,12 @@
   "settings_option_selectTranslation_disableWhileTranslatePage": {
     "message": "Disable while translating the page"
   },
+  "settings_option_selectTranslation_draggablePopup": {
+    "message": "Allow dragging the translation popup"
+  },
+  "settings_option_selectTranslation_draggablePopup_desc": {
+    "message": "Lets you grab the translation popup on its background and move it anywhere on the page"
+  },
   "settings_option_selectTranslation_enable": {
     "message": "Enable selected text translation"
   },

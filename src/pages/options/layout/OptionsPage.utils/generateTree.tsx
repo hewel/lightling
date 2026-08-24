@@ -506,6 +506,16 @@ export const generateTree = ({
                 type: 'InputNumber',
               },
             },
+            {
+              description: getMessage(
+                'settings_option_selectTranslation_draggablePopup_desc',
+              ),
+              path: 'selectTranslator.draggablePopup',
+              optionContent: {
+                type: 'Checkbox',
+                text: getMessage('settings_option_selectTranslation_draggablePopup'),
+              },
+            },
           ],
         },
         {

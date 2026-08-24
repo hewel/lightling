@@ -19,6 +19,9 @@ const styles = stylex.create({
   desktop: {
     position: 'absolute',
   },
+  grabbing: {
+    cursor: 'grabbing',
+  },
   translateButton: {
     display: 'block',
     opacity: {
@@ -46,7 +49,7 @@ export interface TextTranslatorPopupProps extends Omit<
   zIndex?: number;
   quickTranslate?: boolean;
   focusOnTranslateButton?: boolean;
-
+  draggablePopup?: boolean;
   closeHandler: () => void;
 }
 
@@ -61,6 +64,7 @@ export const TextTranslatorPopup: FC<TextTranslatorPopupProps> = ({
   timeoutForHideButton,
   quickTranslate = false,
   focusOnTranslateButton = false,
+  draggablePopup = false,
   ...props
 }) => {
   const { closeHandler } = props;
@@ -128,9 +132,19 @@ export const TextTranslatorPopup: FC<TextTranslatorPopupProps> = ({
     }
   }, []);
 
+  const isMobile = useMemo(() => isMobileBrowser(), []);
+
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const dragOriginRef = useRef<{ x: number; y: number } | null>(null);
+
+  useEffect(() => {
+    updateHook();
+  }, [dragOffset, updateHook]);
+
   const cursorRef = useRef<HTMLDivElement>(null);
   const cursorStyle: React.CSSProperties = useMemo(() => {
-    const { left, top } = fixPosToPreventOverflow(x, y);
+    const { left, top } = fixPosToPreventOverflow(x + dragOffset.x, y + dragOffset.y);
 
     return {
       position: 'absolute',
@@ -141,7 +155,7 @@ export const TextTranslatorPopup: FC<TextTranslatorPopupProps> = ({
       pointerEvents: 'none',
       visibility: 'hidden',
     };
-  }, [x, y]);
+  }, [x, y, dragOffset]);
 
   // Focus on translate button or root node by change `translating` state
   const containerRef = useRef<HTMLDivElement>(null);
@@ -201,10 +215,76 @@ export const TextTranslatorPopup: FC<TextTranslatorPopupProps> = ({
     focusTranslateButton,
   ]);
 
-  const isMobile = useMemo(() => isMobileBrowser(), []);
+  const handlePointerDown = useCallback(
+    (evt: React.PointerEvent<HTMLDivElement>) => {
+      if (!draggablePopup || !translating || isMobile || evt.button !== 0) {
+        return;
+      }
+
+      const target =
+        evt.target instanceof Element
+          ? evt.target
+          : (evt.target as Node | null)?.parentElement;
+      if (!target) return;
+
+      if (
+        target.closest(
+          'button, a, input, textarea, select, [role="button"], [role="option"], [role="listbox"], [contenteditable="true"], p, svg',
+        )
+      ) {
+        return;
+      }
+
+      dragOriginRef.current = {
+        x: evt.clientX - dragOffset.x,
+        y: evt.clientY - dragOffset.y,
+      };
+      setIsDragging(true);
+      containerRef.current?.setPointerCapture(evt.pointerId);
+      evt.preventDefault();
+    },
+    [draggablePopup, translating, isMobile, dragOffset.x, dragOffset.y],
+  );
+
+  const handlePointerMove = useCallback((evt: React.PointerEvent<HTMLDivElement>) => {
+    if (!dragOriginRef.current) return;
+
+    setDragOffset({
+      x: evt.clientX - dragOriginRef.current.x,
+      y: evt.clientY - dragOriginRef.current.y,
+    });
+  }, []);
+
+  const handlePointerUp = useCallback((evt: React.PointerEvent<HTMLDivElement>) => {
+    if (!dragOriginRef.current) return;
+
+    dragOriginRef.current = null;
+    setIsDragging(false);
+    if (containerRef.current?.hasPointerCapture(evt.pointerId)) {
+      containerRef.current.releasePointerCapture(evt.pointerId);
+    }
+  }, []);
+
+  const handlePointerCancel = useCallback((evt: React.PointerEvent<HTMLDivElement>) => {
+    if (!dragOriginRef.current) return;
+
+    dragOriginRef.current = null;
+    setIsDragging(false);
+    if (containerRef.current?.hasPointerCapture(evt.pointerId)) {
+      containerRef.current.releasePointerCapture(evt.pointerId);
+    }
+  }, []);
 
   const content = (
-    <div tabIndex={0} ref={containerRef}>
+    <div
+      tabIndex={0}
+      ref={containerRef}
+      {...stylex.props(isDragging && styles.grabbing)}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerCancel}
+    >
       {translating ? (
         <TextTranslator {...props} updatePopup={updateHook} />
       ) : (

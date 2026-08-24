@@ -9,7 +9,7 @@ import { ConfigStorageMigration } from '../ConfigStorage.migrations';
 import configVersion1 from './config-v1.json';
 import configVersion3 from './config-v3.json';
 
-const latestVersion = 13;
+const latestVersion = 14;
 
 describe('config migrations', () => {
   beforeAll(clearAllMocks);
@@ -127,6 +127,29 @@ describe('config migrations', () => {
     expect(appConfig.pageTranslator).toEqual({
       lazyTranslate: true,
       enableLogExport: false,
+    });
+
+    await browser.storage.local.clear();
+    localStorage.clear();
+  });
+
+  test('migrate config v13 to v14 with draggablePopup disabled', async () => {
+    await browser.storage.local.set({
+      appConfig: {
+        selectTranslator: {
+          enabled: true,
+          showOriginalText: true,
+        },
+      },
+    });
+
+    await ConfigStorageMigration.migrate(13, 14);
+
+    const { appConfig } = await browser.storage.local.get('appConfig');
+    expect(appConfig.selectTranslator).toEqual({
+      enabled: true,
+      showOriginalText: true,
+      draggablePopup: false,
     });
 
     await browser.storage.local.clear();

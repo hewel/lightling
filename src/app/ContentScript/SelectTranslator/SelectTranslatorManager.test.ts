@@ -32,6 +32,7 @@ const createConfig = (enabled: boolean): AppConfigType['selectTranslator'] => ({
   detectedLangFirst: false,
   showOnceForSelection: true,
   showOriginalText: true,
+  draggablePopup: false,
   isUseAutoForDetectLang: true,
   timeoutForHideButton: 0,
   mode: 'popupButton',

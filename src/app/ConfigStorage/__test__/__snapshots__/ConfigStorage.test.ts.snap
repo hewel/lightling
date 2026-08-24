@@ -98,6 +98,7 @@ exports[`config migrations > migrate config v0 to latest version 1`] = `
   "selectTranslator": {
     "detectedLangFirst": true,
     "disableWhileTranslatePage": false,
+    "draggablePopup": false,
     "enabled": true,
     "focusOnTranslateButton": false,
     "isUseAutoForDetectLang": true,
@@ -219,6 +220,7 @@ exports[`config migrations > race condition detection > Detection race condition
   "selectTranslator": {
     "detectedLangFirst": true,
     "disableWhileTranslatePage": false,
+    "draggablePopup": false,
     "enabled": true,
     "focusOnTranslateButton": false,
     "isUseAutoForDetectLang": true,
@@ -340,6 +342,7 @@ exports[`config migrations > race condition detection > Detection race condition
   "selectTranslator": {
     "detectedLangFirst": true,
     "disableWhileTranslatePage": false,
+    "draggablePopup": false,
     "enabled": true,
     "focusOnTranslateButton": false,
     "isUseAutoForDetectLang": true,
@@ -461,6 +464,7 @@ exports[`config migrations > race condition detection > Detection race condition
   "selectTranslator": {
     "detectedLangFirst": true,
     "disableWhileTranslatePage": false,
+    "draggablePopup": false,
     "enabled": true,
     "focusOnTranslateButton": false,
     "isUseAutoForDetectLang": true,
@@ -582,6 +586,7 @@ exports[`config migrations > race condition detection > Detection race condition
   "selectTranslator": {
     "detectedLangFirst": true,
     "disableWhileTranslatePage": false,
+    "draggablePopup": false,
     "enabled": true,
     "focusOnTranslateButton": false,
     "isUseAutoForDetectLang": true,
@@ -703,6 +708,7 @@ exports[`config migrations > race condition detection > Detection race condition
   "selectTranslator": {
     "detectedLangFirst": true,
     "disableWhileTranslatePage": false,
+    "draggablePopup": false,
     "enabled": true,
     "focusOnTranslateButton": false,
     "isUseAutoForDetectLang": true,

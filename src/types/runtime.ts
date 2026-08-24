@@ -390,6 +390,7 @@ export const AppConfig = Schema.Struct({
     detectedLangFirst: Schema.Boolean,
     showOnceForSelection: Schema.Boolean,
     showOriginalText: Schema.Boolean,
+    draggablePopup: Schema.Boolean,
     isUseAutoForDetectLang: Schema.Boolean,
     timeoutForHideButton: NonNaNNumber,
     mode: Schema.Union([

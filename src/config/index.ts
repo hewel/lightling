@@ -78,6 +78,7 @@ export const defaultConfig: AppConfigType = {
     focusOnTranslateButton: false,
     showOnceForSelection: isMobileBrowser() ? false : true,
     showOriginalText: true,
+    draggablePopup: false,
     isUseAutoForDetectLang: true,
   },
   popup: {
