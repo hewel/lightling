@@ -31,7 +31,8 @@
     "lint": "npm run format:check && npm run lint:oxlint && npm run lint:imports && npm run lint:spelling && npm run lint:styles",
     "prepare": "husky install && effect-tsgo patch --typescript --oxlint",
     "predev:firefox": "npm run prepare:extension",
-    "dev:firefox": "extension dev --browser=firefox --no-browser"
+    "dev:firefox": "extension dev --browser=firefox --no-browser",
+    "store:assets": "bun assets/stores/chrome/render.ts"
   },
   "engines": {
     "node": ">=22.12"
