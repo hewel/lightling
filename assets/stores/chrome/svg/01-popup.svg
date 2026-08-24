@@ -47,13 +47,13 @@
   <g transform="translate(74 497)">
     <rect width="159" height="34" rx="17" fill="#fffefb" stroke="#1348dc" stroke-opacity="0.35"/>
     <circle cx="17" cy="17" r="4" fill="#1348dc"/>
-    <text x="29" y="22" font-family="IBM Plex Mono, IBM Plex Sans SC" font-size="12" font-weight="500" letter-spacing="0.7" fill="#0a1030">130+ LANGUAGES</text>
+    <text x="29" y="17" dominant-baseline="central" font-family="IBM Plex Mono, IBM Plex Sans SC" font-size="12" font-weight="500" letter-spacing="0.7" fill="#0a1030">130+ LANGUAGES</text>
   </g>
 
   <g transform="translate(74 543)">
     <rect width="186" height="34" rx="17" fill="#fffefb" stroke="#e07e03" stroke-opacity="0.35"/>
     <circle cx="17" cy="17" r="4" fill="#e07e03"/>
-    <text x="29" y="22" font-family="IBM Plex Mono, IBM Plex Sans SC" font-size="12" font-weight="500" letter-spacing="0.7" fill="#0a1030">ON-DEVICE PRIVACY</text>
+    <text x="29" y="17" dominant-baseline="central" font-family="IBM Plex Mono, IBM Plex Sans SC" font-size="12" font-weight="500" letter-spacing="0.7" fill="#0a1030">ON-DEVICE PRIVACY</text>
   </g>
 
   <g transform="translate(658.00 165.00) rotate(-1.98 295.00 247.41)">

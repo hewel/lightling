@@ -50,19 +50,13 @@
   <g transform="translate(64 427)">
     <rect width="124" height="34" rx="17" fill="#fffefb" stroke="#1348dc" stroke-opacity="0.35"/>
     <circle cx="17" cy="17" r="4" fill="#1348dc"/>
-    <text x="29" y="22" font-family="IBM Plex Mono, IBM Plex Sans SC" font-size="12" font-weight="500" letter-spacing="0.7" fill="#0a1030">FULL PAGES</text>
+    <text x="29" y="17" dominant-baseline="central" font-family="IBM Plex Mono, IBM Plex Sans SC" font-size="12" font-weight="500" letter-spacing="0.7" fill="#0a1030">FULL PAGES</text>
   </g>
 
   <g transform="translate(218 427)">
-    <rect width="150" height="34" rx="17" fill="#fffefb" stroke="#e07e03" stroke-opacity="0.35"/>
-    <circle cx="17" cy="17" r="4" fill="#e07e03"/>
-    <text x="29" y="22" font-family="IBM Plex Mono, IBM Plex Sans SC" font-size="12" font-weight="500" letter-spacing="0.7" fill="#0a1030">SELECTED TEXT</text>
-  </g>
-
-  <g transform="translate(407 427)">
     <rect width="116" height="34" rx="17" fill="#fffefb" stroke="#1348dc" stroke-opacity="0.35"/>
     <circle cx="17" cy="17" r="4" fill="#1348dc"/>
-    <text x="29" y="22" font-family="IBM Plex Mono, IBM Plex Sans SC" font-size="12" font-weight="500" letter-spacing="0.7" fill="#0a1030">ON-DEVICE</text>
+    <text x="29" y="17" dominant-baseline="central" font-family="IBM Plex Mono, IBM Plex Sans SC" font-size="12" font-weight="500" letter-spacing="0.7" fill="#0a1030">ON-DEVICE</text>
   </g>
 
   <g transform="translate(805 58) rotate(-3.2 220 180)">

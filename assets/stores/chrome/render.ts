@@ -54,6 +54,7 @@ interface Shot {
   headline: readonly string[];
   body: readonly string[];
   layout: 'hero' | 'selection' | 'wide';
+  wideVariant?: 'compact';
   accent: string;
   primaryUploadOrder?: number;
 }
@@ -99,6 +100,7 @@ const SHOTS: Shot[] = [
     headline: ['Switch back whenever you need context.'],
     body: ['Move between the original and translated page without losing your place.'],
     layout: 'wide',
+    wideVariant: 'compact',
     accent: COLORS.amber,
   },
   {
@@ -118,6 +120,7 @@ const SHOTS: Shot[] = [
     headline: ['Turn quick lookups into lasting vocabulary.'],
     body: ['Save words, filter by language, and keep learning even while offline.'],
     layout: 'wide',
+    wideVariant: 'compact',
     accent: COLORS.amber,
     primaryUploadOrder: 5,
   },
@@ -245,7 +248,7 @@ const chip = (
   <g transform="translate(${x} ${y})">
     <rect width="${width.toFixed(0)}" height="34" rx="17" fill="${COLORS.white}" stroke="${accent}" stroke-opacity="0.35"/>
     <circle cx="17" cy="17" r="4" fill="${accent}"/>
-    <text x="29" y="22" font-family="${FONT_FAMILIES.mono}" font-size="12" font-weight="500" letter-spacing="0.7" fill="${COLORS.ink}">${escapeXml(text)}</text>
+    <text x="29" y="17" dominant-baseline="central" font-family="${FONT_FAMILIES.mono}" font-size="12" font-weight="500" letter-spacing="0.7" fill="${COLORS.ink}">${escapeXml(text)}</text>
   </g>`;
 };
 
@@ -305,15 +308,20 @@ ${screenCard(imageUri, 180, 208, cardW, cardH, -0.75, shot.accent)}`;
     clipW = cardW;
     clipH = cardH;
   } else {
-    const cardW = 980.0;
+    const compact = shot.wideVariant === 'compact';
+    const cardW = compact ? 860.0 : 980.0;
     const cardH = (cardW * 2004) / 3736;
     const angle = position % 2 ? -0.55 : 0.55;
+    const cardX = compact ? 210 : 150;
+    const cardY = compact ? 242 : 216;
+    const titleY = compact ? 159 : 145;
+    const bodyY = compact ? 195 : 180;
     content = `
-${logoLockup(logoUri, 72, 32, 36)}
-${kicker(shot.label, 72, 97)}
-${multilineText(shot.headline, 72, 145, 47, 54)}
-${bodyText(shot.body, 74, 180, 18)}
-${screenCard(imageUri, 150, 216, cardW, cardH, angle, shot.accent)}`;
+${logoLockup(logoUri, 72, compact ? 42 : 32, 36)}
+${kicker(shot.label, 72, compact ? 107 : 97)}
+${multilineText(shot.headline, 72, titleY, compact ? 44 : 47, 54)}
+${bodyText(shot.body, 74, bodyY, 18)}
+${screenCard(imageUri, cardX, cardY, cardW, cardH, angle, shot.accent)}`;
     clipW = cardW;
     clipH = cardH;
   }
@@ -332,17 +340,16 @@ const promoSmallSvg = (
 ): string => `<svg xmlns="http://www.w3.org/2000/svg" width="440" height="280" viewBox="0 0 440 280">
 ${defs()}
 ${background(440, 280, true)}
-  <image href="${logoUri}" x="30" y="26" width="70" height="70"/>
-  <text x="116" y="73" font-family="${FONT_FAMILIES.sans}" font-size="39" font-weight="600" letter-spacing="-0.6" fill="${COLORS.navy}">Lightling</text>
-  <text x="32" y="144" font-family="${FONT_FAMILIES.sans}" font-size="27" font-weight="600" letter-spacing="-0.4" fill="${COLORS.ink}">Translate the web.</text>
-  <text x="32" y="177" font-family="${FONT_FAMILIES.sans}" font-size="27" font-weight="600" letter-spacing="-0.4" fill="${COLORS.ink}">Keep your privacy.</text>
-  <g transform="translate(31 205)">
-    <rect width="166" height="38" rx="19" fill="${COLORS.white}" stroke="${COLORS.indigo}" stroke-opacity="0.28"/>
-    <text x="18" y="25" font-family="${FONT_FAMILIES.mono}" font-size="13" font-weight="500" fill="${COLORS.ink}">ENGLISH</text>
-    <text x="109" y="25" font-family="${FONT_FAMILIES.sans}" font-size="18" font-weight="600" fill="${COLORS.indigo}">&#8594;</text>
-    <text x="137" y="25" font-family="${FONT_FAMILIES.sans}" font-size="16" font-weight="600" fill="${COLORS.ink}">译</text>
+  <image href="${logoUri}" x="32" y="30" width="54" height="54"/>
+  <text x="100" y="69" font-family="${FONT_FAMILIES.sans}" font-size="33" font-weight="600" letter-spacing="-0.5" fill="${COLORS.navy}">Lightling</text>
+  <text x="32" y="130" font-family="${FONT_FAMILIES.sans}" font-size="25" font-weight="600" letter-spacing="-0.4" fill="${COLORS.ink}">Translate the web.</text>
+  <text x="32" y="161" font-family="${FONT_FAMILIES.sans}" font-size="25" font-weight="600" letter-spacing="-0.4" fill="${COLORS.ink}">Keep your privacy.</text>
+  <g transform="translate(32 204)">
+    <rect width="184" height="44" rx="22" fill="${COLORS.white}" stroke="${COLORS.indigo}" stroke-opacity="0.28"/>
+    <text x="20" y="22" dominant-baseline="central" font-family="${FONT_FAMILIES.mono}" font-size="13" font-weight="500" fill="${COLORS.ink}">ENGLISH</text>
+    <path d="M 117 22 H 133 M 128 17 L 133 22 L 128 27" fill="none" stroke="${COLORS.indigo}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="147" y="22" dominant-baseline="central" font-family="${FONT_FAMILIES.sans}" font-size="18" font-weight="600" fill="${COLORS.ink}">译</text>
   </g>
-  <text x="217" y="230" font-family="${FONT_FAMILIES.mono}" font-size="11" font-weight="500" letter-spacing="0.8" fill="${COLORS.indigoDark}">130+ LANGUAGES · OPEN SOURCE</text>
   <path d="M 333 20 L 417 20 L 417 104" fill="url(#dots)" opacity="0.75"/>
 ${grainOverlay(440, 280)}
 </svg>
@@ -367,8 +374,7 @@ ${background(1400, 560, true)}
     <tspan x="64" dy="30">Free, open-source, and private by design.</tspan>
   </text>
 ${chip(64, 427, 'FULL PAGES')}
-${chip(218, 427, 'SELECTED TEXT', COLORS.amber)}
-${chip(407, 427, 'ON-DEVICE')}
+${chip(218, 427, 'ON-DEVICE')}
 
   <g transform="translate(805 58) rotate(-3.2 220 180)">
     <rect x="13" y="16" width="440" height="360" rx="28" fill="${COLORS.amberPale}" stroke="${COLORS.amber}" stroke-opacity="0.42" stroke-width="2"/>
