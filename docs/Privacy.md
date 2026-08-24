@@ -4,7 +4,7 @@ Lightling is a browser translation extension. Lightling does not operate a telem
 
 ## Data stored on your device
 
-Lightling stores settings, translation history, dictionary entries, cached translations, custom modules, and configured service credentials in Firefox extension storage. This data remains under your browser profile unless you export it or remove it through Lightling or Firefox.
+Lightling stores settings, translation history, dictionary entries, cached translations, custom modules, and configured service credentials in the browser's extension storage. This data remains under your browser profile unless you export it or remove it through Lightling or your browser.
 
 ## Translation providers
 
