@@ -7,7 +7,8 @@
   "scripts": {
     "test": "vitest",
     "test:all": "TEST_TARGETS=all npx vitest",
-    "typecheck": "tsc --noEmit -p tsconfig.extension.json",
+    "typecheck": "tsc --noEmit -p tsconfig.extension.json && npm run typecheck:store-assets",
+    "typecheck:store-assets": "tsc --noEmit -p tsconfig.store-assets.json",
     "prepare:extension": "node scripts/prepareExtensionAssets.mjs",
     "prepare:extension:release": "node scripts/prepareExtensionAssets.mjs --require-thirdparty",
     "predev": "npm run prepare:extension",
