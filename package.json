@@ -11,7 +11,7 @@
     "prepare:extension": "node scripts/prepareExtensionAssets.mjs",
     "prepare:extension:release": "node scripts/prepareExtensionAssets.mjs --require-thirdparty",
     "predev": "npm run prepare:extension",
-    "dev": "extension dev --browser=chromium-based --chromium-binary=/usr/bin/helium-browser",
+    "dev": "extension dev --browser=chromium-based --chromium-binary=/usr/bin/helium-browser --no-browser",
     "prestart": "npm run prepare:extension:release",
     "start": "extension start --browser=chromium-based --chromium-binary=/usr/bin/helium-browser",
     "prebuild": "npm run prepare:extension:release",
@@ -29,7 +29,9 @@
     "lint:styles": "stylelint --allow-empty-input \"{*,**/*}.css\"",
     "prettify": "oxlint --fix --deny-warnings . && oxlint --config .oxlintrc.json --type-aware --fix --deny-warnings src packages/locales vitest.config.ts && stylelint --fix --allow-empty-input \"{*,**/*}.css\" && npm run format",
     "lint": "npm run format:check && npm run lint:oxlint && npm run lint:imports && npm run lint:spelling && npm run lint:styles",
-    "prepare": "husky install && effect-tsgo patch --typescript --oxlint"
+    "prepare": "husky install && effect-tsgo patch --typescript --oxlint",
+    "predev:firefox": "npm run prepare:extension",
+    "dev:firefox": "extension dev --browser=firefox --no-browser"
   },
   "engines": {
     "node": ">=22.12"
