@@ -4,6 +4,8 @@
 
 Lightling is a privacy-first browser extension for translating web pages, selected text, subtitles, messages, and custom input. It supports offline translation, custom translation backends, text-to-speech, translation history, and a personal dictionary.
 
+> **Lightling is a fork of [Linguist](https://github.com/vitonsky/linguist). Most of the functionality is implemented by Linguist** — created by Robert Vitonsky and its contributors. This fork builds on their work.
+
 ## Features
 
 - Full-page, selected-text, subtitle, message, and free-form text translation
