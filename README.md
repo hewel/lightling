@@ -8,12 +8,15 @@ Lightling is a privacy-first browser extension for translating web pages, select
 
 ## Features
 
-- Full-page, selected-text, subtitle, message, and free-form text translation
-- Built-in and custom translation services
-- Offline translation with [Bergamot](https://github.com/browsermt/bergamot-translator)
+- Full-page translation with a token-aware pipeline: batching, cross-page deduplication, incremental DOM scanning, placeholder protection, and plan-driven retries
+- LLM translation engines — OpenAI, Anthropic, OpenRouter, Ant Ling, Ollama, LM Studio, or any OpenAI-compatible endpoint, with a quick model selector in the popup
+- Offline on-device translation with [Bergamot](https://github.com/browsermt/bergamot-translator) — no text ever leaves the browser
+- Selected-text translation popup with pronunciation, copy, and save-to-dictionary
+- Subtitle, message, and free-form text translation
+- Built-in and custom translation services and TTS via pluggable modules
 - Personal dictionary and translation history
-- Text-to-speech
-- Automatic translation rules
+- Per-site automatic translation rules
+- Privacy-first: free, open source, and no user data collection
 
 See the [custom translator](./docs/CustomTranslator.md), [custom TTS](./docs/CustomTTS.md), and [offline translation](./docs/guides/OfflineTranslation.md) guides for configuration details.
 
