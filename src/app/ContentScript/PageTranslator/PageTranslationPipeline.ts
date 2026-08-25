@@ -44,6 +44,7 @@ import {
   type TranslationUnit,
 } from './domPipeline';
 import { PageTranslationDomLifecycle } from './PageTranslationDomLifecycle';
+import { compareUnitPriority } from './priorityLanes';
 
 export interface PagePipelineMetrics {
   occurrences: number;
@@ -675,9 +676,7 @@ export class PageTranslationPipeline {
       markOccurrenceSourceNodes(occurrence);
     }
     this.occurrences.push(...newOccurrences);
-    const units = deduplicateOccurrences(newOccurrences).sort(
-      (left, right) => right.priority - left.priority,
-    );
+    const units = deduplicateOccurrences(newOccurrences).sort(compareUnitPriority);
     this.registerUnits(units);
     this.metrics.occurrences += newOccurrences.length;
     this.metrics.logicalSegments += newOccurrences.filter(

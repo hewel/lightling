@@ -9,6 +9,7 @@ import {
 } from '@/lib/pageTranslation/protocol';
 
 import { pageTranslationProvenance } from './PageTranslationProvenance';
+import { initialLaneForElement, type TranslationPriorityLane } from './priorityLanes';
 
 const SKIPPED_TAGS = new Set([
   'SCRIPT',
@@ -110,12 +111,18 @@ export type OccurrenceBinding = SegmentBinding | AttributeBinding;
 
 export interface TextOccurrence extends TranslationTarget {
   occurrenceId: string;
+  lane: TranslationPriorityLane;
+  distanceToViewport: number;
+  documentOrder: number;
   binding: OccurrenceBinding;
   element: Element;
   section: SectionContext;
 }
 
 export interface TranslationUnit extends TranslationTarget {
+  lane: TranslationPriorityLane;
+  distanceToViewport: number;
+  documentOrder: number;
   occurrences: TextOccurrence[];
   section: SectionContext;
 }
@@ -474,6 +481,7 @@ export const collectPageOccurrences = (
       slot,
       contextClass,
     });
+    const priority = priorityOverride ?? getPriority(semanticElement);
     const occurrenceId = `o-${++occurrenceSerial}`;
     occurrences.push({
       id: occurrenceId,
@@ -486,7 +494,10 @@ export const collectPageOccurrences = (
       sectionId: section.sectionId,
       componentId: semanticElement.getAttribute('id') ?? undefined,
       semanticKey: dedupKey,
-      priority: priorityOverride ?? getPriority(semanticElement),
+      priority,
+      lane: initialLaneForElement(semanticElement, priority),
+      distanceToViewport: 0,
+      documentOrder: occurrenceSerial,
       binding,
       element,
       section,
@@ -550,6 +561,7 @@ export const deduplicateOccurrences = (
     if (existing !== undefined) {
       existing.occurrences.push(occurrence);
       existing.priority = Math.max(existing.priority, occurrence.priority);
+      existing.lane = Math.min(existing.lane, occurrence.lane);
       continue;
     }
     units.set(occurrence.semanticKey, {
@@ -563,6 +575,9 @@ export const deduplicateOccurrences = (
       componentId: occurrence.componentId,
       semanticKey: occurrence.semanticKey,
       priority: occurrence.priority,
+      lane: occurrence.lane,
+      distanceToViewport: 0,
+      documentOrder: occurrence.documentOrder,
       occurrences: [occurrence],
       section: occurrence.section,
     });

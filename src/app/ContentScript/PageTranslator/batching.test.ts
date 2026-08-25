@@ -4,6 +4,7 @@ import type { TranslationTokenCounter } from '@/lib/translators/llm/tokenizer';
 
 import { buildTokenAwareBatches, calculateSourceBudget } from './batching';
 import type { TranslationUnit } from './domPipeline';
+import { TranslationPriorityLane } from './priorityLanes';
 
 const counter: TranslationTokenCounter = {
   id: 'test-tokenizer',
@@ -20,6 +21,9 @@ const makeUnit = (id: string, sourceText: string): TranslationUnit => ({
   contextClass: 'main:body',
   semanticKey: `key-${id}`,
   priority: 1,
+  lane: TranslationPriorityLane.Rest,
+  distanceToViewport: 0,
+  documentOrder: 0,
   occurrences: [],
   section: { sectionId: 'section', headingPath: [] },
 });
