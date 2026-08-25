@@ -14,6 +14,7 @@ import type { TranslationModelProfile } from '@/lib/translators/llm/modelProfile
 import type { TranslationTokenCounter } from '@/lib/translators/llm/tokenizer';
 
 import type { TranslationUnit } from './domPipeline';
+import { TranslationPriorityLane } from './priorityLanes';
 
 export interface TokenBudgetInput {
   contextWindow: number;
@@ -35,6 +36,18 @@ export const calculateSourceBudget = (input: TokenBudgetInput): number => {
     input.safetyTokens;
   if (remaining <= 0) return 0;
   return Math.floor(remaining / (1 + input.outputRatio));
+};
+
+export interface LaneBatchCap {
+  maxItems: number;
+  sourceTokens: number;
+}
+
+export type LaneBatchCaps = Partial<Record<TranslationPriorityLane, LaneBatchCap>>;
+
+export const DEFAULT_LANE_BATCH_CAPS: Readonly<LaneBatchCaps> = {
+  [TranslationPriorityLane.Urgent]: { maxItems: 16, sourceTokens: 1000 },
+  [TranslationPriorityLane.Visible]: { maxItems: 16, sourceTokens: 1000 },
 };
 
 export interface PlannedTarget {
@@ -84,6 +97,8 @@ export interface BatchPlanOptions {
   context: TranslationRequestContext;
   outputRatio: number;
   preferredSourceTokens?: number;
+  /** Lane limits only shrink the model/controller allowances. */
+  laneBatchCaps?: LaneBatchCaps;
 }
 
 const splitAtSafeSentenceBoundaries = (
@@ -206,7 +221,7 @@ export const buildTokenAwareBatches = (
   options: BatchPlanOptions,
 ): PlannedBatch[] => {
   const counter = options.tokenCounter;
-  const sourceBudget = Math.max(
+  const controllerSourceBudget = Math.max(
     1,
     Math.min(
       options.preferredSourceTokens ??
@@ -214,9 +229,15 @@ export const buildTokenAwareBatches = (
       options.modelProfile.batching.maxSourceTokens,
     ),
   );
+  const controllerMaxItems = options.modelProfile.batching.maxItems;
 
   const planned: PlannedTarget[] = [];
   for (const unit of units) {
+    const laneCap = options.laneBatchCaps?.[unit.lane];
+    const sourceBudget = Math.max(
+      1,
+      Math.min(controllerSourceBudget, laneCap?.sourceTokens ?? controllerSourceBudget),
+    );
     const sourceTokens = counter.count(unit.sourceText);
     if (sourceTokens <= sourceBudget) {
       planned.push({ target: toWireTarget(unit), unit, partIndex: 0, partCount: 1 });
@@ -234,16 +255,28 @@ export const buildTokenAwareBatches = (
   const batches: PlannedBatch[] = [];
   let current: PlannedTarget[] = [];
   let currentTokens = 0;
-  const maxItems = options.modelProfile.batching.maxItems;
+  let currentSourceBudget = controllerSourceBudget;
+  let currentMaxItems = controllerMaxItems;
 
   const flush = (): void => {
     if (current.length === 0) return;
-    batches.push(...finalizeBatch(current, options, sourceBudget));
+    batches.push(...finalizeBatch(current, options, currentSourceBudget));
     current = [];
     currentTokens = 0;
+    currentSourceBudget = controllerSourceBudget;
+    currentMaxItems = controllerMaxItems;
   };
 
   for (const item of planned) {
+    const laneCap = options.laneBatchCaps?.[item.unit.lane];
+    const itemSourceBudget = Math.max(
+      1,
+      Math.min(controllerSourceBudget, laneCap?.sourceTokens ?? controllerSourceBudget),
+    );
+    const itemMaxItems = Math.max(
+      1,
+      Math.min(controllerMaxItems, laneCap?.maxItems ?? controllerMaxItems),
+    );
     const itemTokens = counter.count(
       JSON.stringify({
         id: item.target.id,
@@ -253,10 +286,15 @@ export const buildTokenAwareBatches = (
     );
     if (
       current.length > 0 &&
-      (current.length >= maxItems || currentTokens + itemTokens > sourceBudget)
+      (currentSourceBudget !== itemSourceBudget ||
+        currentMaxItems !== itemMaxItems ||
+        current.length >= currentMaxItems ||
+        currentTokens + itemTokens > currentSourceBudget)
     ) {
       flush();
     }
+    currentSourceBudget = itemSourceBudget;
+    currentMaxItems = itemMaxItems;
     current.push(item);
     currentTokens += itemTokens;
   }

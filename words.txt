@@ -54,6 +54,7 @@ penpal
 pressend
 pressstart
 reorderable
+reranks
 rescan
 rescans
 retargeted

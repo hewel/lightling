@@ -2,7 +2,11 @@ import { OutputRatioTracker } from '@/lib/translators/llm/budget';
 import { createConservativeTranslationModelProfile } from '@/lib/translators/llm/modelProfile';
 import type { TranslationTokenCounter } from '@/lib/translators/llm/tokenizer';
 
-import { buildTokenAwareBatches, calculateSourceBudget } from './batching';
+import {
+  buildTokenAwareBatches,
+  calculateSourceBudget,
+  DEFAULT_LANE_BATCH_CAPS,
+} from './batching';
 import type { TranslationUnit } from './domPipeline';
 import { TranslationPriorityLane } from './priorityLanes';
 
@@ -12,7 +16,11 @@ const counter: TranslationTokenCounter = {
   count: (text) => Math.ceil(text.length / 8),
 };
 
-const makeUnit = (id: string, sourceText: string): TranslationUnit => ({
+const makeUnit = (
+  id: string,
+  sourceText: string,
+  lane: TranslationPriorityLane = TranslationPriorityLane.Rest,
+): TranslationUnit => ({
   id,
   sourceText,
   normalizedText: sourceText,
@@ -21,7 +29,7 @@ const makeUnit = (id: string, sourceText: string): TranslationUnit => ({
   contextClass: 'main:body',
   semanticKey: `key-${id}`,
   priority: 1,
-  lane: TranslationPriorityLane.Rest,
+  lane,
   distanceToViewport: 0,
   documentOrder: 0,
   occurrences: [],
@@ -89,6 +97,72 @@ describe('token-aware page batching', () => {
     );
     expect(batches.map((batch) => batch.targets.length)).toEqual([2, 1]);
     expect(batches.every((batch) => batch.sourceTokens <= batch.sourceBudget)).toBe(true);
+  });
+  test('clamps Urgent and Visible lanes to the default batch limits', () => {
+    for (const lane of [
+      TranslationPriorityLane.Urgent,
+      TranslationPriorityLane.Visible,
+    ]) {
+      const batches = buildTokenAwareBatches(
+        Array.from({ length: 17 }, (_, index) =>
+          makeUnit(`${lane}-${index}`, `Unit ${index}`, lane),
+        ),
+        {
+          ...options,
+          laneBatchCaps: DEFAULT_LANE_BATCH_CAPS,
+        },
+      );
+
+      expect(batches.map((batch) => batch.targets.length)).toEqual([16, 1]);
+      expect(batches.every((batch) => batch.sourceBudget === 1000)).toBe(true);
+    }
+  });
+
+  test('keeps Near and Rest lanes at the existing model sizing', () => {
+    const units = [
+      makeUnit('foreground', 'Foreground unit', TranslationPriorityLane.Visible),
+      ...Array.from({ length: 40 }, (_, index) =>
+        makeUnit(
+          `background-${index}`,
+          `Background unit ${index}`,
+          index < 20 ? TranslationPriorityLane.Near : TranslationPriorityLane.Rest,
+        ),
+      ),
+    ];
+    const batches = buildTokenAwareBatches(units, {
+      ...options,
+      laneBatchCaps: DEFAULT_LANE_BATCH_CAPS,
+    });
+
+    expect(batches.map((batch) => batch.targets.length)).toEqual([1, 40]);
+    expect(batches.map((batch) => batch.sourceBudget)).toEqual([
+      1000,
+      modelProfile.batching.preferredSourceTokens,
+    ]);
+  });
+
+  test('never raises a smaller model or controller allowance to a lane cap', () => {
+    const batches = buildTokenAwareBatches(
+      Array.from({ length: 9 }, (_, index) =>
+        makeUnit(
+          `visible-${index}`,
+          `Visible unit ${index}`,
+          TranslationPriorityLane.Visible,
+        ),
+      ),
+      {
+        ...options,
+        modelProfile: {
+          ...modelProfile,
+          batching: { ...modelProfile.batching, maxItems: 8 },
+        },
+        preferredSourceTokens: 600,
+        laneBatchCaps: DEFAULT_LANE_BATCH_CAPS,
+      },
+    );
+
+    expect(batches.map((batch) => batch.targets.length)).toEqual([8, 1]);
+    expect(batches.every((batch) => batch.sourceBudget === 600)).toBe(true);
   });
 
   test('splits an oversized logical segment only at balanced sentence boundaries', () => {

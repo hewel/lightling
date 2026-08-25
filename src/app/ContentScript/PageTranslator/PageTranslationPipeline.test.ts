@@ -8,8 +8,10 @@ import { conservativeTokenCounter } from '@/lib/translators/llm/tokenizer';
 import { abortTranslation } from '@/requests/backend/abortTranslation';
 import { translatePageBatch } from '@/requests/backend/translatePageBatch';
 
+import type { LaneBatchCaps } from './batching';
 import { PageTranslationPipeline } from './PageTranslationPipeline';
 import { pageTranslationProvenance } from './PageTranslationProvenance';
+import { TranslationPriorityLane } from './priorityLanes';
 
 vi.mock('@/requests/backend/translatePageBatch', () => ({
   translatePageBatch: vi.fn(),
@@ -17,6 +19,70 @@ vi.mock('@/requests/backend/translatePageBatch', () => ({
 vi.mock('@/requests/backend/abortTranslation', () => ({
   abortTranslation: vi.fn(async () => {}),
 }));
+class MockIntersectionObserver implements IntersectionObserver {
+  public static instances: MockIntersectionObserver[] = [];
+
+  public readonly root: Element | Document | null;
+  public readonly rootMargin: string;
+  public readonly thresholds: readonly number[];
+  public readonly scrollMargin = '0px';
+  public readonly observed = new Set<Element>();
+  public readonly observe = vi.fn((target: Element) => {
+    this.observed.add(target);
+  });
+  public readonly unobserve = vi.fn((target: Element) => {
+    this.observed.delete(target);
+  });
+  public readonly disconnect = vi.fn(() => {
+    this.observed.clear();
+  });
+  public readonly takeRecords = vi.fn((): IntersectionObserverEntry[] => []);
+
+  public constructor(
+    private readonly callback: IntersectionObserverCallback,
+    options: IntersectionObserverInit = {},
+  ) {
+    this.root = options.root ?? null;
+    this.rootMargin = options.rootMargin ?? '0px';
+    this.thresholds = Array.isArray(options.threshold)
+      ? options.threshold
+      : [options.threshold ?? 0];
+    MockIntersectionObserver.instances.push(this);
+  }
+
+  public trigger(...entries: IntersectionObserverEntry[]): void {
+    this.callback(entries, this);
+  }
+}
+
+const observerEntry = (
+  target: Element,
+  isIntersecting: boolean,
+  top: number,
+  bottom: number,
+): IntersectionObserverEntry => {
+  const boundingClientRect = DOMRect.fromRect({
+    x: 0,
+    y: top,
+    width: 100,
+    height: bottom - top,
+  });
+  const rootBounds = DOMRect.fromRect({
+    x: 0,
+    y: 0,
+    width: 100,
+    height: window.innerHeight,
+  });
+  return {
+    target,
+    isIntersecting,
+    intersectionRatio: isIntersecting ? 1 : 0,
+    boundingClientRect,
+    intersectionRect: isIntersecting ? boundingClientRect : DOMRect.fromRect(),
+    rootBounds,
+    time: performance.now(),
+  };
+};
 
 const responseFor = (
   request: PageTranslationBatchRequest,
@@ -47,6 +113,7 @@ const createPipeline = (
   }) => void,
   sizeTier: 'small' | 'medium' | 'large' = 'small',
   userConcurrencyCeiling: number | null = null,
+  laneBatchCaps?: LaneBatchCaps,
 ) =>
   new PageTranslationPipeline({
     root,
@@ -62,6 +129,7 @@ const createPipeline = (
     sizeTier,
     userConcurrencyCeiling,
     onBudgetSnapshot,
+    laneBatchCaps,
   });
 
 describe('PageTranslationPipeline dynamic lifecycle', () => {
@@ -72,6 +140,138 @@ describe('PageTranslationPipeline dynamic lifecycle', () => {
       responseFor(request),
     );
   });
+  test('applies configured lane batch caps during pipeline planning', async () => {
+    document.body.innerHTML =
+      '<main><p>Visible one</p><p>Visible two</p><p>Visible three</p></main>';
+    const main = document.querySelector('main');
+    if (main === null) throw new Error('fixture main missing');
+    for (const paragraph of main.querySelectorAll('p')) {
+      paragraph.getBoundingClientRect = () =>
+        DOMRect.fromRect({ y: 10, width: 100, height: 20 });
+    }
+    const staticProfile = {
+      ...modelProfile,
+      adaptive: { ...modelProfile.adaptive, enabled: false },
+    };
+    const pipeline = createPipeline(
+      main,
+      false,
+      0,
+      staticProfile,
+      undefined,
+      'small',
+      null,
+      {
+        [TranslationPriorityLane.Visible]: { maxItems: 2, sourceTokens: 500 },
+      },
+    );
+
+    pipeline.start();
+    await vi.waitFor(() => expect(translatePageBatch).toHaveBeenCalledTimes(2));
+    expect(
+      vi.mocked(translatePageBatch).mock.calls.map(([request]) => request.targets.length),
+    ).toEqual([2, 1]);
+    pipeline.stop();
+  });
+
+  test('counts unique units by their collection-time lanes', async () => {
+    document.body.innerHTML = `
+      <main>
+        <p id="urgent" role="alert">Urgent unit</p>
+        <p id="visible">Visible unit</p>
+        <p id="near">Near unit</p>
+        <p id="rest">Rest unit</p>
+      </main>
+    `;
+    const main = document.querySelector('main');
+    if (main === null) throw new Error('fixture main missing');
+    const positions = {
+      urgent: 10,
+      visible: 10,
+      near: window.innerHeight + 10,
+      rest: window.innerHeight * 3,
+    };
+    for (const [id, top] of Object.entries(positions)) {
+      const element = document.querySelector(`#${id}`);
+      if (element === null) throw new Error(`fixture ${id} missing`);
+      element.getBoundingClientRect = () =>
+        DOMRect.fromRect({ y: top, width: 100, height: 20 });
+    }
+    const pipeline = createPipeline(main);
+
+    pipeline.start();
+    await vi.waitFor(() => expect(pipeline.getMetrics().uniqueUnits).toBe(4));
+    expect(pipeline.getMetrics().unitsByLane).toEqual({
+      urgent: 1,
+      visible: 1,
+      near: 1,
+      rest: 1,
+    });
+    pipeline.stop();
+  });
+
+  test('counts reranks only for lane changes touching undispatched units', async () => {
+    document.body.innerHTML = '<main><p>First item</p><p>Second item</p></main>';
+    const main = document.querySelector('main');
+    const [first, second] = Array.from(document.querySelectorAll('p'));
+    if (main === null || first === undefined || second === undefined) {
+      throw new Error('fixture missing');
+    }
+    for (const paragraph of [first, second]) {
+      paragraph.getBoundingClientRect = () =>
+        DOMRect.fromRect({ y: window.innerHeight * 3, width: 100, height: 20 });
+    }
+    MockIntersectionObserver.instances = [];
+    vi.stubGlobal('IntersectionObserver', MockIntersectionObserver);
+    const firstResponse = Promise.withResolvers<PageTranslationBatchResponse>();
+    vi.mocked(translatePageBatch).mockImplementation(async (request) => {
+      if (vi.mocked(translatePageBatch).mock.calls.length === 1) {
+        return firstResponse.promise;
+      }
+      return {
+        translations: request.targets.map((target) => ({
+          id: target.id,
+          target: `Translated ${target.sourceText}`,
+          cacheKey: target.semanticKey,
+          cacheHit: false,
+          provenance: 'provider',
+        })),
+      };
+    });
+    const singleItemProfile = {
+      ...modelProfile,
+      adaptive: { ...modelProfile.adaptive, enabled: false },
+      batching: { ...modelProfile.batching, concurrency: 1, maxItems: 1 },
+    };
+    const pipeline = createPipeline(main, false, 0, singleItemProfile);
+
+    try {
+      pipeline.start();
+      await vi.waitFor(() => expect(translatePageBatch).toHaveBeenCalledTimes(1));
+      const visibleObserver = MockIntersectionObserver.instances[0];
+      if (visibleObserver === undefined) throw new Error('visible observer missing');
+
+      visibleObserver.trigger(observerEntry(first, true, 10, 30));
+      await Promise.resolve();
+      expect(pipeline.getMetrics().reranks).toBe(0);
+
+      visibleObserver.trigger(observerEntry(second, true, 10, 30));
+      await vi.waitFor(() => expect(pipeline.getMetrics().reranks).toBe(1));
+
+      firstResponse.resolve(responseFor(vi.mocked(translatePageBatch).mock.calls[0][0]));
+      await vi.waitFor(() => expect(second.textContent).toBe('Translated Second item'));
+
+      visibleObserver.trigger(
+        observerEntry(second, false, window.innerHeight * 3, window.innerHeight * 3 + 20),
+      );
+      await Promise.resolve();
+      expect(pipeline.getMetrics().reranks).toBe(1);
+    } finally {
+      pipeline.stop();
+      vi.unstubAllGlobals();
+    }
+  });
+
   test('admits a newly urgent dialog before queued Rest units without replacing the active batch', async () => {
     document.body.innerHTML =
       '<main><p>First item</p><p>Second item</p><p>Third item</p></main>';

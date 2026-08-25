@@ -29,6 +29,8 @@ import { translatePageBatch } from '@/requests/backend/translatePageBatch';
 
 import {
   buildTokenAwareBatches,
+  DEFAULT_LANE_BATCH_CAPS,
+  type LaneBatchCaps,
   type PlannedBatch,
   type PlannedTarget,
 } from './batching';
@@ -44,7 +46,7 @@ import {
   type TranslationUnit,
 } from './domPipeline';
 import { PageTranslationDomLifecycle } from './PageTranslationDomLifecycle';
-import { compareUnitPriority } from './priorityLanes';
+import { compareUnitPriority, TranslationPriorityLane } from './priorityLanes';
 import { ViewportLaneTracker } from './viewportLaneTracker';
 
 export interface PagePipelineMetrics {
@@ -52,6 +54,13 @@ export interface PagePipelineMetrics {
   logicalSegments: number;
   uniqueUnits: number;
   deduplicationRatio: number;
+  /** Cumulative unique-unit counts by the lane assigned at collection time. */
+  unitsByLane: {
+    urgent: number;
+    visible: number;
+    near: number;
+    rest: number;
+  };
   memoryHits: number;
   memoryMisses: number;
   sourceTokens: number;
@@ -62,6 +71,7 @@ export interface PagePipelineMetrics {
   staleCancellations: number;
   navigationCancellations: number;
   terminologyConflicts: number;
+  reranks: number;
   startedAt: number;
   firstVisibleTranslationAt?: number;
 }
@@ -80,6 +90,8 @@ export interface PageTranslationPipelineOptions extends CollectionOptions {
   sizeTier?: TranslationModelSizeTier;
   persistedBudget?: BudgetSnapshot | null;
   nearRootMargin?: string;
+  /** Per-lane limits only shrink model/controller batch allowances. */
+  laneBatchCaps?: LaneBatchCaps;
   userConcurrencyCeiling?: number | null;
   onBudgetSnapshot?: (snapshot: BudgetSnapshot) => void;
   onUnitStarted?: (count: number) => void;
@@ -171,6 +183,12 @@ const createMetrics = (): PagePipelineMetrics => ({
   logicalSegments: 0,
   uniqueUnits: 0,
   deduplicationRatio: 0,
+  unitsByLane: {
+    urgent: 0,
+    visible: 0,
+    near: 0,
+    rest: 0,
+  },
   memoryHits: 0,
   memoryMisses: 0,
   sourceTokens: 0,
@@ -181,6 +199,7 @@ const createMetrics = (): PagePipelineMetrics => ({
   staleCancellations: 0,
   navigationCancellations: 0,
   terminologyConflicts: 0,
+  reranks: 0,
   startedAt: performance.now(),
 });
 
@@ -214,6 +233,7 @@ export class PageTranslationPipeline {
   private readonly reorderableUnits = new Set<TranslationUnit>();
   private readonly pendingRescans = new Map<Element, ReturnType<typeof setTimeout>>();
   private readonly stabilizationMs: number;
+  private readonly laneBatchCaps: LaneBatchCaps;
   private processedSlots = new WeakMap<Element, Set<string>>();
   private readonly accepted: AcceptedTranslation[] = [];
   private readonly terminology = new TerminologyMemory();
@@ -262,6 +282,10 @@ export class PageTranslationPipeline {
     retriever: TranslationContextRetriever = new DeterministicContextRetriever(),
   ) {
     this.stabilizationMs = options.stabilizationMs ?? DEFAULT_STABILIZATION_MS;
+    this.laneBatchCaps = {
+      ...DEFAULT_LANE_BATCH_CAPS,
+      ...options.laneBatchCaps,
+    };
     this.budgetController = options.modelProfile.adaptive.enabled
       ? new TranslationBudgetController({
           tier: options.sizeTier ?? 'medium',
@@ -703,6 +727,22 @@ export class PageTranslationPipeline {
     }
     this.occurrences.push(...newOccurrences);
     const units = deduplicateOccurrences(newOccurrences);
+    for (const unit of units) {
+      switch (unit.lane) {
+        case TranslationPriorityLane.Urgent:
+          this.metrics.unitsByLane.urgent++;
+          break;
+        case TranslationPriorityLane.Visible:
+          this.metrics.unitsByLane.visible++;
+          break;
+        case TranslationPriorityLane.Near:
+          this.metrics.unitsByLane.near++;
+          break;
+        case TranslationPriorityLane.Rest:
+          this.metrics.unitsByLane.rest++;
+          break;
+      }
+    }
     this.registerUnits(units);
     this.metrics.occurrences += newOccurrences.length;
     this.metrics.logicalSegments += newOccurrences.filter(
@@ -795,6 +835,7 @@ export class PageTranslationPipeline {
           context: plan.context,
           outputRatio,
           preferredSourceTokens,
+          laneBatchCaps: this.laneBatchCaps,
         });
         const batch = batches[0];
         if (batch === undefined) return null;
@@ -1400,6 +1441,7 @@ export class PageTranslationPipeline {
     this.viewportLaneTracker.observe(units, (changedUnits) => {
       for (const unit of changedUnits) {
         if (!this.reorderableUnits.has(unit)) continue;
+        this.metrics.reranks++;
         this.pumpAdmissions();
         break;
       }
