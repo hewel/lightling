@@ -167,6 +167,43 @@ describe('LLM webpage request contract', () => {
     expect(calls).toHaveLength(1);
   });
 
+  test('accepts an unchanged echo for a single capitalized word', async () => {
+    const calls: LLMRequest[] = [];
+    const echoResponse = JSON.stringify({
+      translations: [{ id: 'u1', target: 'Discord' }],
+    });
+    const engine = new LLMTranslationEngine({
+      loadSettings: () => Promise.resolve(settings),
+      fetch: (llmRequest) => {
+        calls.push(llmRequest);
+        const response: LLMResponse = {
+          text: echoResponse,
+          usage: { inputTokens: null, outputTokens: null },
+        };
+        return Effect.succeed(response);
+      },
+    });
+
+    await expect(
+      engine.translatePageBatch(
+        {
+          ...request,
+          targetLanguage: 'zh',
+          targets: [target('u1', 'Discord')],
+        },
+        {
+          context: 'session',
+          priority: 4,
+          retryLimit: 3,
+          isolateInvalidBatches: true,
+        },
+        () => {},
+      ),
+    ).resolves.toEqual([{ id: 'u1', target: 'Discord' }]);
+
+    expect(calls).toHaveLength(1);
+  });
+
   test('reassembles placeholder-free fragments after structural retries fail', async () => {
     const calls: LLMRequest[] = [];
     const corruptedResponse = JSON.stringify({

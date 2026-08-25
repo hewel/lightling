@@ -184,6 +184,8 @@ describe('page translation protocol', () => {
       false,
     );
     expect(isPlausibleTargetLanguage('GitHub', 'zh-CN', 'GitHub')).toBe(true);
+    expect(isPlausibleTargetLanguage('Discord', 'zh-CN', 'Discord')).toBe(true);
+    expect(isPlausibleTargetLanguage('the', 'zh-CN', 'the')).toBe(false);
     expect(isPlausibleTargetLanguage('Noctalia', 'zh-CN', 'Noctalia', ['Noctalia'])).toBe(
       true,
     );

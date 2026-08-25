@@ -865,7 +865,13 @@ export const isPlausibleTargetLanguage = (
 
   const comparableSource = comparableText(sourceText);
   if (comparableText(text) !== comparableSource) return false;
-  return isInvariantTranslationSource(comparableSource, invariantTerms);
+  if (isInvariantTranslationSource(comparableSource, invariantTerms)) return true;
+  // A single capitalized word echoed unchanged is the model's settled judgment
+  // that the term is a brand or proper name ("Discord"). Rejecting it cannot
+  // yield a better outcome: the unit fails, the same source text stays visible,
+  // and the miss is re-requested on every future page load.
+  const words = comparableSource.match(/\p{L}+/gu);
+  return words?.length === 1 && /^\p{Lu}/u.test(words[0] ?? '');
 };
 
 const CODE_FENCE_PATTERN = /^```[^\n`]*\n([\s\S]*?)\n?\s*```$/u;
