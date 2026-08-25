@@ -698,3 +698,12 @@ export const restoreOccurrence = (occurrence: TextOccurrence): void => {
   for (const [node, value] of binding.originalText) node.nodeValue = value;
   binding.createdTextNodes.clear();
 };
+
+// Provenance semantics extended: mark on collection to declare translator ownership of the node's text.
+export const markOccurrenceSourceNodes = (occurrence: TextOccurrence): void => {
+  if (occurrence.binding.type === 'attribute') {
+    pageTranslationProvenance.markNodes([occurrence.binding.element]);
+  } else {
+    pageTranslationProvenance.markNodes(occurrence.binding.originalText.keys());
+  }
+};

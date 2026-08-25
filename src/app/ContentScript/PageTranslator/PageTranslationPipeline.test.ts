@@ -33,7 +33,7 @@ const modelProfile = {
   ...baseModelProfile,
   batching: { ...baseModelProfile.batching, concurrency: 1 },
 };
-const createPipeline = (root: Element, logEnabled = false) =>
+const createPipeline = (root: Element, logEnabled = false, stabilizationMs = 0) =>
   new PageTranslationPipeline({
     root,
     sourceLanguage: 'en',
@@ -44,6 +44,7 @@ const createPipeline = (root: Element, logEnabled = false) =>
     modelProfile,
     tokenCounter: conservativeTokenCounter,
     logEnabled,
+    stabilizationMs,
   });
 
 describe('PageTranslationPipeline dynamic lifecycle', () => {
@@ -427,5 +428,133 @@ describe('PageTranslationPipeline dynamic lifecycle', () => {
       Element.prototype.replaceChildren = originalReplace;
       vi.useRealTimers();
     }
+  });
+
+  test('discards an in-flight response when the source changes before commit', async () => {
+    const main = document.querySelector('main');
+    const button = document.querySelector('button');
+    if (main === null || button === null) throw new Error('fixture missing');
+
+    const firstRequest = Promise.withResolvers<PageTranslationBatchResponse>();
+    let firstRequestData: PageTranslationBatchRequest | null = null;
+    vi.mocked(translatePageBatch).mockImplementation(async (request) => {
+      if (firstRequestData === null) {
+        firstRequestData = request;
+        return firstRequest.promise;
+      }
+      return responseFor(request);
+    });
+
+    const pipeline = createPipeline(main);
+    pipeline.start();
+
+    await vi.waitFor(() => expect(translatePageBatch).toHaveBeenCalledTimes(1));
+    expect(firstRequestData).not.toBeNull();
+
+    button.textContent = 'Close';
+
+    await vi.waitFor(() => expect(translatePageBatch).toHaveBeenCalledTimes(2));
+    expect(vi.mocked(translatePageBatch).mock.calls[1]?.[0].targets[0]?.sourceText).toBe(
+      'Close',
+    );
+
+    if (firstRequestData !== null) {
+      firstRequest.resolve(responseFor(firstRequestData));
+    }
+
+    await vi.waitFor(() => {
+      expect(button.textContent).toBe('Schließen');
+      expect(pipeline.getMetrics().staleCancellations).toBeGreaterThan(0);
+    });
+    expect(button.textContent).toBe('Schließen');
+    pipeline.stop();
+  });
+
+  test('reuses a stale response from cache when the source returns', async () => {
+    const main = document.querySelector('main');
+    const button = document.querySelector('button');
+    if (main === null || button === null) throw new Error('fixture missing');
+
+    const firstRequest = Promise.withResolvers<PageTranslationBatchResponse>();
+    let firstRequestData: PageTranslationBatchRequest | null = null;
+    vi.mocked(translatePageBatch).mockImplementation(async (request) => {
+      if (firstRequestData === null) {
+        firstRequestData = request;
+        return firstRequest.promise;
+      }
+      return responseFor(request);
+    });
+
+    const pipeline = createPipeline(main);
+    pipeline.start();
+
+    await vi.waitFor(() => expect(translatePageBatch).toHaveBeenCalledTimes(1));
+    button.textContent = 'Close';
+
+    await vi.waitFor(() => expect(translatePageBatch).toHaveBeenCalledTimes(2));
+    if (firstRequestData !== null) {
+      firstRequest.resolve(responseFor(firstRequestData));
+    }
+
+    await vi.waitFor(() => {
+      expect(button.textContent).toBe('Schließen');
+      expect(pipeline.getMetrics().staleCancellations).toBeGreaterThan(0);
+    });
+    button.textContent = 'Save';
+    await vi.waitFor(() => expect(button.textContent).toBe('Speichern'));
+    expect(translatePageBatch).toHaveBeenCalledTimes(2);
+
+    pipeline.stop();
+  });
+
+  test('defers dynamic rescans behind the stabilization window', async () => {
+    const main = document.querySelector('main');
+    const button = document.querySelector('button');
+    if (main === null || button === null) throw new Error('fixture missing');
+
+    const pipeline = createPipeline(main, false, 150);
+    pipeline.start();
+
+    await vi.waitFor(() => expect(button.textContent).toBe('Speichern'));
+    expect(translatePageBatch).toHaveBeenCalledTimes(1);
+
+    button.textContent = 'Close';
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(translatePageBatch).toHaveBeenCalledTimes(1);
+
+    await vi.waitFor(() => expect(translatePageBatch).toHaveBeenCalledTimes(2));
+    expect(vi.mocked(translatePageBatch).mock.calls[1]?.[0].targets[0]?.sourceText).toBe(
+      'Close',
+    );
+    await vi.waitFor(() => expect(button.textContent).toBe('Schließen'));
+
+    pipeline.stop();
+  });
+
+  test('resets the stabilization window on repeated mutations of the same boundary', async () => {
+    const main = document.querySelector('main');
+    const button = document.querySelector('button');
+    if (main === null || button === null) throw new Error('fixture missing');
+
+    const pipeline = createPipeline(main, false, 200);
+    pipeline.start();
+
+    await vi.waitFor(() => expect(button.textContent).toBe('Speichern'));
+    expect(translatePageBatch).toHaveBeenCalledTimes(1);
+
+    button.textContent = 'A';
+    await new Promise((resolve) => setTimeout(resolve, 120));
+    button.textContent = 'B';
+    await new Promise((resolve) => setTimeout(resolve, 120));
+
+    expect(translatePageBatch).toHaveBeenCalledTimes(1);
+
+    await vi.waitFor(() => expect(translatePageBatch).toHaveBeenCalledTimes(2));
+    expect(vi.mocked(translatePageBatch).mock.calls[1]?.[0].targets[0]?.sourceText).toBe(
+      'B',
+    );
+
+    pipeline.stop();
   });
 });

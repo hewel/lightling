@@ -33,6 +33,7 @@ export interface PageTranslationDomLifecycleOptions {
   removeOccurrence: (occurrence: TextOccurrence) => void;
   clearProcessedSlot: (occurrence: TextOccurrence) => void;
   isCurrent: (generation: number) => boolean;
+  isUnitLive: (unit: TranslationUnit) => boolean;
   onMutations: (mutations: MutationRecord[]) => Promise<void>;
   onUnitResolved?: (count: number) => void;
   onApplied?: (unit: TranslationUnit) => void;
@@ -110,7 +111,12 @@ export class PageTranslationDomLifecycle {
     for (const mutation of mutations) {
       if (this.isVolatileMutationTarget(mutation.target)) continue;
       if (this.isAppliedMutation(mutation)) continue;
-      if (pageTranslationProvenance.isOurs(mutation.target)) {
+      if (
+        pageTranslationProvenance.isOurs(mutation.target) ||
+        Array.from(mutation.removedNodes).some((node) =>
+          pageTranslationProvenance.isOurs(node),
+        )
+      ) {
         const occurrence = this.findOccurrence(mutation);
         if (occurrence !== null) {
           const shouldBackOff =
@@ -398,7 +404,11 @@ export class PageTranslationDomLifecycle {
         ) {
           const item = this.applyQueue.shift();
           if (item === undefined) break;
-          if (!this.options.isCurrent(item.generation)) continue;
+          if (
+            !this.options.isCurrent(item.generation) ||
+            !this.options.isUnitLive(item.unit)
+          )
+            continue;
           this.applyUnit(item.unit, item.translation);
           if (item.resolvedParts !== undefined) {
             this.options.onUnitResolved?.(item.resolvedParts);

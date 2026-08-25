@@ -29,6 +29,7 @@ import {
   createPageCollectionContext,
   deduplicateOccurrences,
   getOccurrenceOriginalText,
+  markOccurrenceSourceNodes,
   type CollectionOptions,
   type PageCollectionContext,
   type TextOccurrence,
@@ -53,6 +54,7 @@ export interface PagePipelineMetrics {
   startedAt: number;
   firstVisibleTranslationAt?: number;
 }
+export const DEFAULT_STABILIZATION_MS = 400;
 
 export interface PageTranslationPipelineOptions extends CollectionOptions {
   root: Element;
@@ -60,6 +62,7 @@ export interface PageTranslationPipelineOptions extends CollectionOptions {
   sessionSignature: string;
   modelProfile: TranslationModelProfile;
   tokenCounter: TranslationTokenCounter;
+  stabilizationMs?: number;
   logEnabled?: boolean;
   debug?: boolean;
   debugIncludeText?: boolean;
@@ -174,6 +177,10 @@ export class PageTranslationPipeline {
     string,
     { values: (string | undefined)[]; unit: TranslationUnit }
   >();
+  private readonly liveUnits = new Set<TranslationUnit>();
+  private readonly unitByOccurrence = new Map<TextOccurrence, TranslationUnit>();
+  private readonly pendingRescans = new Map<Element, ReturnType<typeof setTimeout>>();
+  private readonly stabilizationMs: number;
   private processedSlots = new WeakMap<Element, Set<string>>();
   private readonly accepted: AcceptedTranslation[] = [];
   private readonly terminology = new TerminologyMemory();
@@ -218,6 +225,7 @@ export class PageTranslationPipeline {
     private readonly options: PageTranslationPipelineOptions,
     retriever: TranslationContextRetriever = new DeterministicContextRetriever(),
   ) {
+    this.stabilizationMs = options.stabilizationMs ?? DEFAULT_STABILIZATION_MS;
     this.retriever = retriever;
     this.pageCollectionContext = createPageCollectionContext(options.root);
     this.pageProfile = this.pageCollectionContext.pageProfile;
@@ -230,11 +238,13 @@ export class PageTranslationPipeline {
       removeOccurrence: (occurrence) => {
         const index = this.occurrences.indexOf(occurrence);
         if (index >= 0) this.occurrences.splice(index, 1);
+        this.killUnitForOccurrence(occurrence);
       },
       clearProcessedSlot: (occurrence) => {
         this.processedSlots.get(occurrence.element)?.delete(occurrence.slot);
       },
       isCurrent: (generation) => this.isCurrent(generation),
+      isUnitLive: (unit) => this.liveUnits.has(unit),
       onMutations: (mutations) => this.onMutations(mutations),
       onUnitResolved: (count) => this.options.onUnitResolved?.(count),
       onApplied: (unit) => {
@@ -292,10 +302,13 @@ export class PageTranslationPipeline {
 
   public stop(): void {
     ++this.generation;
+    this.clearPendingRescans();
     this.domLifecycle.stop();
     this.perfObserver?.disconnect();
     this.perfObserver = null;
     this.occurrences = [];
+    this.liveUnits.clear();
+    this.unitByOccurrence.clear();
     this.inFlight.clear();
   }
 
@@ -492,10 +505,14 @@ export class PageTranslationPipeline {
     });
     if (newOccurrences.length === 0) return;
 
+    for (const occurrence of newOccurrences) {
+      markOccurrenceSourceNodes(occurrence);
+    }
     this.occurrences.push(...newOccurrences);
     const units = deduplicateOccurrences(newOccurrences).sort(
       (left, right) => right.priority - left.priority,
     );
+    this.registerUnits(units);
     this.metrics.occurrences += newOccurrences.length;
     this.metrics.logicalSegments += newOccurrences.filter(
       (occurrence) => occurrence.slot === 'visible-text',
@@ -614,7 +631,11 @@ export class PageTranslationPipeline {
       for (const item of planned) {
         if (applied.has(item.unit.semanticKey)) continue;
         const translated = this.pageMemory.get(item.unit.semanticKey);
-        if (translated !== undefined && this.isCurrent(generation)) {
+        if (
+          translated !== undefined &&
+          this.isCurrent(generation) &&
+          this.liveUnits.has(item.unit)
+        ) {
           this.scheduleApply(item.unit, translated, generation);
           applied.add(item.unit.semanticKey);
         }
@@ -829,7 +850,7 @@ export class PageTranslationPipeline {
           this.options.tokenCounter.count(translated),
         );
         this.observeAccepted(item.unit, translated);
-        if (this.isCurrent(generation)) {
+        if (this.isCurrent(generation) && this.liveUnits.has(item.unit)) {
           this.scheduleApply(item.unit, translated, generation, assembly.values.length);
         } else {
           this.metrics.staleCancellations++;
@@ -917,6 +938,7 @@ export class PageTranslationPipeline {
       // Restore generates the same childList/characterData records as apply.
       // Observe only after the synchronous restore completes so those writes
       // cannot trigger a second restore -> rescan cycle.
+      this.clearPendingRescans();
       this.domLifecycle.resetForNavigation();
       this.metrics = createMetrics();
       this.logBatches?.splice(0);
@@ -924,6 +946,8 @@ export class PageTranslationPipeline {
       this.logBatchSerial = 0;
       this.sessionStartedAt = Date.now();
       this.occurrences = [];
+      this.liveUnits.clear();
+      this.unitByOccurrence.clear();
       this.pageMemory.clear();
       this.inFlight.clear();
       this.pendingParts.clear();
@@ -954,10 +978,65 @@ export class PageTranslationPipeline {
       }
     }
 
-    const generation = this.generation;
-    // Dynamic rescans use a fixed near-viewport priority. Reading every
-    // element's bounding box after DOM writes forced thousands of layouts in
-    // the real trace; request scheduling does not need that precision here.
-    for (const root of scanRoots) await this.scanAndTranslate(root, generation, 3);
+    for (const root of scanRoots) {
+      this.scheduleRescan(root);
+    }
+  }
+
+  private registerUnits(units: TranslationUnit[]): void {
+    for (const unit of units) {
+      this.liveUnits.add(unit);
+      for (const occurrence of unit.occurrences) {
+        this.unitByOccurrence.set(occurrence, unit);
+      }
+    }
+  }
+
+  private killUnitForOccurrence(occurrence: TextOccurrence): void {
+    const unit = this.unitByOccurrence.get(occurrence);
+    if (unit === undefined) return;
+    this.liveUnits.delete(unit);
+    for (const member of unit.occurrences) {
+      this.unitByOccurrence.delete(member);
+    }
+    this.pendingParts.delete(unit.semanticKey);
+  }
+
+  private scheduleRescan(root: Element): void {
+    for (const [pending, timer] of this.pendingRescans) {
+      if (pending === root || pending.contains(root)) {
+        clearTimeout(timer);
+        this.pendingRescans.set(
+          pending,
+          setTimeout(() => {
+            this.pendingRescans.delete(pending);
+            if (!pending.isConnected && pending !== this.options.root) return;
+            void this.scanAndTranslate(pending, this.generation, 3);
+          }, this.stabilizationMs),
+        );
+        return;
+      }
+    }
+    for (const [pending, timer] of this.pendingRescans) {
+      if (root.contains(pending)) {
+        clearTimeout(timer);
+        this.pendingRescans.delete(pending);
+      }
+    }
+    this.pendingRescans.set(
+      root,
+      setTimeout(() => {
+        this.pendingRescans.delete(root);
+        if (!root.isConnected && root !== this.options.root) return;
+        void this.scanAndTranslate(root, this.generation, 3);
+      }, this.stabilizationMs),
+    );
+  }
+
+  private clearPendingRescans(): void {
+    for (const timer of this.pendingRescans.values()) {
+      clearTimeout(timer);
+    }
+    this.pendingRescans.clear();
   }
 }
