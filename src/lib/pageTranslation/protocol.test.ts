@@ -35,9 +35,15 @@ describe('page translation protocol', () => {
     expect(isInvariantTranslationSource('tsx')).toBe(true);
     expect(isInvariantTranslationSource('bash')).toBe(true);
     expect(isInvariantTranslationSource('@imdreamrunner')).toBe(true);
+    expect(isInvariantTranslationSource('cool.person@example.com')).toBe(true);
     expect(
       isInvariantTranslationSource('<x id="x-1"/> — XDSCollapse → XDSCollapsible'),
     ).toBe(true);
+    // Person-name shapes stay invariant so unchanged model echoes are accepted
+    // instead of retried into a storm.
+    expect(isInvariantTranslationSource('Jonas E. P')).toBe(true);
+    expect(isInvariantTranslationSource('Christopher Keele')).toBe(true);
+    expect(isInvariantTranslationSource('Krzysztof Gasienica-Bednarz')).toBe(true);
 
     for (const text of [
       'Save',

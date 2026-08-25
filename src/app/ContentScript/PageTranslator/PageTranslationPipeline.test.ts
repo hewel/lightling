@@ -127,6 +127,59 @@ describe('PageTranslationPipeline dynamic lifecycle', () => {
     pipeline.stop();
   });
 
+  test('does not retranslate an applied text node recreated by the page', async () => {
+    document.body.innerHTML = '<main><p>Save <code>token</code> Close</p></main>';
+    const main = document.querySelector('main');
+    const paragraph = document.querySelector('p');
+    if (main === null || paragraph === null) throw new Error('fixture missing');
+    const pipeline = createPipeline(main);
+    pipeline.start();
+    await vi.waitFor(() =>
+      expect(paragraph.textContent).toBe('Speichern token Schließen'),
+    );
+
+    const translatedText = paragraph.lastChild;
+    if (!(translatedText instanceof Text)) throw new Error('translated text missing');
+    translatedText.replaceWith(translatedText.nodeValue ?? '');
+    const recreatedText = paragraph.lastChild;
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(translatePageBatch).toHaveBeenCalledTimes(1);
+    expect(paragraph.textContent).toBe('Speichern token Schließen');
+    if (!(recreatedText instanceof Text)) throw new Error('recreated text missing');
+    recreatedText.nodeValue = ' Open';
+    await vi.waitFor(() => expect(translatePageBatch).toHaveBeenCalledTimes(2));
+    expect(
+      vi.mocked(translatePageBatch).mock.calls[1]?.[0].targets[0]?.sourceText,
+    ).toContain('Open');
+
+    pipeline.stop();
+    expect(paragraph.lastChild).toBe(recreatedText);
+    expect(main.textContent).toBe('Save token Open');
+  });
+
+  test('backs off when the page keeps reverting an applied translation', async () => {
+    document.body.innerHTML = '<main><p>Save</p></main>';
+    const main = document.querySelector('main');
+    const paragraph = document.querySelector('p');
+    if (main === null || paragraph === null) throw new Error('fixture missing');
+    const pipeline = createPipeline(main);
+    pipeline.start();
+    await vi.waitFor(() => expect(paragraph.textContent).toBe('Speichern'));
+
+    // Hostile page repeatedly resets the translated node to the source text.
+    for (let attempt = 0; attempt < 5; attempt++) {
+      paragraph.replaceChildren(document.createTextNode('Save'));
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+
+    // The translation comes from page memory, so the war must never re-request,
+    // and the conflict backoff must stop re-applying after repeated reverts.
+    expect(translatePageBatch).toHaveBeenCalledTimes(1);
+    expect(paragraph.textContent).toBe('Save');
+    pipeline.stop();
+  });
+
   test('does not leak nested applied text when a link parent is rescanned', async () => {
     document.body.innerHTML = '<main><a><span>Save</span></a></main>';
     const main = document.querySelector('main');

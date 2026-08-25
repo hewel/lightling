@@ -127,6 +127,46 @@ describe('LLM webpage request contract', () => {
     ]);
   });
 
+  test('accepts an unchanged echo for alt text instead of retrying', async () => {
+    const calls: LLMRequest[] = [];
+    const echoResponse = JSON.stringify({
+      translations: [{ id: 'u1', target: 'Lexx' }],
+    });
+    const engine = new LLMTranslationEngine({
+      loadSettings: () => Promise.resolve(settings),
+      fetch: (llmRequest) => {
+        calls.push(llmRequest);
+        const response: LLMResponse = {
+          text: echoResponse,
+          usage: { inputTokens: null, outputTokens: null },
+        };
+        return Effect.succeed(response);
+      },
+    });
+
+    await expect(
+      engine.translatePageBatch(
+        {
+          ...request,
+          targetLanguage: 'zh',
+          group: { kind: 'image-alt', slot: 'alt', contextClass: 'main:image-alt' },
+          targets: [
+            { ...target('u1', 'Lexx'), kind: 'image-alt' as const, slot: 'alt' as const },
+          ],
+        },
+        {
+          context: 'session',
+          priority: 4,
+          retryLimit: 3,
+          isolateInvalidBatches: true,
+        },
+        () => {},
+      ),
+    ).resolves.toEqual([{ id: 'u1', target: 'Lexx' }]);
+
+    expect(calls).toHaveLength(1);
+  });
+
   test('reassembles placeholder-free fragments after structural retries fail', async () => {
     const calls: LLMRequest[] = [];
     const corruptedResponse = JSON.stringify({

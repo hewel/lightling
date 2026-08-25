@@ -611,13 +611,29 @@ const TARGET_SCRIPT_BY_LANGUAGE: Record<string, RegExp> = {
   zh: /\p{Script=Han}/u,
 };
 
-const comparableText = (text: string): string =>
+export const comparableText = (text: string): string =>
   normalizeTranslationText(text.replace(PLACEHOLDER_PATTERN, ''));
 
 const LIKELY_INVARIANT_SOURCE_PATTERN = /(?:[_/]|::|[a-z][A-Z]|[A-Z]{2})/u;
 const COPYRIGHT_SOURCE_PATTERN = /^©\s*\d{4}(?:[-–]\d{4})?\b/u;
 const IDENTIFIER_SOURCE_PATTERN = /^[A-Za-z][A-Za-z0-9_+#./:-]{1,15}$/u;
 const HANDLE_SOURCE_PATTERN = /^@[A-Za-z0-9](?:[A-Za-z0-9_-]{0,38})$/u;
+const EMAIL_SOURCE_PATTERN = /^[\w.+-]+@[\w-]+\.[\w.]+$/u;
+
+/**
+ * Person-name shape: 2-4 Title-Case words ("Jonas E. P", "Christopher Robin").
+ * Single capitalized words are excluded on purpose: they collide with UI
+ * vocabulary ("Discord", "Docs") that must stay translatable.
+ */
+const isLikelyProperName = (text: string): boolean => {
+  const words = text.match(/\p{L}+/gu);
+  return (
+    words !== null &&
+    words.length >= 2 &&
+    words.length <= 4 &&
+    words.every((word) => /^\p{Lu}/u.test(word))
+  );
+};
 const CODE_LANGUAGE_IDENTIFIERS: Record<string, true> = {
   bash: true,
   bat: true,
@@ -679,7 +695,9 @@ export const isInvariantTranslationSource = (
   }
   return (
     HANDLE_SOURCE_PATTERN.test(comparableSource) ||
+    EMAIL_SOURCE_PATTERN.test(comparableSource) ||
     isLikelyInvariantSource(comparableSource) ||
+    isLikelyProperName(comparableSource) ||
     COPYRIGHT_SOURCE_PATTERN.test(comparableSource) ||
     isIdentifierLikeSource(comparableSource)
   );

@@ -2,6 +2,7 @@ import { Duration, Effect, Schema } from 'effect';
 import type { AiError, Prompt } from 'effect/unstable/ai';
 
 import {
+  comparableText,
   deriveAttemptMetrics,
   isPlausibleTargetLanguage,
   parsePageTranslationResponse,
@@ -970,7 +971,12 @@ export class LLMTranslationEngine {
                 request.targetLanguage,
                 source.sourceText,
                 invariantTerms,
-              ),
+              ) ||
+              // Alt texts are often proper names the model rightly keeps
+              // unchanged; an identical echo is acceptable there because a
+              // wrong-language alt is invisible in the rendered page.
+              (source.slot === 'alt' &&
+                comparableText(text) === comparableText(source.sourceText)),
             { repairPlaceholders: true },
           );
           attempts.push({
