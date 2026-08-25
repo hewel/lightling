@@ -67,6 +67,21 @@ describe('runtime schemas', () => {
     });
   });
 
+  test('decodes legacy exports without selectTranslator.draggablePopup', () => {
+    const selectTranslator = { ...defaultConfig.selectTranslator } as Record<
+      string,
+      unknown
+    >;
+    delete selectTranslator.draggablePopup;
+
+    const config = tryDecode(AppConfig, {
+      ...defaultConfig,
+      selectTranslator,
+    });
+
+    expect(config.selectTranslator.draggablePopup).toBe(false);
+  });
+
   test('enforces execution override ranges', () => {
     const profile = { ...defaultConfig.llmTranslator.profiles[0] };
     const configWith = (overrides: Record<string, unknown>) => ({

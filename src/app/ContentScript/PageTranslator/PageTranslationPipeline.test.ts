@@ -8,6 +8,7 @@ import { abortTranslation } from '@/requests/backend/abortTranslation';
 import { translatePageBatch } from '@/requests/backend/translatePageBatch';
 
 import { PageTranslationPipeline } from './PageTranslationPipeline';
+import { pageTranslationProvenance } from './PageTranslationProvenance';
 
 vi.mock('@/requests/backend/translatePageBatch', () => ({
   translatePageBatch: vi.fn(),
@@ -93,35 +94,37 @@ describe('PageTranslationPipeline dynamic lifecycle', () => {
     pipeline.stop();
   });
 
-  test('does not retranslate an applied text node recreated by the page', async () => {
-    document.body.innerHTML = '<main><p>Save <code>token</code> Close</p></main>';
+  test('ignores ambiguous mutations inside owned translated subtrees', async () => {
     const main = document.querySelector('main');
-    const paragraph = document.querySelector('p');
-    if (main === null || paragraph === null) throw new Error('fixture missing');
+    if (main === null) throw new Error('fixture main missing');
     const pipeline = createPipeline(main);
     pipeline.start();
     await vi.waitFor(() =>
-      expect(paragraph.textContent).toBe('Speichern token Schließen'),
+      expect(main.querySelector('button')?.textContent).toBe('Speichern'),
     );
-
-    const translatedText = paragraph.lastChild;
-    if (!(translatedText instanceof Text)) throw new Error('translated text missing');
-    translatedText.replaceWith(translatedText.nodeValue ?? '');
-    const recreatedText = paragraph.lastChild;
-    await new Promise((resolve) => setTimeout(resolve, 0));
-
     expect(translatePageBatch).toHaveBeenCalledTimes(1);
-    expect(paragraph.textContent).toBe('Speichern token Schließen');
-    if (!(recreatedText instanceof Text)) throw new Error('recreated text missing');
-    recreatedText.nodeValue = ' Open';
+
+    // Own output re-observed without an occurrence binding must never be
+    // re-collected: use unique text so a leak would force a second batch.
+    const owned = document.createElement('button');
+    pageTranslationProvenance.markNodes([owned]);
+    main.append(owned);
+    owned.append(document.createTextNode('Eindeutig'));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(translatePageBatch).toHaveBeenCalledTimes(1);
+
+    // Negative control: identical unmarked text IS collected, proving the
+    // pipeline is alive and only provenance suppressed the owned copy.
+    const external = document.createElement('button');
+    external.textContent = 'Eindeutig';
+    main.append(external);
     await vi.waitFor(() => expect(translatePageBatch).toHaveBeenCalledTimes(2));
     expect(
       vi.mocked(translatePageBatch).mock.calls[1]?.[0].targets[0]?.sourceText,
-    ).toContain('Open');
+    ).toContain('Eindeutig');
 
+    pageTranslationProvenance.unmark(owned);
     pipeline.stop();
-    expect(paragraph.lastChild).toBe(recreatedText);
-    expect(main.textContent).toBe('Save token Open');
   });
 
   test('does not leak nested applied text when a link parent is rescanned', async () => {

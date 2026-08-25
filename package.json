@@ -12,7 +12,7 @@
     "prepare:extension": "node scripts/prepareExtensionAssets.mjs",
     "prepare:extension:release": "node scripts/prepareExtensionAssets.mjs --require-thirdparty",
     "predev": "npm run prepare:extension",
-    "dev": "extension dev --browser=chromium-based --chromium-binary=/usr/bin/helium-browser --no-browser",
+    "dev": "extension dev --browser=chrome --no-browser",
     "prestart": "npm run prepare:extension:release",
     "start": "extension start --browser=chromium-based --chromium-binary=/usr/bin/helium-browser",
     "prebuild": "npm run prepare:extension:release",

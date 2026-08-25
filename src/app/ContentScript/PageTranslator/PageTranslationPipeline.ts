@@ -260,9 +260,6 @@ export class PageTranslationPipeline {
         this.perfProbe.mutationTotalMs += elapsed;
         this.perfProbe.mutationMaxMs = Math.max(this.perfProbe.mutationMaxMs, elapsed);
       },
-      onVolatileBackoff: () => {
-        this.perfProbe.volatileBackoffs++;
-      },
     });
   }
 

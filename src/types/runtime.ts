@@ -390,7 +390,10 @@ export const AppConfig = Schema.Struct({
     detectedLangFirst: Schema.Boolean,
     showOnceForSelection: Schema.Boolean,
     showOriginalText: Schema.Boolean,
-    draggablePopup: Schema.Boolean,
+    // Default keeps configs exported before the drag feature importable
+    draggablePopup: Schema.Boolean.pipe(
+      Schema.withDecodingDefault(Effect.succeed(false)),
+    ),
     isUseAutoForDetectLang: Schema.Boolean,
     timeoutForHideButton: NonNaNNumber,
     mode: Schema.Union([
