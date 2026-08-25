@@ -1,4 +1,5 @@
 import {
+  getRegisteredTranslationModelPatch,
   mergeTranslationModelProfile,
   resolveTranslationModelProfile,
   selectStructuredOutputMode,
@@ -36,6 +37,22 @@ describe('translation model profile resolution', () => {
     });
     expect(merged.batching.concurrency).toBe(1);
     expect(merged.batching.maxItems).toBe(24);
+  });
+
+  test('registers the Google AI Studio preset and Gemini model patches', () => {
+    expect(llmProviderPresets.google).toMatchObject({
+      provider: 'openai-compatible',
+      apiUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
+      model: 'gemini-3.7-flash',
+    });
+    expect(getRegisteredTranslationModelPatch('models/gemini-3.7-flash')).toMatchObject({
+      contextWindow: 1_048_576,
+      sizeTier: 'small',
+    });
+    expect(getRegisteredTranslationModelPatch('gemini-3.5-flash-lite')).toMatchObject({
+      contextWindow: 1_048_576,
+      sizeTier: 'small',
+    });
   });
 
   test('gives explicit overrides precedence over provider metadata', () => {

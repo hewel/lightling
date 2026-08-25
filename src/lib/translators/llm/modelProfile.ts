@@ -294,6 +294,8 @@ const registeredModelAliases: Record<string, string> = {
   'Ling-3.0-tiny': 'ling-3.0-tiny',
   'inclusionai/ling-3.0-tiny': 'ling-3.0-tiny',
   'tencent/hy-mt2-30b-a3b': 'hy-mt2-30b-a3b',
+  'models/gemini-3.7-flash': 'gemini-3.7-flash',
+  'models/gemini-3.5-flash-lite': 'gemini-3.5-flash-lite',
 };
 
 export const registeredModelPatches: Record<string, TranslationModelProfilePatch> = {
@@ -307,6 +309,8 @@ export const registeredModelPatches: Record<string, TranslationModelProfilePatch
   'ling-3.0-flash': { contextWindow: 262_144, sizeTier: 'small' },
   'ling-3.0-tiny': { contextWindow: 262_144, sizeTier: 'small' },
   'hy-mt2-30b-a3b': { contextWindow: 8192 },
+  'gemini-3.7-flash': { contextWindow: 1_048_576, sizeTier: 'small' },
+  'gemini-3.5-flash-lite': { contextWindow: 1_048_576, sizeTier: 'small' },
 };
 
 export const getCanonicalTranslationModelId = (modelId: string): string =>

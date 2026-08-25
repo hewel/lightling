@@ -11,6 +11,7 @@ export type LLMPresetId =
   | 'openai'
   | 'anthropic'
   | 'openrouter'
+  | 'google'
   | 'antling'
   | 'ollama'
   | 'lmstudio'
@@ -20,6 +21,7 @@ export const llmPresetIds: readonly LLMPresetId[] = [
   'openai',
   'anthropic',
   'openrouter',
+  'google',
   'antling',
   'ollama',
   'lmstudio',
@@ -76,6 +78,14 @@ export const llmProviderPresets: Record<LLMPresetId, LLMProfile> = {
     apiUrl: 'https://openrouter.ai/api/v1',
     apiKey: '',
     model: '',
+    ...automaticExecution(),
+  },
+  google: {
+    name: 'Google AI Studio',
+    provider: 'openai-compatible',
+    apiUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
+    apiKey: '',
+    model: 'gemini-3.7-flash',
     ...automaticExecution(),
   },
   antling: {

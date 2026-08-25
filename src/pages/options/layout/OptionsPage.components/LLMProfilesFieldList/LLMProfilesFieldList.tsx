@@ -76,6 +76,7 @@ const presetLabels: Record<LLMPresetId, string> = {
   openai: 'OpenAI',
   anthropic: 'Anthropic',
   openrouter: 'OpenRouter',
+  google: 'Google AI Studio',
   antling: 'Ant Ling',
   ollama: 'Ollama',
   lmstudio: 'LM Studio',
