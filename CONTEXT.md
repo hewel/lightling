@@ -47,3 +47,14 @@ decisions live in `docs/adr/`, not here.
 - **Framework re-render** — a page-owned write that restores a value equal
   to the stored source; repaired by reapplying the stored translation
   without a new model request.
+- **Visibility lane** — the first sort key of a unit's scheduling
+  urgency: Urgent, Visible, Near, or Rest. Derived from viewport
+  intersection state and urgent semantic signals (open dialogs, alerts,
+  assertive live regions); changes as the viewport moves. A
+  deduplicated unit takes the highest lane among its occurrences.
+  Code counterpart: `TranslationPriorityLane` (planned).
+- **Reorder buffer** — the set of collected-but-undispatched units
+  whose dispatch order follows current visibility lanes. Only
+  undispatched work can be re-ranked; dispatched batches are final.
+  Code counterpart: pre-admission buffer in `PageTranslationPipeline`
+  (planned).
