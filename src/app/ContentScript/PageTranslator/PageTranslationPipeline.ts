@@ -50,6 +50,7 @@ export interface PagePipelineMetrics {
   retries: number;
   validationFailures: number;
   staleCancellations: number;
+  navigationCancellations: number;
   terminologyConflicts: number;
   startedAt: number;
   firstVisibleTranslationAt?: number;
@@ -163,6 +164,7 @@ const createMetrics = (): PagePipelineMetrics => ({
   retries: 0,
   validationFailures: 0,
   staleCancellations: 0,
+  navigationCancellations: 0,
   terminologyConflicts: 0,
   startedAt: performance.now(),
 });
@@ -853,7 +855,8 @@ export class PageTranslationPipeline {
         if (this.isCurrent(generation) && this.liveUnits.has(item.unit)) {
           this.scheduleApply(item.unit, translated, generation, assembly.values.length);
         } else {
-          this.metrics.staleCancellations++;
+          if (!this.isCurrent(generation)) this.metrics.navigationCancellations++;
+          else this.metrics.staleCancellations++;
           if (logBatch !== null) {
             for (const target of logBatch.targets) {
               if (target.semanticKey === item.unit.semanticKey) target.status = 'stale';
@@ -930,34 +933,48 @@ export class PageTranslationPipeline {
 
   private async onMutations(mutations: MutationRecord[]): Promise<void> {
     if (location.href !== this.currentUrl) {
-      const previousSession = this.runtimeSessionId;
-      this.currentUrl = location.href;
-      ++this.generation;
-      this.metrics.staleCancellations++;
-      await abortTranslation({ context: previousSession }).catch(() => undefined);
-      // Restore generates the same childList/characterData records as apply.
-      // Observe only after the synchronous restore completes so those writes
-      // cannot trigger a second restore -> rescan cycle.
-      this.clearPendingRescans();
-      this.domLifecycle.resetForNavigation();
-      this.metrics = createMetrics();
-      this.logBatches?.splice(0);
-      this.droppedLogBatches = 0;
-      this.logBatchSerial = 0;
-      this.sessionStartedAt = Date.now();
-      this.occurrences = [];
-      this.liveUnits.clear();
-      this.unitByOccurrence.clear();
-      this.pageMemory.clear();
-      this.inFlight.clear();
-      this.pendingParts.clear();
-      this.accepted.length = 0;
-      this.processedSlots = new WeakMap();
-      this.runtimeSessionId = createUUID();
-      this.runtimeSignature = `${this.currentUrl}\u0000${this.options.sourceLanguage}\u0000${this.options.targetLanguage}\u0000${this.options.identity.provider}\u0000${this.options.identity.model}\u0000${this.runtimeSessionId}`;
-      const generation = ++this.generation;
-      await this.scanAndTranslate(this.options.root, generation);
-      return;
+      let isPathChange = true;
+      try {
+        const previous = new URL(this.currentUrl);
+        const current = new URL(location.href);
+        isPathChange =
+          previous.origin !== current.origin || previous.pathname !== current.pathname;
+      } catch {
+        isPathChange = true;
+      }
+
+      if (!isPathChange) {
+        this.currentUrl = location.href;
+      } else {
+        const previousSession = this.runtimeSessionId;
+        this.currentUrl = location.href;
+        ++this.generation;
+        this.metrics.navigationCancellations++;
+        void abortTranslation({ context: previousSession }).catch(() => undefined);
+        // Restore generates the same childList/characterData records as apply.
+        // Observe only after the synchronous restore completes so those writes
+        // cannot trigger a second restore -> rescan cycle.
+        this.clearPendingRescans();
+        this.domLifecycle.resetForNavigation();
+        this.metrics = createMetrics();
+        this.logBatches?.splice(0);
+        this.droppedLogBatches = 0;
+        this.logBatchSerial = 0;
+        this.sessionStartedAt = Date.now();
+        this.occurrences = [];
+        this.liveUnits.clear();
+        this.unitByOccurrence.clear();
+        this.pageMemory.clear();
+        this.inFlight.clear();
+        this.pendingParts.clear();
+        this.accepted.length = 0;
+        this.processedSlots = new WeakMap();
+        this.runtimeSessionId = createUUID();
+        this.runtimeSignature = `${this.currentUrl}\u0000${this.options.sourceLanguage}\u0000${this.options.targetLanguage}\u0000${this.options.identity.provider}\u0000${this.options.identity.model}\u0000${this.runtimeSessionId}`;
+        const generation = ++this.generation;
+        await this.scanAndTranslate(this.options.root, generation);
+        return;
+      }
     }
 
     const roots = this.domLifecycle.collectRescanRoots(mutations);

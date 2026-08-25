@@ -557,4 +557,99 @@ describe('PageTranslationPipeline dynamic lifecycle', () => {
 
     pipeline.stop();
   });
+
+  test('does not requeue unchanged content after a query-only route change', async () => {
+    const main = document.querySelector('main');
+    const button = document.querySelector('button');
+    if (main === null || button === null) throw new Error('fixture missing');
+    const originalHref = location.href;
+    location.href = 'https://page.test/components/Button';
+    const pipeline = createPipeline(main);
+    pipeline.start();
+    await vi.waitFor(() => expect(button.textContent).toBe('Speichern'));
+    expect(translatePageBatch).toHaveBeenCalledTimes(1);
+
+    // Tab UIs switch routes through the query string; the document is unchanged.
+    // The test environment mocks location as a bare URL, so assign href directly.
+    location.href = 'https://page.test/components/Button?tab=examples';
+    main.append(document.createElement('span'));
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    expect(translatePageBatch).toHaveBeenCalledTimes(1);
+    location.href = originalHref;
+    pipeline.stop();
+  });
+
+  test('completes navigation reset before awaiting the backend abort', async () => {
+    const main = document.querySelector('main');
+    const button = document.querySelector('button');
+    if (main === null || button === null) throw new Error('fixture missing');
+    const pipeline = createPipeline(main, true);
+    pipeline.start();
+    await vi.waitFor(() => expect(button.textContent).toBe('Speichern'));
+    expect(translatePageBatch).toHaveBeenCalledTimes(1);
+
+    // A second unit stays in flight across the navigation.
+    const inFlight = Promise.withResolvers<PageTranslationBatchResponse>();
+    vi.mocked(translatePageBatch).mockImplementation(async (request) => {
+      if (request.targets.some((target) => target.sourceText === 'Close')) {
+        return inFlight.promise;
+      }
+      return responseFor(request);
+    });
+    const second = document.createElement('button');
+    second.textContent = 'Close';
+    main.append(second);
+    await vi.waitFor(() => expect(translatePageBatch).toHaveBeenCalledTimes(2));
+
+    const abortDeferred = Promise.withResolvers<undefined>();
+    vi.mocked(abortTranslation).mockImplementation(() => abortDeferred.promise);
+    const originalHref = location.href;
+    location.href = 'https://page.test/other-page';
+    main.append(document.createElement('span'));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    // The pre-navigation response arrives while the backend abort is pending.
+    const request = vi.mocked(translatePageBatch).mock.calls[1]?.[0];
+    if (request === undefined) throw new Error('second request missing');
+    inFlight.resolve(responseFor(request));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    // The reset must already be complete: no pre-navigation batch may linger
+    // in the exportable log to be marked stale during the abort window.
+    const batches = pipeline.getLog()?.batches ?? [];
+    const staleTargets = batches.flatMap((batch) =>
+      batch.targets.filter((target) => target.status === 'stale'),
+    );
+    expect(staleTargets).toEqual([]);
+
+    abortDeferred.resolve(undefined);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    location.href = originalHref;
+    pipeline.stop();
+  });
+
+  test('resets the session when the pathname changes', async () => {
+    const main = document.querySelector('main');
+    const button = document.querySelector('button');
+    if (main === null || button === null) throw new Error('fixture missing');
+    const pipeline = createPipeline(main);
+    const initialSessionId = pipeline.getSessionId();
+    pipeline.start();
+    await vi.waitFor(() => expect(button.textContent).toBe('Speichern'));
+    expect(translatePageBatch).toHaveBeenCalledTimes(1);
+
+    const originalHref = location.href;
+    location.href = 'https://page.test/other-page';
+    main.append(document.createElement('span'));
+
+    await vi.waitFor(() => {
+      expect(translatePageBatch).toHaveBeenCalledTimes(2);
+      expect(abortTranslation).toHaveBeenCalledWith({ context: initialSessionId });
+      expect(button.textContent).toBe('Speichern');
+    });
+
+    location.href = originalHref;
+    pipeline.stop();
+  });
 });
