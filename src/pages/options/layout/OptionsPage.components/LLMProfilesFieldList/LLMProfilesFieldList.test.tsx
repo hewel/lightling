@@ -391,8 +391,10 @@ describe('LLMProfilesFieldList', () => {
 
     onChange.mockClear();
     await inputText(concurrencyInput, '9');
-    expect(onChange).not.toHaveBeenCalled();
-
+    expect(onChange).toHaveBeenLastCalledWith({
+      activeProfile: 'OpenAI',
+      profiles: [{ ...openAIProfile(), maxConcurrentRequests: 9 }],
+    });
     onChange.mockClear();
     await inputText(concurrencyInput, '1.5');
     expect(onChange).not.toHaveBeenCalled();
@@ -407,7 +409,7 @@ describe('LLMProfilesFieldList', () => {
     expect(onChange).toHaveBeenLastCalledWith({
       activeProfile: 'OpenAI',
       profiles: [
-        { ...openAIProfile(), maxConcurrentRequests: 2, contextWindowTokens: 1024 },
+        { ...openAIProfile(), maxConcurrentRequests: 9, contextWindowTokens: 1024 },
       ],
     });
   });
@@ -501,8 +503,8 @@ describe('LLMProfilesFieldList', () => {
 
     await act(async () => findCollapsibleTrigger().click());
     const concurrencyInput = findInput('llmProfiles_maxConcurrentRequests');
-    await inputText(concurrencyInput, '3');
-
+    onChange.mockClear();
+    await inputText(concurrencyInput, '9');
     expect(container.textContent).toContain(
       'settings_message_llmTranslator_modelsLoaded',
     );

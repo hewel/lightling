@@ -933,7 +933,7 @@ export const LLMProfilesFieldList: FC<LLMProfilesFieldListProps> = ({
                     isWheelEnabled={false}
                     units={getMessage('llmProfiles_unitRequests')}
                     min={1}
-                    max={8}
+                    max={12}
                     width="100%"
                     onChange={(maxConcurrentRequests) => {
                       patchProfile(selectedProfileIndex, { maxConcurrentRequests });

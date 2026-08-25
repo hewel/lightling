@@ -1,6 +1,8 @@
 // cspell:ignore inclusionai
 import type { AppConfigType } from '@/types/runtime';
 
+import type { TranslationModelSizeTier } from './sizeTier';
+
 export const TRANSLATION_MODEL_PROFILE_VERSION = 'translation-profile-v1';
 export const TRANSLATION_PAGE_PROMPT_VERSION = 'page-v3';
 
@@ -64,11 +66,6 @@ export interface TranslationModelCapabilities {
 
 export interface TranslationAdaptiveSettings {
   enabled: boolean;
-  observationWindow: number;
-  minimumSourceTokens: number;
-  maximumSourceTokens: number;
-  increaseStep: number;
-  decreaseFactor: number;
 }
 
 export interface TranslationModelProfile {
@@ -124,13 +121,13 @@ export interface TranslationModelProfilePatch {
   batching?: Partial<TranslationBatchSettings>;
   retry?: Partial<TranslationRetrySettings>;
   adaptive?: Partial<TranslationAdaptiveSettings>;
+  sizeTier?: TranslationModelSizeTier;
   safetyReserveTokens?: number;
   schemaReserveTokens?: number;
   initialOutputRatios?: Record<string, number>;
   promptVersion?: string;
   profileVersion?: string;
 }
-
 export interface TranslationProfileResolution {
   profile: TranslationModelProfile;
   warnings: string[];
@@ -230,11 +227,6 @@ const baseProfile = (
   },
   adaptive: {
     enabled: true,
-    observationWindow: 5,
-    minimumSourceTokens: 256,
-    maximumSourceTokens: 1600,
-    increaseStep: 96,
-    decreaseFactor: 0.75,
   },
   safetyReserveTokens: 384,
   schemaReserveTokens: 128,
@@ -304,15 +296,16 @@ const registeredModelAliases: Record<string, string> = {
   'tencent/hy-mt2-30b-a3b': 'hy-mt2-30b-a3b',
 };
 
-const registeredModelPatches: Record<string, TranslationModelProfilePatch> = {
+export const registeredModelPatches: Record<string, TranslationModelProfilePatch> = {
   'gpt-4o-mini': {
     tokenizerId: 'o200k_base',
     tokenizerSource: 'registered-model',
     contextWindow: 128_000,
     maximumOutputTokens: 16_384,
+    sizeTier: 'small',
   },
-  'ling-3.0-flash': { contextWindow: 262_144 },
-  'ling-3.0-tiny': { contextWindow: 262_144 },
+  'ling-3.0-flash': { contextWindow: 262_144, sizeTier: 'small' },
+  'ling-3.0-tiny': { contextWindow: 262_144, sizeTier: 'small' },
   'hy-mt2-30b-a3b': { contextWindow: 8192 },
 };
 
@@ -687,12 +680,7 @@ export const resolveTranslationModelProfile = (
       configured.translationProfile?.structuredOutputMode ??
       selectStructuredOutputMode(profile.capabilities),
     adaptive: {
-      ...profile.adaptive,
-      maximumSourceTokens: profile.batching.maxSourceTokens,
-      minimumSourceTokens: Math.min(
-        profile.adaptive.minimumSourceTokens,
-        profile.batching.preferredSourceTokens,
-      ),
+      enabled: profile.adaptive.enabled,
     },
   };
 
@@ -793,97 +781,3 @@ export const validateFallbackProfiles = (
   }
   return Array.from(new Set(errors)).sort();
 };
-
-export interface AdaptiveBatchObservation {
-  valid: boolean;
-  truncated: boolean;
-  timedOut: boolean;
-  latencyMs: number;
-}
-
-interface AdaptiveState {
-  preferredSourceTokens: number;
-  observations: AdaptiveBatchObservation[];
-}
-
-export class AdaptiveBatchTuner {
-  private readonly states = new Map<string, AdaptiveState>();
-
-  public get(
-    profile: TranslationModelProfile,
-    sourceLanguage: string,
-    targetLanguage: string,
-    contentClass: string,
-  ): number {
-    if (!profile.adaptive.enabled) return profile.batching.preferredSourceTokens;
-    const key = this.key(profile, sourceLanguage, targetLanguage, contentClass);
-    return (
-      this.states.get(key)?.preferredSourceTokens ??
-      profile.batching.preferredSourceTokens
-    );
-  }
-
-  public observe(
-    profile: TranslationModelProfile,
-    sourceLanguage: string,
-    targetLanguage: string,
-    contentClass: string,
-    observation: AdaptiveBatchObservation,
-  ): void {
-    if (!profile.adaptive.enabled) return;
-    const key = this.key(profile, sourceLanguage, targetLanguage, contentClass);
-    const state = this.states.get(key) ?? {
-      preferredSourceTokens: profile.batching.preferredSourceTokens,
-      observations: [],
-    };
-    state.observations.push(observation);
-    if (state.observations.length > profile.adaptive.observationWindow) {
-      state.observations.shift();
-    }
-    if (state.observations.length < profile.adaptive.observationWindow) {
-      this.states.set(key, state);
-      return;
-    }
-
-    const hasFailure = state.observations.some(
-      (item) => !item.valid || item.truncated || item.timedOut,
-    );
-    if (hasFailure) {
-      state.preferredSourceTokens = Math.max(
-        profile.adaptive.minimumSourceTokens,
-        Math.floor(state.preferredSourceTokens * profile.adaptive.decreaseFactor),
-      );
-    } else {
-      const averageLatency =
-        state.observations.reduce((sum, item) => sum + item.latencyMs, 0) /
-        state.observations.length;
-      if (averageLatency < 5000) {
-        state.preferredSourceTokens = Math.min(
-          profile.adaptive.maximumSourceTokens,
-          state.preferredSourceTokens + profile.adaptive.increaseStep,
-        );
-      }
-    }
-    state.observations = [];
-    this.states.set(key, state);
-  }
-
-  public clear(profileId?: string): void {
-    if (profileId === undefined) {
-      this.states.clear();
-      return;
-    }
-    for (const key of this.states.keys()) {
-      if (key.startsWith(`${profileId}\u0000`)) this.states.delete(key);
-    }
-  }
-
-  private key(
-    profile: TranslationModelProfile,
-    sourceLanguage: string,
-    targetLanguage: string,
-    contentClass: string,
-  ): string {
-    return `${profile.id}\u0000${sourceLanguage}>${targetLanguage}\u0000${contentClass}`;
-  }
-}

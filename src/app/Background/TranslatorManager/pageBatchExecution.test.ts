@@ -4,6 +4,7 @@ import type {
   PageTranslationBatchRequest,
   TranslationTarget,
 } from '@/lib/pageTranslation/protocol';
+import type { LLMScheduler } from '@/lib/translators/llm/LLMScheduler';
 import { LLMTranslator } from '@/lib/translators/llm/LLMTranslator';
 
 import {
@@ -104,23 +105,31 @@ test('scheduler page batch execution translates each target with its own priorit
   });
 });
 
-test('page batch execution factory selects the explicit adapter', () => {
-  const translator = { translatePageBatch: vi.fn() } as unknown as LLMTranslator;
-  const scheduler = { translate: vi.fn() } as unknown as IScheduler;
+test('page batch execution factory routes LLM batches through the raw scheduler', async () => {
+  const translatePageBatch = vi.fn(async () => [{ id: 'first', target: 'translated' }]);
+  const rawScheduler = { translatePageBatch } as unknown as LLMScheduler;
+  const cachedScheduler = { translate: vi.fn() } as unknown as IScheduler;
+
+  const execution = createPageBatchExecution({
+    translatorClass: LLMTranslator,
+    getScheduler: () => cachedScheduler,
+    llmSchedulerInstance: rawScheduler,
+    retryLimit: 2,
+  });
+  await expect(
+    execution.execute(createRequest([createTarget('first', 8)])),
+  ).resolves.toEqual([{ id: 'first', target: 'translated' }]);
+  expect(translatePageBatch).toHaveBeenCalledWith(
+    expect.objectContaining({ sessionId: 'session-1' }),
+    { context: 'session-1', priority: 8, retryLimit: 2 },
+    undefined,
+  );
+  expect(cachedScheduler.translate).not.toHaveBeenCalled();
 
   expect(
     createPageBatchExecution({
-      translatorClass: LLMTranslator,
-      getLLMTranslator: () => translator,
-      getScheduler: () => scheduler,
-      retryLimit: 2,
-    }),
-  ).toBeInstanceOf(LLMPageBatchExecution);
-  expect(
-    createPageBatchExecution({
       translatorClass: class OtherTranslator {},
-      getLLMTranslator: () => translator,
-      getScheduler: () => scheduler,
+      getScheduler: () => cachedScheduler,
       retryLimit: 2,
     }),
   ).toBeInstanceOf(SchedulerPageBatchExecution);

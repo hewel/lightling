@@ -2,6 +2,7 @@ import type {
   PageTranslationBatchRequest,
   PageTranslationBatchResponse,
 } from '@/lib/pageTranslation/protocol';
+import { TranslationBudgetController } from '@/lib/translators/llm/budgetController';
 import { createConservativeTranslationModelProfile } from '@/lib/translators/llm/modelProfile';
 import { conservativeTokenCounter } from '@/lib/translators/llm/tokenizer';
 import { abortTranslation } from '@/requests/backend/abortTranslation';
@@ -25,6 +26,7 @@ const responseFor = (
     target: target.sourceText.replace('Save', 'Speichern').replace('Close', 'Schließen'),
     cacheKey: target.semanticKey,
     cacheHit: false,
+    provenance: 'provider',
   })),
 });
 
@@ -33,7 +35,19 @@ const modelProfile = {
   ...baseModelProfile,
   batching: { ...baseModelProfile.batching, concurrency: 1 },
 };
-const createPipeline = (root: Element, logEnabled = false, stabilizationMs = 0) =>
+const createPipeline = (
+  root: Element,
+  logEnabled = false,
+  stabilizationMs = 0,
+  profile = modelProfile,
+  onBudgetSnapshot?: (snapshot: {
+    concurrency: number;
+    batchSourceTokens: number;
+    budgetTokens: number;
+  }) => void,
+  sizeTier: 'small' | 'medium' | 'large' = 'small',
+  userConcurrencyCeiling: number | null = null,
+) =>
   new PageTranslationPipeline({
     root,
     sourceLanguage: 'en',
@@ -41,10 +55,13 @@ const createPipeline = (root: Element, logEnabled = false, stabilizationMs = 0) 
     identity: { provider: 'openai', model: 'small-model' },
     sessionId: crypto.randomUUID(),
     sessionSignature: crypto.randomUUID(),
-    modelProfile,
+    modelProfile: profile,
     tokenCounter: conservativeTokenCounter,
     logEnabled,
     stabilizationMs,
+    sizeTier,
+    userConcurrencyCeiling,
+    onBudgetSnapshot,
   });
 
 describe('PageTranslationPipeline dynamic lifecycle', () => {
@@ -53,6 +70,69 @@ describe('PageTranslationPipeline dynamic lifecycle', () => {
     document.body.innerHTML = '<main><button>Save</button></main>';
     vi.mocked(translatePageBatch).mockImplementation(async (request) =>
       responseFor(request),
+    );
+  });
+  test('keeps static profile behavior without creating an adaptive budget controller', async () => {
+    const main = document.querySelector('main');
+    if (main === null) throw new Error('fixture main missing');
+    const onBudgetSnapshot = vi.fn();
+    const pipeline = createPipeline(
+      main,
+      true,
+      0,
+      { ...modelProfile, adaptive: { enabled: false } },
+      onBudgetSnapshot,
+    );
+    pipeline.start();
+    await vi.waitFor(() => expect(translatePageBatch).toHaveBeenCalledTimes(1));
+    await vi.waitFor(() =>
+      expect(pipeline.getLog()?.batches[0].completedAt).toEqual(expect.any(Number)),
+    );
+    const batch = pipeline.getLog()?.batches[0];
+    if (batch === undefined) throw new Error('provider batch log missing');
+    expect(batch.parallelism).toEqual({
+      adaptive: false,
+      sizeTier: 'small',
+      dispatchConcurrency: modelProfile.batching.concurrency,
+      batchSourceTokens: batch.sourceBudget,
+      budgetTokens:
+        modelProfile.batching.concurrency *
+        (batch.sourceBudget + batch.tokenBudget.reservedOutputTokens),
+    });
+    expect(batch.latencyMs).toEqual(expect.any(Number));
+    expect(batch.latencyMs).toBeGreaterThanOrEqual(0);
+    expect(batch.terminologyConflicts).toBe(0);
+    pipeline.stop();
+    expect(onBudgetSnapshot).not.toHaveBeenCalled();
+  });
+
+  test('observes a 429 attempt and persists the adaptive snapshot on stop', async () => {
+    const main = document.querySelector('main');
+    if (main === null) throw new Error('fixture main missing');
+    vi.mocked(translatePageBatch).mockImplementationOnce(async (request) => ({
+      ...responseFor(request),
+      metrics: {
+        retryCount: 1,
+        validationFailures: 0,
+        attempts: [
+          {
+            kind: 'transport-retry',
+            stage: 'initial',
+            profileId: modelProfile.id,
+            targetIds: request.targets.map((target) => target.id),
+            httpStatus: 429,
+            error: 'rate limit',
+          },
+        ],
+      },
+    }));
+    const onBudgetSnapshot = vi.fn();
+    const pipeline = createPipeline(main, false, 0, modelProfile, onBudgetSnapshot);
+    pipeline.start();
+    await vi.waitFor(() => expect(translatePageBatch).toHaveBeenCalledTimes(1));
+    pipeline.stop();
+    expect(onBudgetSnapshot).toHaveBeenCalledWith(
+      expect.objectContaining({ budgetTokens: expect.any(Number) }),
     );
   });
 
@@ -259,6 +339,85 @@ describe('PageTranslationPipeline dynamic lifecycle', () => {
     expect(main.querySelector('button')?.textContent).toBe('Save');
     expect(abortTranslation).not.toHaveBeenCalled();
   });
+  test('shares admission across overlapping initial scan and rescan work', async () => {
+    const profile = {
+      ...modelProfile,
+      batching: { ...modelProfile.batching, maxItems: 1, concurrency: 1 },
+    };
+    const first = Promise.withResolvers<PageTranslationBatchResponse>();
+    let firstRequest: PageTranslationBatchRequest | undefined;
+    vi.mocked(translatePageBatch).mockImplementation(async (request) => {
+      if (firstRequest === undefined) {
+        firstRequest = request;
+        return first.promise;
+      }
+      return responseFor(request);
+    });
+    const main = document.querySelector('main');
+    if (main === null) throw new Error('fixture main missing');
+    const pipeline = createPipeline(main, false, 0, profile);
+    pipeline.start();
+    await vi.waitFor(() => expect(translatePageBatch).toHaveBeenCalledTimes(1));
+
+    const second = document.createElement('button');
+    second.textContent = 'Close';
+    main.append(second);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(translatePageBatch).toHaveBeenCalledTimes(1);
+
+    if (firstRequest === undefined) throw new Error('first request missing');
+    first.resolve(responseFor(firstRequest));
+    await vi.waitFor(() => expect(translatePageBatch).toHaveBeenCalledTimes(2));
+    pipeline.stop();
+  });
+  test('rotates a full producer behind a queued peer', async () => {
+    type AdmissionProducer = {
+      generation: number;
+      nextBatch: () => unknown;
+      resolve: () => void;
+      active: number;
+      exhausted: boolean;
+    };
+    const main = document.querySelector('main');
+    if (main === null) throw new Error('fixture main missing');
+    const pipeline = createPipeline(main, false, 0, {
+      ...modelProfile,
+      adaptive: { ...modelProfile.adaptive, enabled: false },
+      batching: { ...modelProfile.batching, concurrency: 1 },
+    });
+    const admission = pipeline as unknown as {
+      enqueueAdmission: (producer: AdmissionProducer) => Promise<void>;
+    };
+    const order: string[] = [];
+    const createProducer = (label: string, batches: number): AdmissionProducer => {
+      let cursor = 0;
+      return {
+        generation: 0,
+        active: 0,
+        exhausted: false,
+        resolve: () => undefined,
+        nextBatch: () => {
+          if (cursor >= batches) return null;
+          order.push(`${label}${++cursor}`);
+          return {
+            targets: [],
+            pageProfile: {},
+            context: {},
+            sourceTokens: 0,
+            sourceBudget: 0,
+            budget: {},
+            reductions: [],
+          };
+        },
+      };
+    };
+    await Promise.all([
+      admission.enqueueAdmission(createProducer('A', 2)),
+      admission.enqueueAdmission(createProducer('B', 1)),
+    ]);
+    expect(order).toEqual(['A1', 'B1', 'A2']);
+  });
+
   test('retains no exportable log while the setting is disabled', async () => {
     const main = document.querySelector('main');
     if (main === null) throw new Error('fixture main missing');
@@ -300,6 +459,15 @@ describe('PageTranslationPipeline dynamic lifecycle', () => {
     expect(log?.batches[0]).toMatchObject({
       retryCount: 0,
       validationFailures: 0,
+      parallelism: {
+        adaptive: true,
+        sizeTier: 'small',
+        dispatchConcurrency: expect.any(Number),
+        batchSourceTokens: expect.any(Number),
+        budgetTokens: expect.any(Number),
+      },
+      latencyMs: expect.any(Number),
+      terminologyConflicts: 0,
       targets: [
         {
           sourceText: 'Save',
@@ -310,7 +478,11 @@ describe('PageTranslationPipeline dynamic lifecycle', () => {
         },
       ],
     });
+    expect(log?.batches[0].latencyMs).toBeGreaterThanOrEqual(0);
+
     expect(log?.batches[1]).toMatchObject({
+      latencyMs: 0,
+      terminologyConflicts: 0,
       targets: [
         {
           sourceText: 'Save',
@@ -320,9 +492,48 @@ describe('PageTranslationPipeline dynamic lifecycle', () => {
         },
       ],
     });
+    expect(log?.batches[1]).not.toHaveProperty('parallelism');
+
+    expect(() => structuredClone(log)).not.toThrow();
+    expect(() => JSON.parse(JSON.stringify(log))).not.toThrow();
 
     if (log !== null) log.batches[0].targets[0].sourceText = 'mutated export';
     expect(pipeline.getLog()?.batches[0].targets[0].sourceText).toBe('Save');
+    pipeline.stop();
+  });
+
+  test('attributes terminology conflicts to the provider batch that accepts them', async () => {
+    document.body.innerHTML = '<main><button>Save</button><p>Save</p></main>';
+    vi.mocked(translatePageBatch).mockImplementation(async (request) => {
+      const target = request.group.kind === 'button' ? 'Speichern' : 'Sichern';
+      if (request.group.kind !== 'button') {
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      }
+      return {
+        translations: request.targets.map((item) => ({
+          id: item.id,
+          target,
+          cacheKey: item.semanticKey,
+          cacheHit: false,
+          provenance: 'provider',
+        })),
+      };
+    });
+    const main = document.querySelector('main');
+    if (main === null) throw new Error('fixture main missing');
+    const pipeline = createPipeline(main, true);
+    pipeline.start();
+
+    await vi.waitFor(() => {
+      expect(main.querySelector('button')?.textContent).toBe('Speichern');
+      expect(main.querySelector('p')?.textContent).toBe('Sichern');
+    });
+    const batches = pipeline.getLog()?.batches ?? [];
+    const buttonBatch = batches.find((batch) => batch.group.kind === 'button');
+    const bodyBatch = batches.find((batch) => batch.group.kind === 'body');
+    expect(buttonBatch?.terminologyConflicts).toBe(0);
+    expect(bodyBatch?.terminologyConflicts).toBe(1);
+    expect(pipeline.getMetrics().terminologyConflicts).toBe(1);
     pipeline.stop();
   });
 
@@ -337,6 +548,7 @@ describe('PageTranslationPipeline dynamic lifecycle', () => {
             target: 'Speichern',
             cacheKey: accepted.semanticKey,
             cacheHit: false,
+            provenance: 'provider',
           },
         ],
       };
@@ -359,6 +571,316 @@ describe('PageTranslationPipeline dynamic lifecycle', () => {
     pipeline.stop();
   });
 
+  test('observes structured terminal rate limits before failing targets', async () => {
+    const onBudgetSnapshot = vi.fn();
+    vi.mocked(translatePageBatch).mockImplementationOnce(async () => ({
+      translations: [],
+      failure: { name: 'HttpError', message: 'Too many requests' },
+      metrics: {
+        retryCount: 1,
+        validationFailures: 0,
+        attempts: [
+          {
+            kind: 'transport-retry',
+            stage: 'initial',
+            profileId: modelProfile.id,
+            targetIds: ['target'],
+            httpStatus: 429,
+            retryAfterMs: 2500,
+            error: 'rate limit',
+          },
+        ],
+      },
+    }));
+    const main = document.querySelector('main');
+    if (main === null) throw new Error('fixture main missing');
+    const pipeline = createPipeline(main, true, 0, modelProfile, onBudgetSnapshot);
+    pipeline.start();
+
+    await vi.waitFor(() =>
+      expect(pipeline.getLog()?.batches[0].completedAt).toEqual(expect.any(Number)),
+    );
+    expect(onBudgetSnapshot).toHaveBeenCalled();
+    expect(pipeline.getLog()?.batches[0]).toMatchObject({
+      error: { name: 'HttpError', message: 'Too many requests' },
+      targets: [{ status: 'failed' }],
+    });
+    pipeline.stop();
+  });
+  test('blocks Retry-After queued dispatch and drops it after a stale stop', async () => {
+    vi.useFakeTimers();
+    const observeSpy = vi.spyOn(TranslationBudgetController.prototype, 'observe');
+    let delayCalls = 0;
+    const delaySpy = vi
+      .spyOn(TranslationBudgetController.prototype, 'getDispatchDelayMs')
+      .mockImplementation(() => (delayCalls++ === 0 ? 0 : 1000));
+    try {
+      const profile = {
+        ...modelProfile,
+        batching: { ...modelProfile.batching, maxItems: 1, concurrency: 1 },
+      };
+      let requestCount = 0;
+      vi.mocked(translatePageBatch).mockImplementation(async (request) => {
+        requestCount++;
+        const response = responseFor(request);
+        return requestCount === 1
+          ? {
+              ...response,
+              metrics: {
+                retryCount: 1,
+                validationFailures: 0,
+                attempts: [
+                  {
+                    kind: 'transport-retry',
+                    stage: 'initial',
+                    profileId: profile.id,
+                    targetIds: request.targets.map((target) => target.id),
+                    httpStatus: 429,
+                    retryAfterMs: 1000,
+                    error: 'rate limit',
+                  },
+                ],
+              },
+            }
+          : response;
+      });
+      const main = document.querySelector('main');
+      if (main === null) throw new Error('fixture main missing');
+      const pipeline = createPipeline(main, false, 0, profile);
+      pipeline.start();
+      for (let index = 0; index < 20; index++) await Promise.resolve();
+      expect(translatePageBatch).toHaveBeenCalledTimes(1);
+      vi.advanceTimersByTime(999);
+      for (let index = 0; index < 10; index++) await Promise.resolve();
+      expect(translatePageBatch).toHaveBeenCalledTimes(1);
+
+      pipeline.stop();
+      vi.advanceTimersByTime(1000);
+      for (let index = 0; index < 10; index++) await Promise.resolve();
+      expect(translatePageBatch).toHaveBeenCalledTimes(1);
+      expect(observeSpy).toHaveBeenCalledTimes(1);
+    } finally {
+      delaySpy.mockRestore();
+      observeSpy.mockRestore();
+      vi.useRealTimers();
+    }
+  });
+
+  test('rebuilds later batches from the reduced current-page budget', async () => {
+    document.body.innerHTML = `<main>${Array.from(
+      { length: 3 },
+      (_, index) => `<button>Save ${index}</button>`,
+    ).join('')}</main>`;
+    const profile = {
+      ...modelProfile,
+      batching: { ...modelProfile.batching, maxItems: 1, concurrency: 1 },
+    };
+    let responseCount = 0;
+    vi.mocked(translatePageBatch).mockImplementation(async (request) => {
+      responseCount++;
+      const response = responseFor(request);
+      return responseCount === 1
+        ? {
+            ...response,
+            metrics: {
+              retryCount: 1,
+              validationFailures: 0,
+              attempts: [
+                {
+                  kind: 'transport-retry',
+                  stage: 'initial',
+                  profileId: profile.id,
+                  targetIds: request.targets.map((target) => target.id),
+                  httpStatus: 429,
+                  retryAfterMs: 0,
+                  error: 'rate limit',
+                },
+              ],
+            },
+          }
+        : response;
+    });
+    const main = document.querySelector('main');
+    if (main === null) throw new Error('fixture main missing');
+    const pipeline = createPipeline(main, true, 0, profile);
+    const getBatchSourceTokens = vi
+      .spyOn(TranslationBudgetController.prototype, 'getBatchSourceTokens')
+      .mockReturnValueOnce(600)
+      .mockReturnValue(256);
+    pipeline.start();
+
+    await vi.waitFor(() => expect(translatePageBatch).toHaveBeenCalledTimes(3));
+    await vi.waitFor(() => expect(pipeline.getLog()?.batches).toHaveLength(3));
+    const batches = pipeline.getLog()?.batches ?? [];
+    expect(batches[1]?.sourceBudget).toBeLessThan(batches[0]?.sourceBudget ?? Infinity);
+    expect(getBatchSourceTokens).toHaveBeenCalledTimes(3);
+    pipeline.stop();
+    getBatchSourceTokens.mockRestore();
+  });
+  test('plans only admitted batches after feedback updates the size', async () => {
+    document.body.innerHTML = `<main>${Array.from(
+      { length: 3 },
+      (_, index) => `<button>Save ${index}</button>`,
+    ).join('')}</main>`;
+    const profile = {
+      ...modelProfile,
+      batching: { ...modelProfile.batching, maxItems: 1, concurrency: 2 },
+    };
+    const deferred = [
+      Promise.withResolvers<PageTranslationBatchResponse>(),
+      Promise.withResolvers<PageTranslationBatchResponse>(),
+    ];
+    const requests: PageTranslationBatchRequest[] = [];
+    vi.mocked(translatePageBatch).mockImplementation(async (request) => {
+      requests.push(request);
+      if (requests.length <= deferred.length) {
+        return deferred[requests.length - 1]?.promise ?? responseFor(request);
+      }
+      return responseFor(request);
+    });
+    let sourceTokenCalls = 0;
+    const getBatchSourceTokens = vi
+      .spyOn(TranslationBudgetController.prototype, 'getBatchSourceTokens')
+      .mockImplementation(() => (sourceTokenCalls++ < 2 ? 600 : 256));
+    const main = document.querySelector('main');
+    if (main === null) throw new Error('fixture main missing');
+    const pipeline = createPipeline(main, false, 0, profile, undefined, 'small', 2);
+    pipeline.start();
+
+    await vi.waitFor(() => expect(requests).toHaveLength(2));
+    expect(sourceTokenCalls).toBe(2);
+
+    const firstRequest = requests[0];
+    if (firstRequest === undefined) throw new Error('first request missing');
+    const firstResponse = responseFor(firstRequest);
+    deferred[0]?.resolve({
+      ...firstResponse,
+      metrics: {
+        retryCount: 0,
+        validationFailures: 1,
+        attempts: [
+          {
+            kind: 'parse',
+            stage: 'initial',
+            profileId: profile.id,
+            targetIds: firstRequest.targets.map((target) => target.id),
+            issues: [{ id: firstRequest.targets[0]?.id, failure: 'empty-translation' }],
+          },
+        ],
+      },
+    });
+
+    await vi.waitFor(() => expect(requests).toHaveLength(3));
+    expect(sourceTokenCalls).toBe(3);
+    expect(pipeline.getMetrics().plannedBatches).toBe(3);
+
+    const secondRequest = requests[1];
+    if (secondRequest !== undefined) deferred[1]?.resolve(responseFor(secondRequest));
+    pipeline.stop();
+    getBatchSourceTokens.mockRestore();
+  });
+  test('does not observe or persist an all-cache provider response', async () => {
+    const observeSpy = vi.spyOn(TranslationBudgetController.prototype, 'observe');
+    const onBudgetSnapshot = vi.fn();
+    vi.mocked(translatePageBatch).mockImplementationOnce(async (request) => ({
+      translations: request.targets.map((target) => ({
+        id: target.id,
+        target: 'Speichern',
+        cacheKey: target.semanticKey,
+        cacheHit: true,
+        provenance: 'cache',
+      })),
+      metrics: { retryCount: 0, validationFailures: 0 },
+    }));
+    const main = document.querySelector('main');
+    if (main === null) throw new Error('fixture main missing');
+    const pipeline = createPipeline(main, false, 0, modelProfile, onBudgetSnapshot);
+    pipeline.start();
+    await vi.waitFor(() =>
+      expect(main.querySelector('button')?.textContent).toBe('Speichern'),
+    );
+    expect(observeSpy).not.toHaveBeenCalled();
+    pipeline.stop();
+    expect(onBudgetSnapshot).not.toHaveBeenCalled();
+    observeSpy.mockRestore();
+  });
+  test('does not observe or persist an invariant-only provider response', async () => {
+    const observeSpy = vi.spyOn(TranslationBudgetController.prototype, 'observe');
+    const onBudgetSnapshot = vi.fn();
+    vi.mocked(translatePageBatch).mockImplementationOnce(async (request) => ({
+      translations: request.targets.map((target) => ({
+        id: target.id,
+        target: target.sourceText,
+        cacheKey: target.semanticKey,
+        cacheHit: false,
+        provenance: 'invariant',
+      })),
+      metrics: { retryCount: 0, validationFailures: 0 },
+    }));
+    const main = document.querySelector('main');
+    if (main === null) throw new Error('fixture main missing');
+    const pipeline = createPipeline(main, false, 0, modelProfile, onBudgetSnapshot);
+    pipeline.start();
+    await vi.waitFor(() =>
+      expect(main.querySelector('button')?.textContent).toBe('Save'),
+    );
+    expect(observeSpy).not.toHaveBeenCalled();
+    pipeline.stop();
+    expect(onBudgetSnapshot).not.toHaveBeenCalled();
+    observeSpy.mockRestore();
+  });
+
+  test('observes only provider misses in a mixed invariant response', async () => {
+    const observeSpy = vi.spyOn(TranslationBudgetController.prototype, 'observe');
+    vi.mocked(translatePageBatch).mockImplementationOnce(async (request) => {
+      const hit = request.targets[0];
+      const miss = request.targets[1];
+      if (hit === undefined || miss === undefined) throw new Error('targets missing');
+      return {
+        translations: request.targets.map((target) => ({
+          id: target.id,
+          target: target.sourceText === 'Save' ? 'Speichern' : 'Schließen',
+          cacheKey: target.semanticKey,
+          cacheHit: false,
+          provenance: target.id === hit.id ? 'invariant' : 'provider',
+        })),
+        metrics: {
+          retryCount: 0,
+          validationFailures: 1,
+          attempts: [
+            {
+              kind: 'parse',
+              stage: 'initial',
+              profileId: modelProfile.id,
+              targetIds: [miss.id],
+              issues: [{ id: miss.id, failure: 'empty-translation' }],
+            },
+          ],
+        },
+      };
+    });
+    document.body.innerHTML = '<main><button>Save</button><button>Close</button></main>';
+    const main = document.querySelector('main');
+    if (main === null) throw new Error('fixture main missing');
+    const pipeline = createPipeline(main);
+    pipeline.start();
+    await vi.waitFor(() =>
+      expect(
+        Array.from(main.querySelectorAll('button'), (button) => button.textContent),
+      ).toEqual(['Speichern', 'Schließen']),
+    );
+    expect(observeSpy).toHaveBeenCalledTimes(1);
+    expect(observeSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        targetCount: 1,
+        sourceTokens: conservativeTokenCounter.count('Close'),
+        validationFailures: 1,
+      }),
+    );
+    pipeline.stop();
+    observeSpy.mockRestore();
+  });
+
   test('records provider failures without stack traces', async () => {
     vi.mocked(translatePageBatch).mockRejectedValueOnce(
       new Error('provider unavailable'),
@@ -371,13 +893,21 @@ describe('PageTranslationPipeline dynamic lifecycle', () => {
       expect(pipeline.getLog()?.batches[0].completedAt).toEqual(expect.any(Number)),
     );
 
-    expect(pipeline.getLog()?.batches[0]).toMatchObject({
+    const batch = pipeline.getLog()?.batches[0];
+    expect(batch).toMatchObject({
+      parallelism: {
+        adaptive: true,
+        sizeTier: 'small',
+      },
+      latencyMs: expect.any(Number),
+      terminologyConflicts: 0,
       error: {
         name: 'Error',
         message: 'provider unavailable',
       },
       targets: [{ status: 'failed' }],
     });
+    expect(batch?.latencyMs).toBeGreaterThanOrEqual(0);
     expect(JSON.stringify(pipeline.getLog())).not.toContain('stack');
     pipeline.stop();
   });

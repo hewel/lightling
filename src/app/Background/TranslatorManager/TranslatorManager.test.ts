@@ -160,13 +160,23 @@ test('translatePageBatch resolves invariant targets without execution or memory 
   const response = await translatorManager.translatePageBatch(request);
 
   expect(
-    response.translations.map(({ id, target, cacheHit }) => ({ id, target, cacheHit })),
+    response.translations.map(({ id, target, cacheHit, provenance }) => ({
+      id,
+      target,
+      cacheHit,
+      provenance,
+    })),
   ).toEqual([
-    { id: 'u1', target: 'Discord', cacheHit: false },
-    { id: 'u2', target: 'Figtree', cacheHit: false },
-    { id: 'u3', target: '©2026 Meta Platforms, Inc.', cacheHit: false },
-    { id: 'u4', target: 'tsx', cacheHit: false },
-    { id: 'u5', target: 'bash', cacheHit: false },
+    { id: 'u1', target: 'Discord', cacheHit: false, provenance: 'invariant' },
+    { id: 'u2', target: 'Figtree', cacheHit: false, provenance: 'invariant' },
+    {
+      id: 'u3',
+      target: '©2026 Meta Platforms, Inc.',
+      cacheHit: false,
+      provenance: 'invariant',
+    },
+    { id: 'u4', target: 'tsx', cacheHit: false, provenance: 'invariant' },
+    { id: 'u5', target: 'bash', cacheHit: false, provenance: 'invariant' },
   ]);
   expect(response.metrics).toMatchObject({
     retryCount: 0,
@@ -344,6 +354,91 @@ describe('TranslatorManager LLM integration', () => {
     expect(disposeSpy).toHaveBeenCalledTimes(2);
     translateSpy.mockRestore();
     disposeSpy.mockRestore();
+  });
+
+  test('cache-enabled LLM page batches use the raw scheduler and page cap', async () => {
+    let activeRequests = 0;
+    let maxActiveRequests = 0;
+    const executePageBatch = vi
+      .spyOn(LLMTranslator.prototype, 'executePageBatch')
+      .mockImplementation(async (request) => {
+        activeRequests++;
+        maxActiveRequests = Math.max(maxActiveRequests, activeRequests);
+        await Promise.resolve();
+        activeRequests--;
+        return request.targets.map((target) => ({
+          id: target.id,
+          target: `llm:${target.sourceText}`,
+        }));
+      });
+    const llmManager = new TranslatorManager(
+      {
+        ...defaultConfig,
+        translatorModule: 'LLMTranslator',
+        scheduler: {
+          ...defaultConfig.scheduler,
+          useCache: true,
+        },
+        llmTranslator: {
+          activeProfile: 'Profile1',
+          profiles: [{ ...llmProfile1, maxConcurrentRequests: 1 }],
+        },
+      },
+      { LLMTranslator },
+    );
+    const createRequest = (id: string): PageTranslationBatchRequest => ({
+      sourceLanguage: 'en',
+      targetLanguage: 'de',
+      sessionId: `page-${id}`,
+      memory: {
+        languageDirection: 'en>de',
+        glossary: [],
+        protectedTerms: [],
+        namedEntities: [],
+      },
+      context: {
+        headingPath: [],
+        previous: [],
+        following: [],
+        retrieved: [],
+      },
+      group: {
+        kind: 'body',
+        slot: 'visible-text',
+        contextClass: 'main:body',
+      },
+      targets: [
+        {
+          id,
+          sourceText: `Translate page ${id}`,
+          normalizedText: `Translate page ${id}`,
+          kind: 'body',
+          slot: 'visible-text',
+          contextClass: 'main:body',
+          semanticKey: `Translate page ${id}`,
+          priority: 1,
+        },
+      ],
+    });
+
+    const responses = await Promise.all(
+      ['one', 'two', 'three'].map((id) =>
+        llmManager.translatePageBatch(createRequest(id)),
+      ),
+    );
+
+    expect(
+      responses.flatMap((response) =>
+        response.translations.map(({ target, provenance }) => ({ target, provenance })),
+      ),
+    ).toEqual([
+      { target: 'llm:Translate page one', provenance: 'provider' },
+      { target: 'llm:Translate page two', provenance: 'provider' },
+      { target: 'llm:Translate page three', provenance: 'provider' },
+    ]);
+    expect(executePageBatch).toHaveBeenCalledTimes(3);
+    expect(maxActiveRequests).toBe(1);
+    executePageBatch.mockRestore();
   });
 
   test('getCacheInstance uses getLLMCacheId isolating cache between different models', async () => {

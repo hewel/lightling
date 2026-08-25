@@ -243,6 +243,10 @@ export const budgetPageTranslationRequest = (
 
 export class OutputRatioTracker {
   private readonly ratios = new Map<string, number>();
+  private readonly sessionTotals = new Map<
+    string,
+    { sourceTokens: number; targetTokens: number }
+  >();
 
   public get(
     profile: TranslationModelProfile,
@@ -261,6 +265,18 @@ export class OutputRatioTracker {
       1.35
     );
   }
+  public getSession(
+    profile: TranslationModelProfile,
+    sourceLanguage: string,
+    targetLanguage: string,
+  ): number {
+    const key = this.key(profile.id, sourceLanguage, targetLanguage, 'session');
+    const totals = this.sessionTotals.get(key);
+    if (totals === undefined || totals.sourceTokens <= 0) {
+      return this.get(profile, sourceLanguage, targetLanguage, 'body');
+    }
+    return Math.min(3, Math.max(0.5, totals.targetTokens / totals.sourceTokens));
+  }
 
   public observe(
     profileId: string,
@@ -275,15 +291,26 @@ export class OutputRatioTracker {
     const observed = Math.min(3, Math.max(0.5, targetTokens / sourceTokens));
     const previous = this.ratios.get(key) ?? observed;
     this.ratios.set(key, Math.min(3, Math.max(0.5, previous * 0.8 + observed * 0.2)));
+    const sessionKey = this.key(profileId, sourceLanguage, targetLanguage, 'session');
+    const totals = this.sessionTotals.get(sessionKey) ?? {
+      sourceTokens: 0,
+      targetTokens: 0,
+    };
+    totals.sourceTokens += sourceTokens;
+    totals.targetTokens += targetTokens;
+    this.sessionTotals.set(sessionKey, totals);
   }
-
   public clear(profileId?: string): void {
     if (profileId === undefined) {
       this.ratios.clear();
+      this.sessionTotals.clear();
       return;
     }
     for (const key of this.ratios.keys()) {
       if (key.startsWith(`${profileId}\u0000`)) this.ratios.delete(key);
+    }
+    for (const key of this.sessionTotals.keys()) {
+      if (key.startsWith(`${profileId}\u0000`)) this.sessionTotals.delete(key);
     }
   }
 

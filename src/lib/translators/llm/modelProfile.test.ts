@@ -1,5 +1,4 @@
 import {
-  AdaptiveBatchTuner,
   mergeTranslationModelProfile,
   resolveTranslationModelProfile,
   selectStructuredOutputMode,
@@ -166,41 +165,5 @@ describe('translation model profile resolution', () => {
         messageFormat: 'structured-chat',
       }),
     ).toContain('Structured chat cannot also apply a tokenizer or application template');
-  });
-
-  test('adapts only after a bounded observation window and never exceeds bounds', () => {
-    const profile = resolveTranslationModelProfile(configured(), null).profile;
-    const tuner = new AdaptiveBatchTuner();
-    const observe = (valid: boolean) =>
-      tuner.observe(profile, 'en', 'de', 'body', {
-        valid,
-        truncated: !valid,
-        timedOut: false,
-        latencyMs: 100,
-      });
-
-    for (let index = 0; index < profile.adaptive.observationWindow - 1; index++) {
-      observe(true);
-    }
-    expect(tuner.get(profile, 'en', 'de', 'body')).toBe(
-      profile.batching.preferredSourceTokens,
-    );
-    observe(true);
-    expect(tuner.get(profile, 'en', 'de', 'body')).toBeLessThanOrEqual(
-      profile.adaptive.maximumSourceTokens,
-    );
-
-    for (let round = 0; round < 20; round++) {
-      for (let index = 0; index < profile.adaptive.observationWindow; index++) {
-        observe(false);
-      }
-    }
-    expect(tuner.get(profile, 'en', 'de', 'body')).toBe(
-      profile.adaptive.minimumSourceTokens,
-    );
-    tuner.clear(profile.id);
-    expect(tuner.get(profile, 'en', 'de', 'body')).toBe(
-      profile.batching.preferredSourceTokens,
-    );
   });
 });

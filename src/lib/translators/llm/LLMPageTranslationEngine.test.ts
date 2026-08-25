@@ -273,6 +273,8 @@ describe('LLM webpage request contract', () => {
             stage: 'initial',
             targetIds: ['u1'],
             attemptNumber: 2,
+            httpStatus: 429,
+            retryAfterMs: 50,
           },
           {
             kind: 'parse',
@@ -280,6 +282,55 @@ describe('LLM webpage request contract', () => {
             targetIds: ['u1'],
           },
         ],
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  test('emits terminal metrics before exhausted provider failures', async () => {
+    vi.useFakeTimers();
+    try {
+      const metrics: PageTranslationAttemptMetrics[] = [];
+      const engine = new LLMTranslationEngine({
+        loadSettings: () => Promise.resolve(settings),
+        fetch: () =>
+          Effect.fail(
+            AiError.make({
+              module: 'test',
+              method: 'generateText',
+              reason: new AiError.RateLimitError({ retryAfter: Duration.millis(50) }),
+            }),
+          ),
+      });
+      const promise = engine.translatePageBatch(
+        { ...request, targets: [request.targets[0]] },
+        {
+          context: 'session',
+          priority: 4,
+          retryLimit: 1,
+          isolateInvalidBatches: true,
+        },
+        (terminal) => metrics.push(terminal),
+      );
+      const settled = promise.catch((error: unknown) => error);
+      await vi.advanceTimersByTimeAsync(100);
+      await expect(settled).resolves.toBeInstanceOf(Error);
+      expect(metrics).toHaveLength(1);
+      expect(metrics[0]).toMatchObject({
+        failedIds: ['u1'],
+        attempts: expect.arrayContaining([
+          expect.objectContaining({
+            kind: 'transport-retry',
+            httpStatus: 429,
+            retryAfterMs: 50,
+          }),
+          expect.objectContaining({
+            kind: 'parse',
+            httpStatus: 429,
+            retryAfterMs: 50,
+          }),
+        ]),
       });
     } finally {
       vi.useRealTimers();

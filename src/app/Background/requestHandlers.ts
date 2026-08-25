@@ -10,6 +10,7 @@ import { setSitePreferencesFactory } from '../../requests/backend/autoTranslatio
 import { bergamotHandlersFactory } from '../../requests/backend/bergamot';
 import { clearCacheFactory } from '../../requests/backend/clearCache';
 import { getConfigFactory } from '../../requests/backend/getConfig';
+import { getTranslationBudgetSnapshotFactory } from '../../requests/backend/getTranslationBudgetSnapshot';
 import { getTranslatorFeaturesFactory } from '../../requests/backend/getTranslatorFeatures';
 import { getUserLanguagePreferencesFactory } from '../../requests/backend/getUserLanguagePreferences';
 import { historyRequestHandlersFactory } from '../../requests/backend/history';
@@ -18,6 +19,7 @@ import { addRecentUsedLanguageFactory } from '../../requests/backend/recentUsedL
 import { getRecentUsedLanguagesFactory } from '../../requests/backend/recentUsedLanguages/getRecentUsedLanguages';
 import { resetConfigFactory } from '../../requests/backend/resetConfig';
 import { setConfigFactory } from '../../requests/backend/setConfig';
+import { setTranslationBudgetSnapshotFactory } from '../../requests/backend/setTranslationBudgetSnapshot';
 import { suggestLanguageFactory } from '../../requests/backend/suggestLanguage';
 import { telemetryFactory } from '../../requests/backend/telemetry';
 import { translateFactory } from '../../requests/backend/translate';
@@ -83,6 +85,8 @@ export const requestHandlers = [
   addRecentUsedLanguageFactory,
 
   getTranslationStatsFactory,
+  getTranslationBudgetSnapshotFactory,
+  setTranslationBudgetSnapshotFactory,
   resetTranslationStatsFactory,
 
   // Up ping last to give success response only when all request handlers is ready

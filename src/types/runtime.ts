@@ -49,9 +49,9 @@ const ContextWindowTokens = PositiveInteger.check(
  * Bounded parallel request limit for a single LLM profile
  */
 const ConcurrentRequestsLimit = PositiveInteger.check(
-  Schema.makeFilter((input: number) => input <= 8, {
+  Schema.makeFilter((input: number) => input <= 12, {
     identifier: 'ConcurrentRequestsLimit',
-    expected: 'an integer between 1 and 8',
+    expected: 'an integer between 1 and 12',
   }),
 );
 

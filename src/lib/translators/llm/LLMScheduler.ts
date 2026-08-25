@@ -17,6 +17,7 @@ export type LLMSchedulerConfig = {
   translatePoolDelay: number;
   chunkSizeForInstantTranslate: number | null;
   maxConcurrentRequests?: number;
+  pageMaxConcurrentRequests?: number;
 };
 
 type LLMTranslateOptions = ISchedulerTranslateOptions & {
@@ -65,7 +66,8 @@ export class LLMScheduler implements IScheduler {
   private readonly containers = new Map<string, TaskContainer>();
   private readonly pageQueue: PageTask[] = [];
   private readonly batchQueue: TaskContainer[] = [];
-  private activeRequests = 0;
+  private batchActiveRequests = 0;
+  private pageActiveRequests = 0;
   private pumpScheduled = false;
   private serialCounter = 0;
 
@@ -81,6 +83,10 @@ export class LLMScheduler implements IScheduler {
         this.translator.getMaxConcurrentRequests?.() ??
         1,
     );
+  }
+
+  private getPageMaxConcurrentRequests(): number {
+    return Math.max(1, this.config.pageMaxConcurrentRequests ?? 12);
   }
 
   public async translate(
@@ -298,45 +304,53 @@ export class LLMScheduler implements IScheduler {
   }
 
   private pump(): void {
-    while (
-      !this.isDisposed &&
-      this.activeRequests < this.getMaxConcurrentRequests() &&
-      (this.batchQueue.length > 0 || this.pageQueue.length > 0)
-    ) {
+    while (!this.isDisposed) {
+      const canDispatchBatch =
+        this.batchQueue.length > 0 &&
+        this.batchActiveRequests < this.getMaxConcurrentRequests();
+      const canDispatchPage =
+        this.pageQueue.length > 0 &&
+        this.pageActiveRequests < this.getPageMaxConcurrentRequests();
+      if (!canDispatchBatch && !canDispatchPage) break;
+
       let batchIndex = -1;
       let pageIndex = -1;
       let bestPriority = -Infinity;
       let bestSerial = Infinity;
 
-      for (let i = 0; i < this.batchQueue.length; i++) {
-        const candidate = this.batchQueue[i];
-        if (
-          candidate.priority > bestPriority ||
-          (candidate.priority === bestPriority && candidate.serial < bestSerial)
-        ) {
-          bestPriority = candidate.priority;
-          bestSerial = candidate.serial;
-          batchIndex = i;
-          pageIndex = -1;
+      if (canDispatchBatch) {
+        for (let i = 0; i < this.batchQueue.length; i++) {
+          const candidate = this.batchQueue[i];
+          if (
+            candidate.priority > bestPriority ||
+            (candidate.priority === bestPriority && candidate.serial < bestSerial)
+          ) {
+            bestPriority = candidate.priority;
+            bestSerial = candidate.serial;
+            batchIndex = i;
+            pageIndex = -1;
+          }
         }
       }
-      for (let i = 0; i < this.pageQueue.length; i++) {
-        const candidate = this.pageQueue[i];
-        if (
-          candidate.options.priority > bestPriority ||
-          (candidate.options.priority === bestPriority && candidate.serial < bestSerial)
-        ) {
-          bestPriority = candidate.options.priority;
-          bestSerial = candidate.serial;
-          batchIndex = -1;
-          pageIndex = i;
+      if (canDispatchPage) {
+        for (let i = 0; i < this.pageQueue.length; i++) {
+          const candidate = this.pageQueue[i];
+          if (
+            candidate.options.priority > bestPriority ||
+            (candidate.options.priority === bestPriority && candidate.serial < bestSerial)
+          ) {
+            bestPriority = candidate.options.priority;
+            bestSerial = candidate.serial;
+            batchIndex = -1;
+            pageIndex = i;
+          }
         }
       }
 
       if (batchIndex >= 0) {
         const [container] = this.batchQueue.splice(batchIndex, 1);
         if (this.abortedContexts.has(container.context)) continue;
-        this.activeRequests++;
+        this.batchActiveRequests++;
         const tasks = container.tasks;
         const options: LLMBatchRequestOptions = {
           context: container.context,
@@ -376,7 +390,7 @@ export class LLMScheduler implements IScheduler {
             }
           })
           .finally(() => {
-            this.activeRequests--;
+            this.batchActiveRequests--;
             this.pump();
           });
         continue;
@@ -385,17 +399,17 @@ export class LLMScheduler implements IScheduler {
       if (pageIndex >= 0) {
         const [task] = this.pageQueue.splice(pageIndex, 1);
         if (this.abortedContexts.has(task.options.context)) continue;
-        this.activeRequests++;
+        this.pageActiveRequests++;
         void this.translator.executePageBatch!(task.request, task.options, task.onMetrics)
           .then(task.resolve, task.reject)
           .finally(() => {
-            this.activeRequests--;
+            this.pageActiveRequests--;
             this.pump();
           });
         continue;
       }
 
-      if (batchIndex < 0 && pageIndex < 0) break;
+      break;
     }
   }
 }

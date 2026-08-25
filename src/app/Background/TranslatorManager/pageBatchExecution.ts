@@ -4,11 +4,18 @@ import type {
   PageTranslationAttemptMetrics,
   PageTranslationBatchRequest,
 } from '@/lib/pageTranslation/protocol';
+import type { LLMScheduler } from '@/lib/translators/llm/LLMScheduler';
 import { LLMTranslator } from '@/lib/translators/llm/LLMTranslator';
 
 export type PageBatchExecutionResult = { id: string; target: string };
 
 type PageBatchMetricsHandler = (metrics: PageTranslationAttemptMetrics) => void;
+
+type PageBatchScheduler = Pick<LLMScheduler, 'translatePageBatch'>;
+
+type LLMPageBatchExecutor =
+  | Pick<LLMTranslator, 'translatePageBatch'>
+  | PageBatchScheduler;
 
 export interface PageBatchExecution {
   execute(
@@ -19,7 +26,7 @@ export interface PageBatchExecution {
 
 export class LLMPageBatchExecution implements PageBatchExecution {
   constructor(
-    private readonly translator: LLMTranslator,
+    private readonly executor: LLMPageBatchExecutor,
     private readonly retryLimit: number,
   ) {}
 
@@ -27,7 +34,7 @@ export class LLMPageBatchExecution implements PageBatchExecution {
     request: PageTranslationBatchRequest,
     onMetrics?: PageBatchMetricsHandler,
   ): Promise<PageBatchExecutionResult[]> {
-    return this.translator.translatePageBatch(
+    return this.executor.translatePageBatch(
       request,
       {
         context: request.sessionId,
@@ -64,19 +71,29 @@ export class SchedulerPageBatchExecution implements PageBatchExecution {
 
 export interface CreatePageBatchExecutionOptions {
   translatorClass: unknown;
-  getLLMTranslator: () => LLMTranslator;
   getScheduler: () => IScheduler;
+  llmSchedulerInstance?: LLMScheduler | null;
   retryLimit: number;
 }
 
+const isPageBatchScheduler = (
+  scheduler: LLMScheduler | null | undefined,
+): scheduler is LLMScheduler =>
+  scheduler !== null &&
+  scheduler !== undefined &&
+  typeof scheduler.translatePageBatch === 'function';
+
 export const createPageBatchExecution = ({
   translatorClass,
-  getLLMTranslator,
   getScheduler,
+  llmSchedulerInstance,
   retryLimit,
 }: CreatePageBatchExecutionOptions): PageBatchExecution => {
   if (translatorClass === LLMTranslator) {
-    return new LLMPageBatchExecution(getLLMTranslator(), retryLimit);
+    if (!isPageBatchScheduler(llmSchedulerInstance)) {
+      throw new Error('LLM page translation requires the configured LLM scheduler');
+    }
+    return new LLMPageBatchExecution(llmSchedulerInstance, retryLimit);
   }
   return new SchedulerPageBatchExecution(getScheduler());
 };

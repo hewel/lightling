@@ -124,10 +124,13 @@ export interface PageTranslationBatchAttempt {
   /** Verbatim model output; absent when the fetch itself failed. */
   rawResponse?: string;
   issues?: TranslationValidationIssue[];
+  /** HTTP status when the provider exposed one for this failed attempt. */
+  httpStatus?: number;
+  /** Provider retry delay associated with this failed attempt, in milliseconds. */
+  retryAfterMs?: number;
   /** Fetch-level failure message after internal retries are exhausted. */
   error?: string;
 }
-
 export interface PageTranslationAttemptMetrics {
   retryCount: number;
   validationFailures: number;
@@ -159,16 +162,20 @@ export const deriveAttemptMetrics = (
     { retryCount: 0, validationFailures: 0 },
   );
 
+export type PageTranslationResultProvenance = 'provider' | 'cache' | 'invariant';
+
 export interface PageTranslationResult {
   id: string;
   target: string;
   cacheKey: string;
   cacheHit: boolean;
+  provenance: PageTranslationResultProvenance;
 }
 
 export interface PageTranslationBatchResponse {
   translations: PageTranslationResult[];
   metrics?: PageTranslationAttemptMetrics;
+  failure?: { name: string; message: string };
 }
 
 const TranslationSlotSchema = Schema.Literals([
@@ -286,6 +293,8 @@ const PageTranslationBatchAttemptSchema = Schema.Struct({
   attemptNumber: Schema.optional(Schema.Finite),
   rawResponse: Schema.optional(Schema.String),
   issues: Schema.optional(Schema.mutable(Schema.Array(TranslationValidationIssueSchema))),
+  httpStatus: Schema.optional(Schema.Finite),
+  retryAfterMs: Schema.optional(Schema.Finite.check(Schema.isGreaterThanOrEqualTo(0))),
   error: Schema.optional(Schema.String),
 });
 
@@ -308,10 +317,17 @@ export const PageTranslationBatchResponseSchema = Schema.Struct({
         target: Schema.String,
         cacheKey: Schema.String,
         cacheHit: Schema.Boolean,
+        provenance: Schema.Literals(['provider', 'cache', 'invariant']),
       }),
     ),
   ),
   metrics: Schema.optional(PageTranslationAttemptMetricsSchema),
+  failure: Schema.optional(
+    Schema.Struct({
+      name: Schema.String,
+      message: Schema.String,
+    }),
+  ),
 });
 
 export interface TranslationMemoryEntry {

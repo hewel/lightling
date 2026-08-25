@@ -2,9 +2,11 @@ import {
   PAGE_TRANSLATION_LOG_SCHEMA_VERSION,
   type PageTranslationLog,
   type PageTranslationLogBatch,
+  type PageTranslationLogParallelism,
 } from '@/lib/pageTranslation/log';
 import {
   type PageTranslationBatchRequest,
+  type PageTranslationBatchResponse,
   type PageProfile,
   type TranslationContextItem,
   type TranslationRequestContext,
@@ -15,15 +17,21 @@ import {
   type TranslationTokenBudget,
 } from '@/lib/translators/llm/budget';
 import {
-  AdaptiveBatchTuner,
-  type TranslationModelProfile,
-} from '@/lib/translators/llm/modelProfile';
+  TranslationBudgetController,
+  type BudgetSnapshot,
+} from '@/lib/translators/llm/budgetController';
+import type { TranslationModelProfile } from '@/lib/translators/llm/modelProfile';
+import type { TranslationModelSizeTier } from '@/lib/translators/llm/sizeTier';
 import type { TranslationTokenCounter } from '@/lib/translators/llm/tokenizer';
 import { createUUID } from '@/lib/utils';
 import { abortTranslation } from '@/requests/backend/abortTranslation';
 import { translatePageBatch } from '@/requests/backend/translatePageBatch';
 
-import { buildTokenAwareBatches, type PlannedTarget } from './batching';
+import {
+  buildTokenAwareBatches,
+  type PlannedBatch,
+  type PlannedTarget,
+} from './batching';
 import {
   collectPageOccurrences,
   createPageCollectionContext,
@@ -67,6 +75,10 @@ export interface PageTranslationPipelineOptions extends CollectionOptions {
   logEnabled?: boolean;
   debug?: boolean;
   debugIncludeText?: boolean;
+  sizeTier?: TranslationModelSizeTier;
+  persistedBudget?: BudgetSnapshot | null;
+  userConcurrencyCeiling?: number | null;
+  onBudgetSnapshot?: (snapshot: BudgetSnapshot) => void;
   onUnitStarted?: (count: number) => void;
   onUnitResolved?: (count: number) => void;
   onUnitRejected?: (count: number) => void;
@@ -171,10 +183,24 @@ const createMetrics = (): PagePipelineMetrics => ({
 
 const groupKey = (unit: TranslationUnit): string =>
   `${unit.kind}\\u0000${unit.slot}\\u0000${unit.contextClass}\\u0000${unit.sectionId ?? ''}`;
+interface AdmissionProducer {
+  generation: number;
+  nextBatch: () => PlannedBatch | null;
+  resolve: () => void;
+  active: number;
+  exhausted: boolean;
+}
+
+// Admission is shared by initial scans and rescans. Feedback is deliberately
+// conservative: a batch may influence the controller only if every dispatched
+// unit is still live when it completes.
 
 export class PageTranslationPipeline {
   private readonly pageMemory = new Map<string, string>();
   private readonly inFlight = new Map<string, Promise<string>>();
+  private readonly admissionQueue: AdmissionProducer[] = [];
+  private admissionActive = 0;
+  private admissionTimer: ReturnType<typeof setTimeout> | null = null;
   private readonly pendingParts = new Map<
     string,
     { values: (string | undefined)[]; unit: TranslationUnit }
@@ -187,7 +213,7 @@ export class PageTranslationPipeline {
   private readonly accepted: AcceptedTranslation[] = [];
   private readonly terminology = new TerminologyMemory();
   private readonly ratioTracker = new OutputRatioTracker();
-  private readonly adaptiveTuner = new AdaptiveBatchTuner();
+  private readonly budgetController: TranslationBudgetController | null;
   private readonly retriever: TranslationContextRetriever;
   private readonly domLifecycle: PageTranslationDomLifecycle;
   private metrics = createMetrics();
@@ -222,12 +248,28 @@ export class PageTranslationPipeline {
   private droppedLogBatches = 0;
   private logBatchSerial = 0;
   private sessionStartedAt = Date.now();
+  private lastBudgetPersistAt = 0;
+  private budgetSnapshotDirty = false;
 
   constructor(
     private readonly options: PageTranslationPipelineOptions,
     retriever: TranslationContextRetriever = new DeterministicContextRetriever(),
   ) {
     this.stabilizationMs = options.stabilizationMs ?? DEFAULT_STABILIZATION_MS;
+    this.budgetController = options.modelProfile.adaptive.enabled
+      ? new TranslationBudgetController({
+          tier: options.sizeTier ?? 'medium',
+          profile: options.modelProfile,
+          userConcurrencyCeiling: options.userConcurrencyCeiling ?? null,
+          persisted: options.persistedBudget ?? null,
+          getOutputRatio: () =>
+            this.ratioTracker.getSession(
+              options.modelProfile,
+              options.sourceLanguage,
+              options.targetLanguage,
+            ),
+        })
+      : null;
     this.retriever = retriever;
     this.pageCollectionContext = createPageCollectionContext(options.root);
     this.pageProfile = this.pageCollectionContext.pageProfile;
@@ -305,9 +347,11 @@ export class PageTranslationPipeline {
   public stop(): void {
     ++this.generation;
     this.clearPendingRescans();
+    this.clearAdmissionQueue();
     this.domLifecycle.stop();
     this.perfObserver?.disconnect();
     this.perfObserver = null;
+    this.persistBudgetSnapshotIfDue(true);
     this.occurrences = [];
     this.liveUnits.clear();
     this.unitByOccurrence.clear();
@@ -350,6 +394,7 @@ export class PageTranslationPipeline {
   public getOriginalText(element: Element): string {
     for (let index = this.occurrences.length - 1; index >= 0; index--) {
       const occurrence = this.occurrences[index];
+
       if (occurrence.slot !== 'visible-text') continue;
       if (occurrence.element === element || occurrence.element.contains(element)) {
         return getOccurrenceOriginalText(occurrence);
@@ -360,6 +405,88 @@ export class PageTranslationPipeline {
 
   private isCurrent(generation: number): boolean {
     return generation === this.generation;
+  }
+  private enqueueAdmission(producer: AdmissionProducer): Promise<void> {
+    const { promise, resolve } = Promise.withResolvers<void>();
+    producer.resolve = resolve;
+    this.admissionQueue.push(producer);
+    this.pumpAdmissions();
+    return promise;
+  }
+
+  private pumpAdmissions(): void {
+    while (this.admissionQueue.length > 0) {
+      const producer = this.admissionQueue.shift();
+      if (producer === undefined) return;
+      if (producer.exhausted || !this.isCurrent(producer.generation)) {
+        producer.exhausted = true;
+        if (producer.active === 0) producer.resolve();
+        continue;
+      }
+
+      const limit = Math.max(
+        1,
+        this.budgetController?.getConcurrency() ??
+          this.options.modelProfile.batching.concurrency,
+      );
+      if (this.admissionActive >= limit) {
+        this.admissionQueue.push(producer);
+        return;
+      }
+
+      const delay = this.budgetController?.getDispatchDelayMs() ?? 0;
+      if (delay > 0) {
+        this.admissionQueue.unshift(producer);
+        if (this.admissionTimer === null) {
+          this.admissionTimer = setTimeout(() => {
+            this.admissionTimer = null;
+            this.pumpAdmissions();
+          }, delay);
+        }
+        return;
+      }
+
+      const batch = producer.nextBatch();
+      if (batch === null) {
+        producer.exhausted = true;
+        if (producer.active === 0) producer.resolve();
+        continue;
+      }
+
+      this.admissionActive++;
+      producer.active++;
+      if (this.isCurrent(producer.generation)) this.admissionQueue.push(producer);
+      void this.translateBatch(
+        batch.targets,
+        batch.pageProfile,
+        batch.context,
+        producer.generation,
+        batch.sourceTokens,
+        batch.sourceBudget,
+        batch.budget,
+        batch.reductions,
+      )
+        .catch(() => undefined)
+        .finally(() => {
+          this.admissionActive--;
+          producer.active--;
+          if (producer.exhausted && producer.active === 0) producer.resolve();
+          this.pumpAdmissions();
+        });
+    }
+  }
+
+  private clearAdmissionQueue(): void {
+    if (this.admissionTimer !== null) {
+      clearTimeout(this.admissionTimer);
+      this.admissionTimer = null;
+    }
+    while (this.admissionQueue.length > 0) {
+      const producer = this.admissionQueue.shift();
+      if (producer === undefined) continue;
+      producer.exhausted = true;
+      if (producer.active === 0) producer.resolve();
+    }
   }
 
   private emitMetrics(): void {
@@ -385,10 +512,45 @@ export class PageTranslationPipeline {
     this.logBatches.push(batch);
   }
 
+  private captureBatchParallelism(
+    sourceBudget: number,
+    reservedOutputTokens: number,
+  ): PageTranslationLogParallelism {
+    const sizeTier = this.options.sizeTier ?? 'medium';
+    if (this.budgetController !== null) {
+      const snapshot = this.budgetController.snapshot();
+      return {
+        adaptive: true,
+        sizeTier,
+        dispatchConcurrency: snapshot.concurrency,
+        batchSourceTokens: snapshot.batchSourceTokens,
+        budgetTokens: snapshot.budgetTokens,
+      };
+    }
+
+    const dispatchConcurrency = this.options.modelProfile.batching.concurrency;
+    return {
+      adaptive: false,
+      sizeTier,
+      dispatchConcurrency,
+      batchSourceTokens: sourceBudget,
+      budgetTokens: dispatchConcurrency * (sourceBudget + reservedOutputTokens),
+    };
+  }
+
   private recordPageMemoryHit(unit: TranslationUnit, translatedText: string): void {
+    const sourceTokens = this.options.tokenCounter.count(unit.sourceText);
+    this.ratioTracker.observe(
+      this.options.modelProfile.id,
+      this.options.sourceLanguage,
+      this.options.targetLanguage,
+
+      unit.contextClass,
+      sourceTokens,
+      this.options.tokenCounter.count(translatedText),
+    );
     if (this.logBatches === null) return;
     const now = Date.now();
-    const sourceTokens = this.options.tokenCounter.count(unit.sourceText);
     this.appendLogBatch({
       batchId: ++this.logBatchSerial,
       queuedAt: now,
@@ -447,6 +609,8 @@ export class PageTranslationPipeline {
         totalEstimatedTokens: sourceTokens,
       },
       reductions: [],
+      latencyMs: 0,
+      terminologyConflicts: 0,
     });
   }
 
@@ -550,70 +714,213 @@ export class PageTranslationPipeline {
       else group.push(unit);
     }
 
-    const jobs: (() => Promise<void>)[] = [];
-    for (const group of groups.values()) {
-      const context = this.buildContext(group[0], units);
-      const contentClass = group[0].contextClass;
-      const outputRatio = this.ratioTracker.get(
-        this.options.modelProfile,
-        this.options.sourceLanguage,
-        this.options.targetLanguage,
-        contentClass,
-      );
-      const preferredSourceTokens = this.adaptiveTuner.get(
-        this.options.modelProfile,
-        this.options.sourceLanguage,
-        this.options.targetLanguage,
-        contentClass,
-      );
-      const batches = buildTokenAwareBatches(group, {
-        sourceLanguage: this.options.sourceLanguage,
-        targetLanguage: this.options.targetLanguage,
-        modelProfile: this.options.modelProfile,
-        tokenCounter: this.options.tokenCounter,
-        pageProfile: {
-          ...this.pageProfile,
-          glossary: this.terminology.glossary(24),
-        },
-        section: group[0].section,
-        context,
-        outputRatio,
-        preferredSourceTokens,
-      });
-      for (const batch of batches) {
+    const groupPlans = Array.from(groups.values()).map((group) => ({
+      group,
+      cursor: 0,
+      context: this.buildContext(group[0], units),
+    }));
+    await this.runLimited(groupPlans, generation);
+    this.emitMetrics();
+  }
+
+  private async runLimited(
+    groupPlans: {
+      group: TranslationUnit[];
+      cursor: number;
+      context: TranslationRequestContext;
+    }[],
+    generation: number,
+  ): Promise<void> {
+    const submitted = groupPlans.map((plan) => {
+      const nextBatch = (): PlannedBatch | null => {
+        if (plan.cursor >= plan.group.length) return null;
+        const remaining = plan.group.slice(plan.cursor);
+        const outputRatio = this.ratioTracker.get(
+          this.options.modelProfile,
+          this.options.sourceLanguage,
+          this.options.targetLanguage,
+          remaining[0].contextClass,
+        );
+        const preferredSourceTokens =
+          this.budgetController?.getBatchSourceTokens() ??
+          this.options.modelProfile.batching.preferredSourceTokens;
+        const batches = buildTokenAwareBatches(remaining, {
+          sourceLanguage: this.options.sourceLanguage,
+          targetLanguage: this.options.targetLanguage,
+          modelProfile: this.options.modelProfile,
+          tokenCounter: this.options.tokenCounter,
+          pageProfile: {
+            ...this.pageProfile,
+            glossary: this.terminology.glossary(24),
+          },
+          section: remaining[0].section,
+          context: plan.context,
+          outputRatio,
+          preferredSourceTokens,
+        });
+        const batch = batches[0];
+        if (batch === undefined) return null;
+        const consumedUnits = new Set(batch.targets.map((target) => target.unit));
+        let consumed = 0;
+        while (consumed < remaining.length && consumedUnits.has(remaining[consumed])) {
+          consumed++;
+        }
+        if (consumed === 0) consumed = 1;
+        plan.cursor += consumed;
         this.metrics.plannedBatches++;
         this.metrics.sourceTokens += batch.sourceTokens;
         this.metrics.contextTokens +=
           batch.budget.localContextTokens + batch.budget.retrievedContextTokens;
-        jobs.push(() =>
-          this.translateBatch(
-            batch.targets,
-            batch.pageProfile,
-            batch.context,
-            generation,
-            batch.sourceTokens,
-            batch.sourceBudget,
-            batch.budget,
-            batch.reductions,
-          ),
-        );
+        return batch;
+      };
+      return this.enqueueAdmission({
+        generation,
+        nextBatch,
+        resolve: () => undefined,
+        active: 0,
+        exhausted: false,
+      });
+    });
+    await Promise.all(submitted);
+  }
+  private providerMissIds(
+    response: PageTranslationBatchResponse,
+    planned: readonly PlannedTarget[],
+  ): Set<string> {
+    const plannedIds = new Set(planned.map((item) => item.target.id));
+    const nonProviderIds = new Set(
+      response.translations
+        .filter((translation) => translation.provenance !== 'provider')
+        .map((translation) => translation.id),
+    );
+    const missIds = new Set<string>();
+    for (const translation of response.translations) {
+      if (translation.provenance === 'provider' && plannedIds.has(translation.id)) {
+        missIds.add(translation.id);
       }
     }
-    await this.runLimited(jobs, this.options.modelProfile.batching.concurrency);
-    this.emitMetrics();
+    for (const id of response.metrics?.failedIds ?? []) {
+      if (plannedIds.has(id) && !nonProviderIds.has(id)) missIds.add(id);
+    }
+    for (const attempt of response.metrics?.attempts ?? []) {
+      for (const id of attempt.targetIds) {
+        if (plannedIds.has(id) && !nonProviderIds.has(id)) missIds.add(id);
+      }
+      for (const issue of attempt.issues ?? []) {
+        if (
+          issue.id !== undefined &&
+          plannedIds.has(issue.id) &&
+          !nonProviderIds.has(issue.id)
+        ) {
+          missIds.add(issue.id);
+        }
+      }
+    }
+    if (response.failure !== undefined && missIds.size === 0) {
+      for (const item of planned) {
+        if (!nonProviderIds.has(item.target.id)) missIds.add(item.target.id);
+      }
+    }
+    return missIds;
   }
 
-  private async runLimited(jobs: (() => Promise<void>)[], limit: number): Promise<void> {
-    let next = 0;
-    const worker = async () => {
-      while (next < jobs.length) {
-        const job = jobs[next++];
-        await job();
-      }
-    };
-    await Promise.all(
-      Array.from({ length: Math.min(limit, jobs.length) }, () => worker()),
+  private providerValidationFailures(
+    response: PageTranslationBatchResponse,
+    missIds: ReadonlySet<string>,
+  ): number {
+    if (missIds.size === 0) return 0;
+    const attempts = response.metrics?.attempts ?? [];
+    if (attempts.length > 0) {
+      const failures = attempts.reduce(
+        (count, attempt) =>
+          count +
+          (attempt.issues?.filter(
+            (issue) => issue.id === undefined || missIds.has(issue.id),
+          ).length ?? 0),
+        0,
+      );
+      if (failures > 0) return failures;
+    }
+    return Math.max(0, response.metrics?.validationFailures ?? 0);
+  }
+
+  private observeBudget(
+    response: PageTranslationBatchResponse,
+    valid: boolean,
+    planned: readonly PlannedTarget[],
+    latencyMs: number,
+  ): void {
+    if (this.budgetController === null) return;
+    const missIds = this.providerMissIds(response, planned);
+    if (missIds.size === 0) return;
+    const sourceTokens = planned
+      .filter((item) => missIds.has(item.target.id))
+      .reduce(
+        (total, item) => total + this.options.tokenCounter.count(item.target.sourceText),
+        0,
+      );
+    const attempts = response.metrics?.attempts ?? [];
+    const failureMessage = response.failure?.message ?? '';
+    const rateLimitedAttempt = attempts.find(
+      (attempt) =>
+        attempt.httpStatus === 429 ||
+        /(?:429|rate[\s-]?limit)/iu.test(attempt.error ?? ''),
     );
+    const rateLimited =
+      rateLimitedAttempt !== undefined ||
+      /(?:429|rate[\s-]?limit)/iu.test(failureMessage);
+    const retryAfterMatch = /retry[\s-]?after\D+(\d+(?:\.\d+)?)/iu.exec(
+      rateLimitedAttempt?.error ?? failureMessage,
+    );
+    const retryAfterValue =
+      rateLimitedAttempt?.retryAfterMs ??
+      (retryAfterMatch?.[1] === undefined ? null : Number(retryAfterMatch[1]));
+    this.budgetController.observe({
+      valid,
+      truncated: attempts.some((attempt) =>
+        /truncate|truncated|truncation|context|length/iu.test(attempt.error ?? ''),
+      ),
+      timedOut: attempts.some((attempt) =>
+        /timeout|timed out/iu.test(attempt.error ?? ''),
+      ),
+      latencyMs,
+      validationFailures: this.providerValidationFailures(response, missIds),
+      rateLimited,
+      retryAfterMs:
+        rateLimitedAttempt?.retryAfterMs ??
+        (retryAfterValue === null || !Number.isFinite(retryAfterValue)
+          ? null
+          : retryAfterValue < 1000
+            ? retryAfterValue * 1000
+            : retryAfterValue),
+      sourceTokens,
+      targetCount: missIds.size,
+    });
+    this.budgetSnapshotDirty = true;
+    this.persistBudgetSnapshotIfDue();
+  }
+
+  private canObserveBudget(
+    generation: number,
+    planned: readonly PlannedTarget[],
+  ): boolean {
+    return (
+      this.isCurrent(generation) && planned.every((item) => this.liveUnits.has(item.unit))
+    );
+  }
+
+  private persistBudgetSnapshotIfDue(force = false): void {
+    if (
+      this.budgetController === null ||
+      this.options.onBudgetSnapshot === undefined ||
+      !this.budgetSnapshotDirty
+    )
+      return;
+    const now = Date.now();
+    if (!force && now - this.lastBudgetPersistAt < 30_000) return;
+    this.lastBudgetPersistAt = now;
+    this.options.onBudgetSnapshot(this.budgetController.snapshot());
+    this.budgetSnapshotDirty = false;
   }
 
   private async translateBatch(
@@ -696,9 +1003,12 @@ export class PageTranslationPipeline {
               totalEstimatedTokens: tokenBudget.totalEstimatedTokens,
             },
             reductions: [...reductions],
+            latencyMs: 0,
+            terminologyConflicts: 0,
           };
     if (logBatch !== null) this.appendLogBatch(logBatch);
     this.options.onUnitStarted?.(fresh.length);
+
     const request: PageTranslationBatchRequest = {
       sourceLanguage: this.options.sourceLanguage,
       targetLanguage: this.options.targetLanguage,
@@ -747,8 +1057,14 @@ export class PageTranslationPipeline {
           : {}),
       });
     }
-
+    if (logBatch !== null) {
+      logBatch.parallelism = this.captureBatchParallelism(
+        sourceBudget,
+        tokenBudget.reservedOutputTokens,
+      );
+    }
     const batchStartedAt = performance.now();
+    let budgetObserved = false;
     const batchPromise = translatePageBatch(request);
     for (const item of fresh) {
       const promise = batchPromise
@@ -765,8 +1081,10 @@ export class PageTranslationPipeline {
       this.inFlight.set(item.target.id, promise);
     }
 
+    let responseForFeedback: PageTranslationBatchResponse | null = null;
     try {
-      const response = await batchPromise;
+      responseForFeedback = await batchPromise;
+      const response = responseForFeedback;
       if (response.metrics !== undefined) {
         this.metrics.retries += response.metrics.retryCount;
         this.metrics.validationFailures += response.metrics.validationFailures;
@@ -774,11 +1092,19 @@ export class PageTranslationPipeline {
           logBatch.retryCount = response.metrics.retryCount;
           logBatch.validationFailures = response.metrics.validationFailures;
           logBatch.acceptedProfileId = response.metrics.acceptedProfileId;
-          logBatch.acceptedRetryStage = response.metrics.acceptedRetryStage;
           if (response.metrics.attempts !== undefined) {
             logBatch.attempts = response.metrics.attempts;
           }
         }
+      }
+      if (response.failure !== undefined) {
+        if (this.canObserveBudget(generation, fresh)) {
+          this.observeBudget(response, false, fresh, performance.now() - batchStartedAt);
+          budgetObserved = true;
+        }
+        const failure = new Error(response.failure.message);
+        failure.name = response.failure.name;
+        throw failure;
       }
       const completedUnits = new Set<string>();
       const missingTargetIds = new Set<string>();
@@ -851,7 +1177,8 @@ export class PageTranslationPipeline {
           this.options.tokenCounter.count(item.unit.sourceText),
           this.options.tokenCounter.count(translated),
         );
-        this.observeAccepted(item.unit, translated);
+        this.observeAccepted(item.unit, translated, logBatch);
+
         if (this.isCurrent(generation) && this.liveUnits.has(item.unit)) {
           this.scheduleApply(item.unit, translated, generation, assembly.values.length);
         } else {
@@ -864,35 +1191,44 @@ export class PageTranslationPipeline {
           }
         }
       }
-      if (missingTargetIds.size > 0) {
+      if (missingTargetIds.size > 0 && this.isCurrent(generation)) {
         this.options.onUnitRejected?.(missingTargetIds.size);
       }
-      this.adaptiveTuner.observe(
-        this.options.modelProfile,
-        this.options.sourceLanguage,
-        this.options.targetLanguage,
-        fresh[0].unit.contextClass,
-        {
-          valid: missingTargetIds.size === 0,
-          truncated: false,
-          timedOut: false,
-          latencyMs: performance.now() - batchStartedAt,
-        },
-      );
+      if (this.canObserveBudget(generation, fresh)) {
+        this.observeBudget(
+          response,
+          missingTargetIds.size === 0,
+          fresh,
+          performance.now() - batchStartedAt,
+        );
+        budgetObserved = true;
+      }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      this.adaptiveTuner.observe(
-        this.options.modelProfile,
-        this.options.sourceLanguage,
-        this.options.targetLanguage,
-        fresh[0].unit.contextClass,
-        {
-          valid: false,
-          truncated: /truncate|truncated|truncation|length|context/iu.test(errorMessage),
-          timedOut: /timeout|timed out/iu.test(errorMessage),
-          latencyMs: performance.now() - batchStartedAt,
-        },
-      );
+      if (
+        this.budgetController !== null &&
+        !budgetObserved &&
+        this.canObserveBudget(generation, fresh)
+      ) {
+        const feedbackResponse: PageTranslationBatchResponse = responseForFeedback ?? {
+          translations: [],
+          metrics: {
+            retryCount: 0,
+            validationFailures: /Placeholder validation failed/iu.test(errorMessage)
+              ? 1
+              : 0,
+            failedIds: fresh.map((item) => item.target.id),
+          },
+          failure: { name: 'Error', message: errorMessage },
+        };
+        this.observeBudget(
+          feedbackResponse,
+          false,
+          fresh,
+          performance.now() - batchStartedAt,
+        );
+        budgetObserved = true;
+      }
       if (logBatch !== null) {
         const normalizedError =
           error instanceof Error
@@ -901,15 +1237,22 @@ export class PageTranslationPipeline {
         logBatch.error = normalizedError;
         for (const target of logBatch.targets) target.status = 'failed';
       }
-      this.options.onUnitRejected?.(fresh.length);
+      if (this.isCurrent(generation)) this.options.onUnitRejected?.(fresh.length);
       if (this.options.debug) console.warn('[page-translation] batch failed', error);
     } finally {
-      if (logBatch !== null) logBatch.completedAt = Date.now();
+      if (logBatch !== null) {
+        logBatch.completedAt = Date.now();
+        logBatch.latencyMs = Math.max(0, performance.now() - batchStartedAt);
+      }
       for (const item of fresh) this.inFlight.delete(item.target.id);
     }
   }
 
-  private observeAccepted(unit: TranslationUnit, translation: string): void {
+  private observeAccepted(
+    unit: TranslationUnit,
+    translation: string,
+    logBatch: PageTranslationLogBatch | null,
+  ): void {
     this.accepted.push({
       source: unit.sourceText,
       translation,
@@ -919,6 +1262,9 @@ export class PageTranslationPipeline {
     });
     if (this.terminology.observe(unit.normalizedText, translation)) {
       this.metrics.terminologyConflicts++;
+      if (logBatch !== null) {
+        logBatch.terminologyConflicts = (logBatch.terminologyConflicts ?? 0) + 1;
+      }
     }
   }
 
@@ -949,6 +1295,7 @@ export class PageTranslationPipeline {
         const previousSession = this.runtimeSessionId;
         this.currentUrl = location.href;
         ++this.generation;
+        this.clearAdmissionQueue();
         this.metrics.navigationCancellations++;
         void abortTranslation({ context: previousSession }).catch(() => undefined);
         // Restore generates the same childList/characterData records as apply.

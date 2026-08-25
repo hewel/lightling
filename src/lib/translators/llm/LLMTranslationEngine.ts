@@ -96,6 +96,14 @@ export class TranslationSchedulerReplacedError extends Schema.TaggedError<Transl
     });
   }
 }
+export const isTranslationCancellationError = (error: unknown): boolean =>
+  error instanceof TranslationAbortedError ||
+  error instanceof TranslationSchedulerReplacedError ||
+  (typeof error === 'object' &&
+    error !== null &&
+    '_tag' in error &&
+    (error._tag === 'TranslationAbortedError' ||
+      error._tag === 'TranslationSchedulerReplacedError'));
 
 export type LLMRequest = TranslationInferenceRequest;
 
@@ -184,6 +192,68 @@ export const isContextLengthExceeded = (error: unknown): boolean => {
     serialized,
   );
 };
+type ErrorRecord = Record<string, unknown>;
+
+const asErrorRecord = (value: unknown): ErrorRecord | null =>
+  typeof value === 'object' && value !== null ? (value as ErrorRecord) : null;
+
+const normalizeRetryAfterMs = (value: unknown, now = Date.now()): number | undefined => {
+  if (Duration.isDuration(value)) {
+    return Math.max(0, Duration.toMillis(value));
+  }
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return Math.max(0, value);
+  }
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return Math.max(0, value.getTime() - now);
+  }
+  if (typeof value === 'string') {
+    const timestamp = Date.parse(value);
+    if (!Number.isNaN(timestamp)) return Math.max(0, timestamp - now);
+  }
+  return undefined;
+};
+
+const getErrorFacts = (
+  error: unknown,
+): { httpStatus?: number; retryAfterMs?: number } => {
+  const pending: unknown[] = [error];
+  const visited = new Set<object>();
+  let httpStatus: number | undefined;
+  let retryAfterMs: number | undefined;
+
+  while (pending.length > 0) {
+    const current = pending.pop();
+    const record = asErrorRecord(current);
+    if (record === null) continue;
+    if (visited.has(record)) continue;
+    visited.add(record);
+
+    const directStatus = [record.httpStatus, record.status, record.statusCode].find(
+      (value): value is number => typeof value === 'number' && Number.isInteger(value),
+    );
+    if (directStatus !== undefined && httpStatus === undefined) httpStatus = directStatus;
+    if (record._tag === 'RateLimitError' && httpStatus === undefined) httpStatus = 429;
+
+    const currentRetryAfter = normalizeRetryAfterMs(record.retryAfter);
+    if (currentRetryAfter !== undefined && retryAfterMs === undefined) {
+      retryAfterMs = currentRetryAfter;
+    }
+
+    for (const key of ['reason', 'cause', 'response', 'http']) {
+      const nested = record[key];
+      if (nested !== undefined) pending.push(nested);
+    }
+  }
+
+  return { httpStatus, retryAfterMs };
+};
+
+export const getHttpStatus = (error: unknown): number | undefined =>
+  getErrorFacts(error).httpStatus;
+
+export const getRetryAfterMs = (error: unknown): number | undefined =>
+  getErrorFacts(error).retryAfterMs;
 
 /**
  * Parse an LLM response as a JSON array of strings, or as one outer `json`
@@ -752,11 +822,9 @@ export class LLMTranslationEngine {
             Boolean((error as { isRetryable?: boolean }).isRetryable) &&
             !isContextLengthExceeded(error),
           (error) => {
+            const retryAfterMs = getRetryAfterMs(error);
             onTransportRetry?.(error, attemptNumber + 1);
-            const retryAfter = (error as { retryAfter?: unknown }).retryAfter;
-            const waitMs = Duration.isDuration(retryAfter)
-              ? Duration.toMillis(retryAfter)
-              : delayMs;
+            const waitMs = retryAfterMs ?? delayMs;
             return Effect.sleep(Duration.millis(waitMs)).pipe(
               Effect.flatMap(() =>
                 attempt(
@@ -956,6 +1024,8 @@ export class LLMTranslationEngine {
             profileId: profile.id,
             targetIds: prepared.targets.map((target) => target.id),
             attemptNumber,
+            httpStatus: getHttpStatus(error),
+            retryAfterMs: getRetryAfterMs(error),
             error: error instanceof Error ? error.message : String(error),
           });
         },
@@ -998,6 +1068,8 @@ export class LLMTranslationEngine {
               contextMode: prepared.contextMode,
               profileId: profile.id,
               targetIds: prepared.targets.map((target) => target.id),
+              httpStatus: getHttpStatus(error),
+              retryAfterMs: getRetryAfterMs(error),
               error: error instanceof Error ? error.message : String(error),
             });
           }),
@@ -1125,6 +1197,13 @@ export class LLMTranslationEngine {
         );
         return [...left, ...right];
       }
+      onMetrics?.({
+        ...deriveAttemptMetrics(attempts),
+        acceptedProfileId: profile.id,
+        acceptedRetryStage,
+        failedIds: request.targets.map((target) => target.id),
+        attempts,
+      });
       throw error;
     } finally {
       controllers.delete(controller);

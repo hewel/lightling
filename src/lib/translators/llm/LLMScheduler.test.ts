@@ -236,6 +236,74 @@ describe('LLMScheduler', () => {
     ]);
   });
 
+  test('limits page executions independently to page cap', async () => {
+    const stubTranslator = new StubLLMTranslator();
+    const deferreds: Array<{
+      promise: Promise<{ id: string; target: string }[]>;
+      resolve(value: { id: string; target: string }[]): void;
+    }> = [];
+    let active = 0;
+    let maxActive = 0;
+    stubTranslator.executePageBatch.mockImplementation(async (_request) => {
+      active++;
+      maxActive = Math.max(maxActive, active);
+      const deferred = Promise.withResolvers<{ id: string; target: string }[]>();
+      deferreds.push(deferred);
+      const result = await deferred.promise;
+      active--;
+      return result;
+    });
+    const scheduler = new LLMScheduler(
+      stubTranslator,
+      { ...defaultConfig, pageMaxConcurrentRequests: 2 },
+      vi.fn(),
+    );
+    const makeRequest = (id: string): PageTranslationBatchRequest => ({
+      sourceLanguage: 'en',
+      targetLanguage: 'es',
+      sessionId: 'session',
+      memory: {
+        languageDirection: 'auto',
+        glossary: [],
+        protectedTerms: [],
+        namedEntities: [],
+      },
+      context: { headingPath: [], previous: [], following: [], retrieved: [] },
+      group: { kind: 'body', slot: 'visible-text', contextClass: 'main:body' },
+      targets: [
+        {
+          id,
+          sourceText: id,
+          normalizedText: id,
+          kind: 'body',
+          slot: 'visible-text',
+          contextClass: 'main:body',
+          semanticKey: id,
+          priority: 1,
+        },
+      ],
+    });
+    const requests = ['a', 'b', 'c'].map((id) =>
+      scheduler.translatePageBatch(makeRequest(id), {
+        context: id,
+        priority: 0,
+        retryLimit: 2,
+      }),
+    );
+    for (let index = 0; index < 10 && deferreds.length < 2; index++) {
+      await Promise.resolve();
+    }
+    expect(maxActive).toBe(2);
+    deferreds[0]?.resolve([{ id: 'x', target: 'x' }]);
+    deferreds[1]?.resolve([{ id: 'x', target: 'x' }]);
+    for (let index = 0; index < 10 && deferreds.length < 3; index++) {
+      await Promise.resolve();
+    }
+    deferreds[2]?.resolve([{ id: 'x', target: 'x' }]);
+    await Promise.all(requests);
+    expect(maxActive).toBe(2);
+  });
+
   test('differing priority or context prevents pooling', async () => {
     const stubTranslator = new StubLLMTranslator();
     const onFinalError = vi.fn();

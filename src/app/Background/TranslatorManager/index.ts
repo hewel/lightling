@@ -21,7 +21,10 @@ import {
 import { TELEMETRY_EVENT_NAME } from '@/lib/telemetry';
 import { telemetry } from '@/lib/telemetry/singleton';
 import { LLMScheduler } from '@/lib/translators/llm/LLMScheduler';
-import { getLLMCacheId } from '@/lib/translators/llm/LLMTranslationEngine';
+import {
+  getLLMCacheId,
+  isTranslationCancellationError,
+} from '@/lib/translators/llm/LLMTranslationEngine';
 import { getActiveLLMProfile, LLMTranslator } from '@/lib/translators/llm/LLMTranslator';
 import { resolveTranslationModelProfile } from '@/lib/translators/llm/modelProfile';
 import { AppConfigType } from '@/types/runtime';
@@ -163,6 +166,7 @@ export class TranslatorManager<Translators extends TranslatorsMap = TranslatorsM
           target: target.sourceText,
           cacheKey: target.semanticKey,
           cacheHit: false,
+          provenance: 'invariant',
         });
         continue;
       }
@@ -176,29 +180,53 @@ export class TranslatorManager<Translators extends TranslatorsMap = TranslatorsM
           target: entry.translatedText,
           cacheKey: entry.key,
           cacheHit: true,
+          provenance: 'cache',
         });
       }
     }
     if (misses.length > 0) {
-      const translated = await createPageBatchExecution({
-        translatorClass: this.getTranslatorClass(),
-        getLLMTranslator: () => this.getTranslatorInstance() as LLMTranslator,
-        getScheduler: () => this.getTranslationSchedulerInstance(),
-        retryLimit: this.config.scheduler.translateRetryAttemptLimit,
-      }).execute({ ...request, targets: misses }, (terminal) => {
-        if (terminal.acceptedProfileId !== undefined) {
-          metrics.acceptedProfileId = terminal.acceptedProfileId;
+      let translated: { id: string; target: string }[];
+      try {
+        const scheduler = this.getTranslationSchedulerInstance();
+        translated = await createPageBatchExecution({
+          translatorClass: this.getTranslatorClass(),
+          getScheduler: () => scheduler,
+          llmSchedulerInstance: this.llmSchedulerInstance,
+          retryLimit: this.config.scheduler.translateRetryAttemptLimit,
+        }).execute({ ...request, targets: misses }, (terminal) => {
+          if (terminal.acceptedProfileId !== undefined) {
+            metrics.acceptedProfileId = terminal.acceptedProfileId;
+          }
+          if (terminal.acceptedRetryStage !== undefined) {
+            metrics.acceptedRetryStage = terminal.acceptedRetryStage;
+          }
+          if (terminal.failedIds !== undefined) {
+            metrics.failedIds = terminal.failedIds;
+          }
+          if (terminal.attempts !== undefined) {
+            metrics.attempts = [...(metrics.attempts ?? []), ...terminal.attempts];
+          }
+        });
+      } catch (error) {
+        if (
+          (this.getTranslatorClass() as unknown) !== LLMTranslator ||
+          isTranslationCancellationError(error)
+        ) {
+          throw error;
         }
-        if (terminal.acceptedRetryStage !== undefined) {
-          metrics.acceptedRetryStage = terminal.acceptedRetryStage;
-        }
-        if (terminal.failedIds !== undefined) {
-          metrics.failedIds = terminal.failedIds;
-        }
-        if (terminal.attempts !== undefined) {
-          metrics.attempts = [...(metrics.attempts ?? []), ...terminal.attempts];
-        }
-      });
+        metrics.failedIds = misses.map((target) => target.id);
+        const derivedMetrics = deriveAttemptMetrics(metrics.attempts ?? []);
+        metrics.retryCount = derivedMetrics.retryCount;
+        metrics.validationFailures = derivedMetrics.validationFailures;
+        return {
+          translations: [],
+          metrics,
+          failure: {
+            name: error instanceof Error ? error.name : 'Error',
+            message: error instanceof Error ? error.message : String(error),
+          },
+        };
+      }
 
       for (const translation of translated) {
         const target = misses.find((candidate) => candidate.id === translation.id);
@@ -246,6 +274,7 @@ export class TranslatorManager<Translators extends TranslatorsMap = TranslatorsM
           target: translation.target,
           cacheKey: target.semanticKey,
           cacheHit: false,
+          provenance: 'provider',
         });
       }
     }
@@ -288,7 +317,7 @@ export class TranslatorManager<Translators extends TranslatorsMap = TranslatorsM
             translatorName: LLMTranslator.translatorName,
           });
         };
-
+        const activeProfile = getActiveLLMProfile(this.config.llmTranslator);
         const llmScheduler = new LLMScheduler(
           translator,
           {
@@ -297,6 +326,7 @@ export class TranslatorManager<Translators extends TranslatorsMap = TranslatorsM
             translatePoolDelay: this.config.scheduler.translatePoolDelay,
             chunkSizeForInstantTranslate:
               this.config.scheduler.chunkSizeForInstantTranslate,
+            pageMaxConcurrentRequests: activeProfile.maxConcurrentRequests ?? 12,
           },
           onFinalError,
         );

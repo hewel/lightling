@@ -88,6 +88,7 @@ export class LLMTranslator implements TranslatorInstanceMembers {
   private readonly profile: LLMProfile;
   private readonly engine: LLMTranslationEngine;
   private readonly scheduler: LLMScheduler;
+  private readonly fallbackTranslators = new Map<string, LLMTranslator>();
   private resolvedSettings: ResolvedLLMExecutionSettings | null = null;
   private readonly config: LLMTranslatorConfig;
   private readonly translatorOptions: {
@@ -160,6 +161,7 @@ export class LLMTranslator implements TranslatorInstanceMembers {
         directTranslateLength: null,
         translatePoolDelay: 300,
         chunkSizeForInstantTranslate: null,
+        pageMaxConcurrentRequests: this.profile.maxConcurrentRequests ?? 12,
       },
       () => {},
     );
@@ -243,7 +245,6 @@ export class LLMTranslator implements TranslatorInstanceMembers {
     if (this.profile.model === '') {
       throw new Error('LLM translator model is not configured');
     }
-
     const fallbackName = this.profile.fallbackProfile;
     const fallback =
       fallbackName === null || fallbackName === this.profile.name
@@ -253,22 +254,24 @@ export class LLMTranslator implements TranslatorInstanceMembers {
       targets: PageTranslationBatchRequest['targets'],
     ): Promise<{ id: string; target: string }[]> => {
       if (fallback === undefined || targets.length === 0) return [];
-      const fallbackTranslator = new LLMTranslator(
-        {
-          activeProfile: fallback.name,
-          profiles: [{ ...fallback, fallbackProfile: null }],
-        },
-        this.translatorOptions,
-      );
-      try {
-        return await fallbackTranslator.translatePageBatch(
-          { ...request, targets },
-          options,
-          onMetrics,
+
+      let fallbackTranslator = this.fallbackTranslators.get(fallback.name);
+      if (fallbackTranslator === undefined) {
+        fallbackTranslator = new LLMTranslator(
+          {
+            activeProfile: fallback.name,
+            profiles: [{ ...fallback, fallbackProfile: null }],
+          },
+          this.translatorOptions,
         );
-      } finally {
-        fallbackTranslator.dispose();
+        this.fallbackTranslators.set(fallback.name, fallbackTranslator);
       }
+
+      return fallbackTranslator.translatePageBatch(
+        { ...request, targets },
+        options,
+        onMetrics,
+      );
     };
 
     let translated: { id: string; target: string }[];
@@ -307,10 +310,17 @@ export class LLMTranslator implements TranslatorInstanceMembers {
 
   public abort(context: string): void {
     void this.scheduler.abort(context);
+    for (const fallbackTranslator of this.fallbackTranslators.values()) {
+      fallbackTranslator.abort(context);
+    }
   }
 
   public dispose(): void {
     this.scheduler.dispose();
+    for (const fallbackTranslator of this.fallbackTranslators.values()) {
+      fallbackTranslator.dispose();
+    }
+    this.fallbackTranslators.clear();
   }
 
   public getMaxConcurrentRequests(): number {

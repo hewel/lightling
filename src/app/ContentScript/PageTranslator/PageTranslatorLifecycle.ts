@@ -7,18 +7,43 @@ export interface PageTranslatorLifecycleTarget {
   isRun(): boolean;
   getTranslateDirection(): PageTranslationDirection | null;
   updateConfig(config: PageTranslatorConfig): void;
-  run(from: string, to: string): void;
+  run(from: string, to: string): Promise<void>;
   stop(): void;
 }
 
 export class PageTranslatorLifecycle {
   private readonly pageTranslator: PageTranslatorLifecycleTarget;
+  private readonly onStartupFailure: () => void;
+  private requestGeneration = 0;
+  private requestedState: PageTranslationOptions | null = null;
 
-  constructor(pageTranslator: PageTranslatorLifecycleTarget) {
+  constructor(
+    pageTranslator: PageTranslatorLifecycleTarget,
+    onStartupFailure = () => {},
+  ) {
     this.pageTranslator = pageTranslator;
+    this.onStartupFailure = onStartupFailure;
   }
 
-  public updateConfig(config: PageTranslatorConfig): void {
+  private readonly start = async (
+    direction: PageTranslationDirection,
+    generation: number,
+  ): Promise<void> => {
+    try {
+      await this.pageTranslator.run(direction.from, direction.to);
+    } catch {
+      if (
+        generation === this.requestGeneration &&
+        this.requestedState !== null &&
+        !this.pageTranslator.isRun()
+      ) {
+        this.requestedState = null;
+        this.onStartupFailure();
+      }
+    }
+  };
+
+  public async updateConfig(config: PageTranslatorConfig): Promise<void> {
     if (!this.pageTranslator.isRun()) {
       this.pageTranslator.updateConfig(config);
       return;
@@ -31,17 +56,30 @@ export class PageTranslatorLifecycle {
 
     this.pageTranslator.stop();
     this.pageTranslator.updateConfig(config);
-    this.pageTranslator.run(direction.from, direction.to);
+    const generation = ++this.requestGeneration;
+    await this.start(direction, generation);
   }
 
-  public updateState(pageTranslation: PageTranslationOptions | null): void {
-    const shouldTranslate = pageTranslation !== null;
-    if (shouldTranslate === this.pageTranslator.isRun()) return;
+  public async updateState(
+    pageTranslation: PageTranslationOptions | null,
+  ): Promise<void> {
+    const sameRequestedState =
+      pageTranslation === this.requestedState ||
+      (pageTranslation !== null &&
+        this.requestedState !== null &&
+        pageTranslation.from === this.requestedState.from &&
+        pageTranslation.to === this.requestedState.to);
+    if (sameRequestedState) return;
 
-    if (pageTranslation !== null) {
-      this.pageTranslator.run(pageTranslation.from, pageTranslation.to);
-    } else {
-      this.pageTranslator.stop();
+    const wasRunning = this.pageTranslator.isRun();
+    this.requestedState = pageTranslation;
+    const generation = ++this.requestGeneration;
+    if (pageTranslation === null) {
+      if (wasRunning) this.pageTranslator.stop();
+      return;
     }
+
+    if (wasRunning) this.pageTranslator.stop();
+    await this.start(pageTranslation, generation);
   }
 }

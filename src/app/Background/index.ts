@@ -20,6 +20,7 @@ import { AppConfigType } from '../../types/runtime';
 
 import { ObservableAsyncStorage } from '../ConfigStorage/ConfigStorage';
 import { TranslationAccounting } from './TranslationAccounting';
+import { TranslationBudgetStorage } from './TranslationBudgetStorage';
 import { TranslationStatsStorage } from './TranslationStatsStorage';
 import { TranslatorManager } from './TranslatorManager';
 import { TTSController } from './TTS/TTSController';
@@ -84,6 +85,7 @@ export type TranslatorsMap = Record<string, TranslatorConstructor>;
 export class Background {
   private readonly config: ObservableAsyncStorage<AppConfigType>;
   private readonly ttsManager;
+  private readonly translationBudgetStorage = new TranslationBudgetStorage();
   constructor(config: ObservableAsyncStorage<AppConfigType>) {
     this.config = config;
     this.ttsManager = new TTSManager();
@@ -128,6 +130,10 @@ export class Background {
 
   public getTranslationStatsStorage() {
     return this.translationStatsStorage;
+  }
+
+  public getTranslationBudgetStorage() {
+    return this.translationBudgetStorage;
   }
 
   private ttsController: TTSController | null = null;

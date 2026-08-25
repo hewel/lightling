@@ -51,6 +51,7 @@ describe('fetchLLMModels metadata decoding', () => {
           context_length: 200000,
           per_request_limits: { prompt_tokens: 50000, completion_tokens: 8000 },
           top_provider: { context_length: 128000, max_completion_tokens: 16000 },
+          pricing: { prompt: '0.000002', completion: '0.000004' },
           supported_parameters: ['temperature', 'tools', 42],
         },
       ]),
@@ -75,6 +76,8 @@ describe('fetchLLMModels metadata decoding', () => {
       // conflicting output fields choose the minimum positive value
       maxOutputTokens: 8000,
       maxOutputSource: 'provider',
+      inputPricePerMillionTokens: 2,
+      outputPricePerMillionTokens: 4,
       supportedParameters: ['temperature', 'tools'],
       tokenizerId: null,
       supportsPrefixCaching: null,
@@ -107,16 +110,51 @@ describe('fetchLLMModels metadata decoding', () => {
       {
         id: 'vendor/messy',
         displayName: 'vendor/messy',
-        contextWindowTokens: null,
         contextWindowSource: null,
+        contextWindowTokens: null,
         maxInputTokens: null,
         maxInputSource: null,
         maxOutputTokens: null,
         maxOutputSource: null,
+        inputPricePerMillionTokens: null,
+        outputPricePerMillionTokens: null,
         supportedParameters: null,
         tokenizerId: null,
         supportsPrefixCaching: null,
       },
+    ]);
+  });
+  test('returns null for missing or invalid OpenRouter prices', async () => {
+    fetchMock.mockImplementationOnce(async () =>
+      listResponse([
+        {
+          id: 'vendor/invalid-prices',
+          pricing: { prompt: '', completion: 'not-a-number' },
+        },
+        {
+          id: 'vendor/partial-price',
+          pricing: { prompt: '-0.000001', completion: '0' },
+        },
+      ]),
+    );
+
+    const models = await fetchLLMModels({
+      provider: 'openrouter',
+      apiUrl: '',
+      apiKey: '',
+    });
+
+    expect(models).toEqual([
+      expect.objectContaining({
+        id: 'vendor/invalid-prices',
+        inputPricePerMillionTokens: null,
+        outputPricePerMillionTokens: null,
+      }),
+      expect.objectContaining({
+        id: 'vendor/partial-price',
+        inputPricePerMillionTokens: null,
+        outputPricePerMillionTokens: 0,
+      }),
     ]);
   });
 
@@ -314,6 +352,8 @@ describe('resolveLLMExecutionSettings precedence', () => {
     contextWindowTokens: 32768,
     maxInputTokens: 16384,
     maxOutputTokens: 4096,
+    inputPricePerMillionTokens: null,
+    outputPricePerMillionTokens: null,
     supportedParameters: ['temperature'],
     tokenizerId: null,
     supportsPrefixCaching: null,
@@ -437,6 +477,10 @@ describe('resolveLLMExecutionSettings precedence', () => {
       supportedParameters: null,
     });
   });
+  test('preserves the exact matched model metadata object', () => {
+    const info = providerInfo();
+    expect(resolveLLMExecutionSettings(makeProfile(), info).modelInfo).toBe(info);
+  });
 });
 
 describe('loadLLMExecutionSettings', () => {
@@ -467,6 +511,8 @@ describe('loadLLMExecutionSettings', () => {
       contextWindowSource: 'provider',
       maxOutputTokens: 2048,
     });
+    expect(resolved.modelInfo).not.toBeNull();
+    expect(resolved.modelInfo?.id).toBe('test-model');
   });
 
   test('falls back without a request for OpenAI and Anthropic profiles', async () => {

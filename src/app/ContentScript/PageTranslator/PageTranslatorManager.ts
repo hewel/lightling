@@ -13,6 +13,7 @@ export class PageTranslatorManager {
       state: PageTranslationOptions | null;
       config: PageTranslatorConfig;
     }>,
+    private readonly onStartupFailure: () => void = () => {},
   ) {
     this.$state = $state;
 
@@ -26,19 +27,30 @@ export class PageTranslatorManager {
   }
 
   public start() {
-    const lifecycle = new PageTranslatorLifecycle(this.pageTranslator);
+    const lifecycle = new PageTranslatorLifecycle(
+      this.pageTranslator,
+      this.onStartupFailure,
+    );
 
     // Manage page translation instance
     this.$state.subscribe(
       ({ config }) => config,
-      (config) => lifecycle.updateConfig(config),
+      (config) => {
+        void lifecycle.updateConfig(config).catch((error: unknown) => {
+          console.warn('Failed to update page translator configuration', error);
+        });
+      },
       { fireImmediately: true },
     );
 
     // Manage page translation state
     this.$state.subscribe(
       ({ state }) => state,
-      (pageTranslation) => lifecycle.updateState(pageTranslation),
+      (pageTranslation) => {
+        void lifecycle.updateState(pageTranslation).catch((error: unknown) => {
+          console.warn('Failed to update page translator state', error);
+        });
+      },
       { fireImmediately: true },
     );
   }

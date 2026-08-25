@@ -1,14 +1,21 @@
+import type { BudgetSnapshot } from '@/lib/translators/llm/budgetController';
 import { getActiveLLMProfile } from '@/lib/translators/llm/LLMTranslator';
+import { getLLMDiscoveryIdentity } from '@/lib/translators/llm/modelInfo';
+import { loadLLMExecutionSettingsCached } from '@/lib/translators/llm/modelListCache';
 import {
   createConservativeTranslationModelProfile,
-  resolveTranslationModelProfile,
   type TranslationModelProfile,
 } from '@/lib/translators/llm/modelProfile';
 import {
+  resolveSizeTier,
+  type TranslationModelSizeTier,
+} from '@/lib/translators/llm/sizeTier';
+import {
   conservativeTokenCounter,
-  resolveTranslationTokenizer,
   type TranslationTokenCounter,
 } from '@/lib/translators/llm/tokenizer';
+import { getTranslationBudgetSnapshot } from '@/requests/backend/getTranslationBudgetSnapshot';
+import { setTranslationBudgetSnapshot } from '@/requests/backend/setTranslationBudgetSnapshot';
 import type { AppConfigType } from '@/types/runtime';
 
 export type PageTranslationSessionConfig = {
@@ -25,6 +32,9 @@ export interface PageTranslationSessionDescriptor {
   model: string;
   modelProfile: TranslationModelProfile;
   tokenCounter: TranslationTokenCounter;
+  sizeTier: TranslationModelSizeTier;
+  persistedBudget: BudgetSnapshot | null;
+  onBudgetSnapshot: (snapshot: BudgetSnapshot) => void;
   logEnabled: boolean;
   debug: boolean;
 }
@@ -38,41 +48,47 @@ export interface PageTranslationSessionInput {
   sessionId: string;
 }
 
-export const preparePageTranslationSession = ({
+export const preparePageTranslationSession = async ({
   config,
   from,
   to,
   documentIdentity,
   pageUrl,
   sessionId,
-}: PageTranslationSessionInput): PageTranslationSessionDescriptor => {
+}: PageTranslationSessionInput): Promise<PageTranslationSessionDescriptor> => {
   const configuredProfile =
     config.translatorModule === 'LLMTranslator' && config.llmTranslator !== undefined
       ? getActiveLLMProfile(config.llmTranslator)
       : null;
   const provider = configuredProfile?.provider ?? config.translatorModule ?? 'unknown';
   const model = configuredProfile?.model ?? config.translatorModule ?? 'unknown';
-  const profileResolution =
+  const settings =
     configuredProfile === null
       ? null
-      : resolveTranslationModelProfile(configuredProfile, null);
-  const tokenizerResolution =
-    configuredProfile === null
-      ? null
-      : resolveTranslationTokenizer(configuredProfile, null);
+      : await loadLLMExecutionSettingsCached(configuredProfile);
   const modelProfile =
-    profileResolution === null || tokenizerResolution === null
-      ? createConservativeTranslationModelProfile(model)
-      : {
-          ...profileResolution.profile,
-          tokenizerId: tokenizerResolution.counter.id,
-          tokenizerSource: tokenizerResolution.source,
-          safetyReserveTokens:
-            tokenizerResolution.counter.accuracy === 'estimate'
-              ? Math.max(profileResolution.profile.safetyReserveTokens, 640)
-              : profileResolution.profile.safetyReserveTokens,
-        };
-  const tokenCounter = tokenizerResolution?.counter ?? conservativeTokenCounter;
+    settings?.translationProfile ?? createConservativeTranslationModelProfile(model);
+  const tokenCounter = settings?.tokenCounter ?? conservativeTokenCounter;
+  const sizeTier =
+    configuredProfile === null
+      ? 'medium'
+      : resolveSizeTier(configuredProfile, settings?.modelInfo ?? null);
+  const budgetIdentity =
+    configuredProfile === null ? null : getLLMDiscoveryIdentity(configuredProfile);
+  const persistedBudget =
+    budgetIdentity === null
+      ? null
+      : await getTranslationBudgetSnapshot({ identity: budgetIdentity });
+  const onBudgetSnapshot = (snapshot: BudgetSnapshot): void => {
+    if (budgetIdentity === null) return;
+    void setTranslationBudgetSnapshot({
+      identity: budgetIdentity,
+      snapshot,
+      updatedAt: Date.now(),
+    }).catch((error: unknown) => {
+      console.warn('Failed to persist page translation budget snapshot', error);
+    });
+  };
   const logEnabled = config.enableLogExport === true;
   const debug = logEnabled || configuredProfile?.translationProfile?.debug === true;
   const sessionSignature = [
@@ -94,6 +110,9 @@ export const preparePageTranslationSession = ({
     model,
     modelProfile,
     tokenCounter,
+    sizeTier,
+    persistedBudget,
+    onBudgetSnapshot,
     logEnabled,
     debug,
   };

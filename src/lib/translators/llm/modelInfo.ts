@@ -59,6 +59,8 @@ export interface LLMModelInfo {
   contextWindowTokens: number | null;
   maxInputTokens: number | null;
   maxOutputTokens: number | null;
+  inputPricePerMillionTokens?: number | null;
+  outputPricePerMillionTokens?: number | null;
   supportedParameters: readonly string[] | null;
   tokenizerId: string | null;
   supportsPrefixCaching: boolean | null;
@@ -81,6 +83,7 @@ export interface ResolvedLLMExecutionSettings {
   supportedParameters: readonly string[] | null;
   translationProfile: TranslationModelProfile;
   tokenCounter: TranslationTokenCounter;
+  modelInfo: LLMModelInfo | null;
   profileWarnings: readonly string[];
 }
 
@@ -121,6 +124,29 @@ const tokenizerIdentifier = (...values: unknown[]): string | null => {
   return null;
 };
 
+const pricePerMillionTokens = (value: unknown): number | null => {
+  if (typeof value !== 'string' || value.trim() === '') return null;
+
+  const perToken = Number(value);
+  const perMillion = perToken * 1_000_000;
+  return Number.isFinite(perToken) && perToken >= 0 && Number.isFinite(perMillion)
+    ? perMillion
+    : null;
+};
+
+const openRouterPricing = (
+  value: unknown,
+): {
+  inputPricePerMillionTokens: number | null;
+  outputPricePerMillionTokens: number | null;
+} => {
+  const pricing = stringRecord(value);
+  return {
+    inputPricePerMillionTokens: pricePerMillionTokens(pricing?.prompt),
+    outputPricePerMillionTokens: pricePerMillionTokens(pricing?.completion),
+  };
+};
+
 const optionalBoolean = (value: unknown): boolean | null =>
   typeof value === 'boolean' ? value : null;
 
@@ -135,6 +161,7 @@ const OpenRouterModelEntry = Schema.Struct({
   supported_parameters: Schema.optional(Schema.Unknown),
   architecture: Schema.optional(Schema.Unknown),
   supports_implicit_caching: Schema.optional(Schema.Unknown),
+  pricing: Schema.optional(Schema.Unknown),
 });
 
 const AnthropicModelEntry = Schema.Struct({
@@ -173,6 +200,7 @@ const decodeModelEntry = (provider: LLMProvider, entry: unknown): LLMModelInfo |
       const topProvider = stringRecord(model.top_provider);
       const architecture = stringRecord(model.architecture);
       const supportedParameters = supportedParameterList(model.supported_parameters);
+      const pricing = openRouterPricing(model.pricing);
 
       return {
         id: model.id,
@@ -186,6 +214,7 @@ const decodeModelEntry = (provider: LLMProvider, entry: unknown): LLMModelInfo |
           positiveTokenCount(perRequestLimits?.completion_tokens),
           positiveTokenCount(topProvider?.max_completion_tokens),
         ),
+        ...pricing,
         supportedParameters,
         tokenizerId: tokenizerIdentifier(architecture?.tokenizer),
         supportsPrefixCaching: optionalBoolean(model.supports_implicit_caching),
@@ -205,6 +234,8 @@ const decodeModelEntry = (provider: LLMProvider, entry: unknown): LLMModelInfo |
         contextWindowTokens: null,
         maxInputTokens: null,
         maxOutputTokens: null,
+        inputPricePerMillionTokens: null,
+        outputPricePerMillionTokens: null,
         supportedParameters: supportedParameterList(model.supported_parameters),
         tokenizerId: tokenizerIdentifier(model.tokenizer_id, model.tokenizer),
         supportsPrefixCaching: null,
@@ -229,6 +260,8 @@ const decodeModelEntry = (provider: LLMProvider, entry: unknown): LLMModelInfo |
           positiveTokenCount(model.max_completion_tokens),
           positiveTokenCount(model.max_output_tokens),
         ),
+        inputPricePerMillionTokens: null,
+        outputPricePerMillionTokens: null,
         supportedParameters: supportedParameterList(model.supported_parameters),
         tokenizerId: tokenizerIdentifier(model.tokenizer_id, model.tokenizer),
         supportsPrefixCaching: null,
@@ -455,6 +488,7 @@ export const resolveLLMExecutionSettings = (
     supportedParameters: modelInfo?.supportedParameters ?? null,
     translationProfile,
     tokenCounter: tokenizerResolution.counter,
+    modelInfo,
     profileWarnings: Array.from(new Set(profileWarnings)),
   };
 };

@@ -1,3 +1,5 @@
+import type { TranslationModelSizeTier } from '@/lib/translators/llm/sizeTier';
+
 import type {
   PageProfile,
   PageTranslationBatchAttempt,
@@ -30,6 +32,14 @@ export interface PageTranslationLogProfile {
     | 'json-object'
     | 'prompt-only';
   reasoning: 'disabled' | 'minimal' | 'normal';
+}
+
+export interface PageTranslationLogParallelism {
+  adaptive: boolean;
+  sizeTier: TranslationModelSizeTier;
+  dispatchConcurrency: number;
+  batchSourceTokens: number;
+  budgetTokens: number;
 }
 
 export interface PageTranslationLogTokenBudget {
@@ -70,6 +80,9 @@ export interface PageTranslationLogBatch {
   reductions: string[];
   acceptedProfileId?: string;
   acceptedRetryStage?: RetryStage;
+  parallelism?: PageTranslationLogParallelism;
+  latencyMs?: number;
+  terminologyConflicts?: number;
   /** Append-only parse and transport-retry journal emitted by the engine. */
   attempts?: PageTranslationLogAttempt[];
   error?: {

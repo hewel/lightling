@@ -99,10 +99,10 @@ describe('runtime schemas', () => {
       tryDecode(AppConfig, configWith({ contextWindowTokens: 512 })),
     ).not.toThrow();
     expect(() =>
-      tryDecode(AppConfig, configWith({ maxConcurrentRequests: 9 })),
+      tryDecode(AppConfig, configWith({ maxConcurrentRequests: 13 })),
     ).toThrow();
     expect(() =>
-      tryDecode(AppConfig, configWith({ maxConcurrentRequests: 8 })),
+      tryDecode(AppConfig, configWith({ maxConcurrentRequests: 9 })),
     ).not.toThrow();
     expect(() => tryDecode(AppConfig, configWith({ preferredInputTokens: 0 }))).toThrow();
   });

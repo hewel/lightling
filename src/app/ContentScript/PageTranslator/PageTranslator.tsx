@@ -1,6 +1,7 @@
 import { getContentScriptStyles } from '@/lib/browser';
 import type { PageTranslationLog } from '@/lib/pageTranslation/log';
 import { ShadowDOMContainerManager } from '@/lib/ShadowDOMContainerManager';
+import { getActiveLLMProfile } from '@/lib/translators/llm/LLMTranslator';
 import { createUUID } from '@/lib/utils';
 import { abortTranslation } from '@/requests/backend/abortTranslation';
 import type { AppConfigType } from '@/types/runtime';
@@ -28,10 +29,19 @@ export type PageTranslatorConfig = Partial<
 > &
   Partial<Pick<AppConfigType, 'translatorModule' | 'llmTranslator'>>;
 
+export class PageTranslationStartupCancelledError extends Error {
+  public constructor() {
+    super('Page translation startup cancelled because the page URL changed');
+    this.name = 'PageTranslationStartupCancelledError';
+  }
+}
+
 export class PageTranslator {
   private readonly documentIdentity = createUUID();
   private translateContext: string = createUUID();
   private pageTranslator: PageTranslationPipeline | null = null;
+  private pendingRun: { generation: number; context: string } | null = null;
+  private runGeneration = 0;
   private pageTranslateDirection: { from: string; to: string } | null = null;
   private translateState: PageTranslatorStats = {
     resolved: 0,
@@ -47,9 +57,8 @@ export class PageTranslator {
   public updateConfig(config: PageTranslatorConfig) {
     this.config = { ...this.config, ...config };
   }
-
   public isRun() {
-    return this.pageTranslator !== null;
+    return this.pageTranslator !== null || this.pendingRun !== null;
   }
 
   public getStatus() {
@@ -60,63 +69,94 @@ export class PageTranslator {
     return this.pageTranslateDirection;
   }
 
-  public run(from: string, to: string) {
-    if (this.pageTranslator !== null) {
+  public async run(from: string, to: string) {
+    if (this.pageTranslator !== null || this.pendingRun !== null) {
       throw new Error('Page already translated');
     }
 
+    const generation = ++this.runGeneration;
     this.translateContext = createUUID();
     const localContext = this.translateContext;
-    const session = preparePageTranslationSession({
-      config: this.config,
-      from,
-      to,
-      documentIdentity: this.documentIdentity,
-      pageUrl: location.href,
-      sessionId: localContext,
-    });
-
+    this.pendingRun = { generation, context: localContext };
     this.pageTranslateDirection = { from, to };
-    this.pageTranslator = new PageTranslationPipeline({
-      root: document.documentElement,
-      sourceLanguage: from,
-      targetLanguage: to,
-      identity: {
-        provider: session.provider,
-        model: session.model,
-      },
-      sessionId: session.sessionId,
-      sessionSignature: session.sessionSignature,
-      modelProfile: session.modelProfile,
-      tokenCounter: session.tokenCounter,
-      logEnabled: session.logEnabled,
-      debug: session.debug,
-      translatableAttributes: this.config.translatableAttributes,
-      excludeSelectors: (this.config.excludeSelectors ?? []).filter(
-        (selector) => !selector.startsWith('!') && selector.trim() !== '',
-      ),
-      onUnitStarted: (count) => {
-        if (localContext !== this.translateContext) return;
-        this.translateState.pending += count;
-        this.translateStateUpdate();
-      },
-      onUnitResolved: (count) => {
-        if (localContext !== this.translateContext) return;
-        this.translateState.resolved += count;
-        this.translateState.pending = Math.max(0, this.translateState.pending - count);
-        this.translateStateUpdate();
-      },
-      onUnitRejected: (count) => {
-        if (localContext !== this.translateContext) return;
-        this.translateState.rejected += count;
-        this.translateState.pending = Math.max(0, this.translateState.pending - count);
-        this.translateStateUpdate();
-      },
-    });
-    this.pageTranslator.start();
+    const pageUrl = location.href;
 
-    if (this.config.originalTextPopup) {
-      document.addEventListener('mouseover', this.showOriginalTextHandler);
+    try {
+      const session = await preparePageTranslationSession({
+        config: this.config,
+        from,
+        to,
+        documentIdentity: this.documentIdentity,
+        pageUrl,
+        sessionId: localContext,
+      });
+      const isCurrentPending =
+        this.pendingRun?.generation === generation &&
+        this.pendingRun.context === localContext;
+      if (!isCurrentPending) return;
+      if (location.href !== pageUrl) {
+        throw new PageTranslationStartupCancelledError();
+      }
+
+      this.pageTranslator = new PageTranslationPipeline({
+        root: document.documentElement,
+        sourceLanguage: from,
+        targetLanguage: to,
+        identity: {
+          provider: session.provider,
+          model: session.model,
+        },
+        sessionId: session.sessionId,
+        sessionSignature: session.sessionSignature,
+        modelProfile: session.modelProfile,
+        tokenCounter: session.tokenCounter,
+        sizeTier: session.sizeTier,
+        persistedBudget: session.persistedBudget,
+        userConcurrencyCeiling:
+          this.config.llmTranslator === undefined
+            ? null
+            : getActiveLLMProfile(this.config.llmTranslator).maxConcurrentRequests,
+        onBudgetSnapshot: session.onBudgetSnapshot,
+        logEnabled: session.logEnabled,
+        debug: session.debug,
+        translatableAttributes: this.config.translatableAttributes,
+        excludeSelectors: (this.config.excludeSelectors ?? []).filter(
+          (selector) => !selector.startsWith('!') && selector.trim() !== '',
+        ),
+        onUnitStarted: (count) => {
+          if (localContext !== this.translateContext) return;
+          this.translateState.pending += count;
+          this.translateStateUpdate();
+        },
+        onUnitResolved: (count) => {
+          if (localContext !== this.translateContext) return;
+          this.translateState.resolved += count;
+          this.translateState.pending = Math.max(0, this.translateState.pending - count);
+          this.translateStateUpdate();
+        },
+        onUnitRejected: (count) => {
+          if (localContext !== this.translateContext) return;
+          this.translateState.rejected += count;
+          this.translateState.pending = Math.max(0, this.translateState.pending - count);
+          this.translateStateUpdate();
+        },
+      });
+      this.pendingRun = null;
+      this.pageTranslator.start();
+
+      if (this.config.originalTextPopup) {
+        document.addEventListener('mouseover', this.showOriginalTextHandler);
+      }
+    } catch (error) {
+      if (
+        this.pendingRun?.generation !== generation ||
+        this.pendingRun.context !== localContext
+      ) {
+        return;
+      }
+      this.pendingRun = null;
+      this.pageTranslateDirection = null;
+      throw error;
     }
   }
 
@@ -125,12 +165,14 @@ export class PageTranslator {
   }
 
   public stop() {
-    if (this.pageTranslator === null) {
+    if (this.pageTranslator === null && this.pendingRun === null) {
       throw new Error('Page is not translated');
     }
 
-    const previousContext = this.pageTranslator.getSessionId();
-    this.pageTranslator.stop();
+    const previousContext = this.pageTranslator?.getSessionId();
+    ++this.runGeneration;
+    this.pendingRun = null;
+    this.pageTranslator?.stop();
     this.pageTranslator = null;
     this.pageTranslateDirection = null;
 
@@ -147,9 +189,11 @@ export class PageTranslator {
       this.shadowRoot.unmountComponent();
     }
 
-    void abortTranslation({ context: previousContext }).catch((error) =>
-      console.warn('Failed to abort page translation', error),
-    );
+    if (previousContext !== undefined) {
+      void abortTranslation({ context: previousContext }).catch((error) =>
+        console.warn('Failed to abort page translation', error),
+      );
+    }
   }
 
   private readonly shadowRoot = new ShadowDOMContainerManager({

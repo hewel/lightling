@@ -51,6 +51,7 @@ const makeSettings = (
     maxConcurrentRequests: 2,
     concurrencySource: 'fallback' as const,
     supportedParameters: null as readonly string[] | null,
+    modelInfo: null,
     ...overrides,
   };
   const profile = createConservativeTranslationModelProfile('test-model');

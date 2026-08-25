@@ -68,7 +68,9 @@ export const startPageTranslationLifecycle = ({
   let pageTranslatorManager: PageTranslatorManager | null = null;
   const getPageTranslatorManager = async () => {
     if (pageTranslatorManager === null) {
-      pageTranslatorManager = new PageTranslatorManager($pageTranslatorState);
+      pageTranslatorManager = new PageTranslatorManager($pageTranslatorState, () =>
+        updatePageTranslationState(null),
+      );
       pageTranslatorManager.start();
     }
     return pageTranslatorManager;
