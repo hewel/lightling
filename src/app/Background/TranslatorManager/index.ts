@@ -10,12 +10,12 @@ import {
   createSemanticKey,
   DEFAULT_GLOSSARY_VERSION,
   deriveAttemptMetrics,
+  getPlaceholderIntegrityFailure,
   isInvariantTranslationSource,
   type PageTranslationBatchRequest,
   type PageTranslationAttemptMetrics,
   type PageTranslationBatchResponse,
   type PageTranslationResult,
-  validatePlaceholderIntegrity,
   WEBPAGE_NORMALIZATION_VERSION,
 } from '@/lib/pageTranslation/protocol';
 import { TELEMETRY_EVENT_NAME } from '@/lib/telemetry';
@@ -203,7 +203,11 @@ export class TranslatorManager<Translators extends TranslatorsMap = TranslatorsM
       for (const translation of translated) {
         const target = misses.find((candidate) => candidate.id === translation.id);
         if (target === undefined) continue;
-        if (!validatePlaceholderIntegrity(target.sourceText, translation.target)) {
+        const integrityFailure = getPlaceholderIntegrityFailure(
+          target.sourceText,
+          translation.target,
+        );
+        if (integrityFailure !== null) {
           metrics.attempts = [
             ...(metrics.attempts ?? []),
             {
@@ -211,7 +215,7 @@ export class TranslatorManager<Translators extends TranslatorsMap = TranslatorsM
               stage: 'initial',
               profileId: metrics.acceptedProfileId ?? identity.profileVersion,
               targetIds: [target.id],
-              issues: [{ id: target.id, failure: 'placeholder-corruption' }],
+              issues: [{ id: target.id, failure: integrityFailure }],
             },
           ];
           metrics.failedIds = [...(metrics.failedIds ?? []), target.id];

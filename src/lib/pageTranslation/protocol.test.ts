@@ -2,6 +2,7 @@ import {
   createDedupKey,
   createSemanticKey,
   deriveAttemptMetrics,
+  getPlaceholderIntegrityFailure,
   isInvariantTranslationSource,
   isPlausibleTargetLanguage,
   normalizeTranslationText,
@@ -334,6 +335,39 @@ describe('page translation protocol', () => {
         'Klicken Sie auf <g id="inline-1">Speichern</g>, <um fortzufahren>.',
       ),
     ).toBe('Klicken Sie auf <g id="inline-1">Speichern</g>, um fortzufahren.');
+  });
+
+  test('classifies spurious markup apart from placeholder corruption', () => {
+    expect(
+      getPlaceholderIntegrityFailure('Use <x id="c"/>.', 'Verwende <x id="wrong"/>.'),
+    ).toBe('placeholder-corruption');
+    expect(getPlaceholderIntegrityFailure('Hello world', '<Hallo Welt>')).toBe(
+      'spurious-markup',
+    );
+    expect(getPlaceholderIntegrityFailure('Hello world', 'Hallo Welt')).toBeNull();
+  });
+
+  test('reports spurious-markup issues and repairs them when enabled', () => {
+    const spurious = {
+      ...target,
+      id: 'u3',
+      sourceText: 'Gleam is a friendly language.',
+    };
+    const raw = JSON.stringify({
+      translations: [{ id: 'u3', target: '<Gleam 是一种友好的语言。>' }],
+    });
+
+    const strict = parsePageTranslationResponse(raw, [spurious]);
+    expect(strict.translations).toEqual([]);
+    expect(strict.issues).toContainEqual({ id: 'u3', failure: 'spurious-markup' });
+
+    const repaired = parsePageTranslationResponse(raw, [spurious], () => true, {
+      repairPlaceholders: true,
+    });
+    expect(repaired.translations).toEqual([
+      { id: 'u3', target: 'Gleam 是一种友好的语言。' },
+    ]);
+    expect(repaired.issues).toEqual([]);
   });
 
   test('parse accepts repaired placeholders only when repair is enabled', () => {

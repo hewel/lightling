@@ -86,6 +86,14 @@ export interface TextTranslatorComponentProps {
   richSource?: RichMarkup | null;
 }
 
+/**
+ * How the produced translation was recovered from model output:
+ * `none` — used as returned; `repaired` — deterministic placeholder/markup
+ * repair was applied; `plain-retry` — rich translation was irreparable and
+ * the text was retranslated without placeholders.
+ */
+type TranslationRecovery = 'none' | 'repaired' | 'plain-retry';
+
 // TODO: rename component and move to element dir
 export const TextTranslator: FC<TextTranslatorComponentProps> = ({
   pageLanguage,
@@ -129,41 +137,54 @@ export const TextTranslator: FC<TextTranslatorComponentProps> = ({
         : originalText;
 
     translate(translationInput, from, to)
-      .then((raw): Promise<{ text: string; markup: string | null }> => {
-        if (isRichMode && richSource !== null && richSource !== undefined) {
-          if (validatePlaceholderIntegrity(richSource.markup, raw)) {
-            return Promise.resolve({
-              text: richMarkupToPlainText(raw, richSource.nodes),
-              markup: raw,
-            });
+      .then(
+        (
+          raw,
+        ): Promise<{
+          text: string;
+          markup: string | null;
+          recovery: TranslationRecovery;
+        }> => {
+          if (isRichMode && richSource !== null && richSource !== undefined) {
+            if (validatePlaceholderIntegrity(richSource.markup, raw)) {
+              return Promise.resolve({
+                text: richMarkupToPlainText(raw, richSource.nodes),
+                markup: raw,
+                recovery: 'none',
+              });
+            }
+
+            const repairedMarkup = repairPlaceholderIntegrity(richSource.markup, raw);
+            if (
+              repairedMarkup !== null &&
+              validatePlaceholderIntegrity(richSource.markup, repairedMarkup)
+            ) {
+              return Promise.resolve({
+                text: richMarkupToPlainText(repairedMarkup, richSource.nodes),
+                markup: repairedMarkup,
+                recovery: 'repaired',
+              });
+            }
+
+            // Irreparable corruption: retry once with placeholder-free text.
+            // The plain input gives the translator no reason to emit markup
+            // residue (e.g. hallucinated angle brackets) into the result.
+            return translate(originalText, from, to).then((retryText) => ({
+              text: stripSpuriousAngleBrackets(originalText, retryText),
+              markup: null,
+              recovery: 'plain-retry',
+            }));
           }
 
-          const repairedMarkup = repairPlaceholderIntegrity(richSource.markup, raw);
-          if (
-            repairedMarkup !== null &&
-            validatePlaceholderIntegrity(richSource.markup, repairedMarkup)
-          ) {
-            return Promise.resolve({
-              text: richMarkupToPlainText(repairedMarkup, richSource.nodes),
-              markup: repairedMarkup,
-            });
-          }
-
-          // Irreparable corruption: retry once with placeholder-free text.
-          // The plain input gives the translator no reason to emit markup
-          // residue (e.g. hallucinated angle brackets) into the result.
-          return translate(originalText, from, to).then((retryText) => ({
-            text: stripSpuriousAngleBrackets(originalText, retryText),
+          const strippedText = stripSpuriousAngleBrackets(originalText, raw);
+          return Promise.resolve({
+            text: strippedText,
             markup: null,
-          }));
-        }
-
-        return Promise.resolve({
-          text: stripSpuriousAngleBrackets(originalText, raw),
-          markup: null,
-        });
-      })
-      .then(({ text: completedText, markup: completedMarkup }) => {
+            recovery: strippedText !== raw ? 'repaired' : 'none',
+          });
+        },
+      )
+      .then(({ text: completedText, markup: completedMarkup, recovery }) => {
         if (context !== translateContext.current) return;
 
         setTranslatedMarkup(completedMarkup);
@@ -186,6 +207,7 @@ export const TextTranslator: FC<TextTranslatorComponentProps> = ({
           to,
           sourceTextLength: originalText.length,
           translationLength: completedText.length,
+          recovery,
         });
       })
       .catch((reason) => {

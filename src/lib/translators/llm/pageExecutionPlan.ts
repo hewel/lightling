@@ -81,7 +81,7 @@ const stagesForTarget = (
     return [{ stage: 'rich-context', contextMode: 'rich' }];
   }
 
-  if (failures.has('placeholder-corruption')) {
+  if (failures.has('placeholder-corruption') || failures.has('spurious-markup')) {
     // Isolation distinguishes cross-target interference. Repeating the same
     // structured target with less context cannot restore removed DOM tokens;
     // the engine's placeholder-free fragment fallback owns that case.

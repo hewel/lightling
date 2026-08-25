@@ -3,6 +3,7 @@ import { createRoot, type Root } from 'react-dom/client';
 
 import { detectLanguage } from '@/lib/language';
 import type { RichMarkup } from '@/lib/richTranslation/model';
+import { TELEMETRY_EVENT_NAME } from '@/lib/telemetry';
 import { getTranslatorFeatures } from '@/requests/backend/getTranslatorFeatures';
 import { getUserLanguagePreferences } from '@/requests/backend/getUserLanguagePreferences';
 import { addTranslationHistoryEntry } from '@/requests/backend/history/addTranslationHistoryEntry';
@@ -152,6 +153,34 @@ describe('TextTranslator rich translation integration', () => {
     expect(props.translate).toHaveBeenCalledWith(richSource.markup, 'en', 'de');
     expect(container.querySelector('strong')?.textContent).toBe('Speichern');
     expect(container.textContent).toContain('Klicken Sie auf Speichern');
+    expect(trackClientEvent).toHaveBeenCalledWith(
+      TELEMETRY_EVENT_NAME.TEXT_TRANSLATION_COMPLETED,
+      expect.objectContaining({ recovery: 'none' }),
+    );
+  });
+
+  test('repairs hallucinated wrappers and reports the repaired recovery', async () => {
+    const richSource: RichMarkup = {
+      markup: '<g id="r1">Click Save</g> now',
+      nodes: { r1: { tag: 'strong' } },
+    };
+
+    const props = await renderTranslator({
+      richSource,
+      translateResult: 'Klicken Sie auf <g id="r1">Speichern</g> <bitte>',
+    });
+
+    expect(props.translate).toHaveBeenNthCalledWith(1, richSource.markup, 'en', 'de');
+    expect(
+      props.translate.mock.calls.every(([input]) => input === richSource.markup),
+    ).toBe(true);
+    expect(container.querySelector('strong')?.textContent).toBe('Speichern');
+    expect(container.textContent).toContain('bitte');
+    expect(container.textContent).not.toContain('<');
+    expect(trackClientEvent).toHaveBeenCalledWith(
+      TELEMETRY_EVENT_NAME.TEXT_TRANSLATION_COMPLETED,
+      expect.objectContaining({ recovery: 'repaired' }),
+    );
   });
 
   test('retries with placeholder-free text when translated markup cannot be repaired', async () => {
@@ -183,6 +212,10 @@ describe('TextTranslator rich translation integration', () => {
     expect(container.querySelector('strong')).toBeNull();
     expect(container.textContent).toContain('Klicken Sie auf Speichern');
     expect(container.textContent).not.toContain('<');
+    expect(trackClientEvent).toHaveBeenCalledWith(
+      TELEMETRY_EVENT_NAME.TEXT_TRANSLATION_COMPLETED,
+      expect.objectContaining({ recovery: 'plain-retry' }),
+    );
   });
 
   test('keeps the plain-text rendering path when richSource is undefined', async () => {
@@ -192,6 +225,9 @@ describe('TextTranslator rich translation integration', () => {
     expect(container.querySelector('strong')).toBeNull();
     expect(container.textContent).toContain('Plain translation');
     expect(addTranslationHistoryEntry).toHaveBeenCalled();
-    expect(trackClientEvent).toHaveBeenCalled();
+    expect(trackClientEvent).toHaveBeenCalledWith(
+      TELEMETRY_EVENT_NAME.TEXT_TRANSLATION_COMPLETED,
+      expect.objectContaining({ recovery: 'none' }),
+    );
   });
 });

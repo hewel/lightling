@@ -269,6 +269,7 @@ const TranslationValidationIssueSchema = Schema.Struct({
     'extra-item',
     'duplicate-item',
     'placeholder-corruption',
+    'spurious-markup',
     'language-mismatch',
     'truncation',
     'empty-translation',
@@ -405,6 +406,7 @@ export type TranslationValidationFailure =
   | 'extra-item'
   | 'duplicate-item'
   | 'placeholder-corruption'
+  | 'spurious-markup'
   | 'language-mismatch'
   | 'truncation'
   | 'empty-translation'
@@ -557,7 +559,18 @@ export const stripSpuriousAngleBrackets = (source: string, target: string): stri
   return result;
 };
 
-export const validatePlaceholderIntegrity = (source: string, target: string): boolean => {
+export type PlaceholderIntegrityFailure = 'placeholder-corruption' | 'spurious-markup';
+
+/**
+ * Classifies why a target fails integrity, or returns `null` when it is
+ * clean. `placeholder-corruption` covers missing/added/renamed/unbalanced
+ * placeholder tokens; `spurious-markup` covers hallucinated angle-bracket
+ * wrappers around plain text when the source carries no angle brackets.
+ */
+export const getPlaceholderIntegrityFailure = (
+  source: string,
+  target: string,
+): PlaceholderIntegrityFailure | null => {
   const sourceTokens = readPlaceholders(source);
   const targetTokens = readPlaceholders(target);
   if (
@@ -565,14 +578,19 @@ export const validatePlaceholderIntegrity = (source: string, target: string): bo
     targetTokens === null ||
     getPlaceholderSignature(sourceTokens) !== getPlaceholderSignature(targetTokens)
   ) {
-    return false;
+    return 'placeholder-corruption';
   }
   // When the source has no angle brackets at all, a tag-shaped `<`/`>` in
   // the target is a hallucinated wrapper, not faithful translation output.
   const sourceResidual = source.replace(PLACEHOLDER_PATTERN, '');
-  if (sourceResidual.includes('<') || sourceResidual.includes('>')) return true;
-  return !SPURIOUS_BRACKET_TEST_PATTERN.test(target.replace(PLACEHOLDER_PATTERN, ''));
+  if (sourceResidual.includes('<') || sourceResidual.includes('>')) return null;
+  return SPURIOUS_BRACKET_TEST_PATTERN.test(target.replace(PLACEHOLDER_PATTERN, ''))
+    ? 'spurious-markup'
+    : null;
 };
+
+export const validatePlaceholderIntegrity = (source: string, target: string): boolean =>
+  getPlaceholderIntegrityFailure(source, target) === null;
 
 interface TolerantPlaceholderToken extends PlaceholderToken {
   start: number;
@@ -940,12 +958,13 @@ export const parsePageTranslationResponse = (
       issues.push({ id, failure: 'truncation' });
       continue;
     }
-    if (!validatePlaceholderIntegrity(source.sourceText, target)) {
+    const integrityFailure = getPlaceholderIntegrityFailure(source.sourceText, target);
+    if (integrityFailure !== null) {
       const repaired = options?.repairPlaceholders
         ? repairPlaceholderIntegrity(source.sourceText, target)
         : null;
       if (repaired === null) {
-        issues.push({ id, failure: 'placeholder-corruption' });
+        issues.push({ id, failure: integrityFailure });
         continue;
       }
       target = repaired;
