@@ -45,6 +45,7 @@ import {
 } from './domPipeline';
 import { PageTranslationDomLifecycle } from './PageTranslationDomLifecycle';
 import { compareUnitPriority } from './priorityLanes';
+import { ViewportLaneTracker } from './viewportLaneTracker';
 
 export interface PagePipelineMetrics {
   occurrences: number;
@@ -78,6 +79,7 @@ export interface PageTranslationPipelineOptions extends CollectionOptions {
   debugIncludeText?: boolean;
   sizeTier?: TranslationModelSizeTier;
   persistedBudget?: BudgetSnapshot | null;
+  nearRootMargin?: string;
   userConcurrencyCeiling?: number | null;
   onBudgetSnapshot?: (snapshot: BudgetSnapshot) => void;
   onUnitStarted?: (count: number) => void;
@@ -187,6 +189,7 @@ const groupKey = (unit: TranslationUnit): string =>
 interface AdmissionProducer {
   generation: number;
   nextBatch: () => PlannedBatch | null;
+  peekUnit: () => TranslationUnit | null;
   resolve: () => void;
   active: number;
   exhausted: boolean;
@@ -208,6 +211,7 @@ export class PageTranslationPipeline {
   >();
   private readonly liveUnits = new Set<TranslationUnit>();
   private readonly unitByOccurrence = new Map<TextOccurrence, TranslationUnit>();
+  private readonly reorderableUnits = new Set<TranslationUnit>();
   private readonly pendingRescans = new Map<Element, ReturnType<typeof setTimeout>>();
   private readonly stabilizationMs: number;
   private processedSlots = new WeakMap<Element, Set<string>>();
@@ -217,6 +221,7 @@ export class PageTranslationPipeline {
   private readonly budgetController: TranslationBudgetController | null;
   private readonly retriever: TranslationContextRetriever;
   private readonly domLifecycle: PageTranslationDomLifecycle;
+  private readonly viewportLaneTracker: ViewportLaneTracker;
   private metrics = createMetrics();
   private occurrences: TextOccurrence[] = [];
   /** [DEBUG-perf1] Temporary real-world freeze probe; remove after diagnosis. */
@@ -277,6 +282,9 @@ export class PageTranslationPipeline {
     this.runtimeSessionId = options.sessionId;
     this.runtimeSignature = options.sessionSignature;
     this.logBatches = options.logEnabled ? [] : null;
+    this.viewportLaneTracker = new ViewportLaneTracker({
+      nearRootMargin: options.nearRootMargin,
+    });
     this.domLifecycle = new PageTranslationDomLifecycle({
       root: options.root,
       getOccurrences: () => this.occurrences,
@@ -348,6 +356,7 @@ export class PageTranslationPipeline {
   public stop(): void {
     ++this.generation;
     this.clearPendingRescans();
+    this.viewportLaneTracker.stop();
     this.clearAdmissionQueue();
     this.domLifecycle.stop();
     this.perfObserver?.disconnect();
@@ -355,6 +364,7 @@ export class PageTranslationPipeline {
     this.persistBudgetSnapshotIfDue(true);
     this.occurrences = [];
     this.liveUnits.clear();
+    this.reorderableUnits.clear();
     this.unitByOccurrence.clear();
     this.inFlight.clear();
   }
@@ -417,27 +427,42 @@ export class PageTranslationPipeline {
 
   private pumpAdmissions(): void {
     while (this.admissionQueue.length > 0) {
-      const producer = this.admissionQueue.shift();
-      if (producer === undefined) return;
-      if (producer.exhausted || !this.isCurrent(producer.generation)) {
-        producer.exhausted = true;
-        if (producer.active === 0) producer.resolve();
-        continue;
+      let bestProducerIndex = -1;
+      let bestUnit: TranslationUnit | null = null;
+      for (let index = this.admissionQueue.length - 1; index >= 0; index--) {
+        const candidateProducer = this.admissionQueue[index];
+        if (
+          candidateProducer.exhausted ||
+          !this.isCurrent(candidateProducer.generation)
+        ) {
+          this.admissionQueue.splice(index, 1);
+          candidateProducer.exhausted = true;
+          if (candidateProducer.active === 0) candidateProducer.resolve();
+          continue;
+        }
+        const candidateUnit = candidateProducer.peekUnit();
+        if (candidateUnit === null) {
+          this.admissionQueue.splice(index, 1);
+          candidateProducer.exhausted = true;
+          if (candidateProducer.active === 0) candidateProducer.resolve();
+          continue;
+        }
+        if (bestUnit === null || compareUnitPriority(candidateUnit, bestUnit) < 0) {
+          bestProducerIndex = index;
+          bestUnit = candidateUnit;
+        }
       }
+      if (bestProducerIndex < 0) return;
 
       const limit = Math.max(
         1,
         this.budgetController?.getConcurrency() ??
           this.options.modelProfile.batching.concurrency,
       );
-      if (this.admissionActive >= limit) {
-        this.admissionQueue.push(producer);
-        return;
-      }
+      if (this.admissionActive >= limit) return;
 
       const delay = this.budgetController?.getDispatchDelayMs() ?? 0;
       if (delay > 0) {
-        this.admissionQueue.unshift(producer);
         if (this.admissionTimer === null) {
           this.admissionTimer = setTimeout(() => {
             this.admissionTimer = null;
@@ -447,6 +472,7 @@ export class PageTranslationPipeline {
         return;
       }
 
+      const producer = this.admissionQueue.splice(bestProducerIndex, 1)[0];
       const batch = producer.nextBatch();
       if (batch === null) {
         producer.exhausted = true;
@@ -676,7 +702,7 @@ export class PageTranslationPipeline {
       markOccurrenceSourceNodes(occurrence);
     }
     this.occurrences.push(...newOccurrences);
-    const units = deduplicateOccurrences(newOccurrences).sort(compareUnitPriority);
+    const units = deduplicateOccurrences(newOccurrences);
     this.registerUnits(units);
     this.metrics.occurrences += newOccurrences.length;
     this.metrics.logicalSegments += newOccurrences.filter(
@@ -692,12 +718,14 @@ export class PageTranslationPipeline {
     for (const unit of units) {
       const cached = this.pageMemory.get(unit.semanticKey);
       if (cached !== undefined) {
+        this.viewportLaneTracker.unobserve([unit]);
         this.metrics.memoryHits++;
         this.recordPageMemoryHit(unit, cached);
         if (this.isCurrent(generation)) this.scheduleApply(unit, cached, generation);
       } else {
         this.metrics.memoryMisses++;
         waiting.push(unit);
+        this.reorderableUnits.add(unit);
       }
     }
     if (waiting.length === 0) {
@@ -731,9 +759,20 @@ export class PageTranslationPipeline {
     generation: number,
   ): Promise<void> {
     const submitted = groupPlans.map((plan) => {
+      const peekUnit = (): TranslationUnit | null => {
+        let best: TranslationUnit | null = null;
+        for (let index = plan.cursor; index < plan.group.length; index++) {
+          const candidate = plan.group[index];
+          if (best === null || compareUnitPriority(candidate, best) < 0) {
+            best = candidate;
+          }
+        }
+        return best;
+      };
       const nextBatch = (): PlannedBatch | null => {
         if (plan.cursor >= plan.group.length) return null;
-        const remaining = plan.group.slice(plan.cursor);
+        const remaining = plan.group.slice(plan.cursor).sort(compareUnitPriority);
+        plan.group.splice(plan.cursor, remaining.length, ...remaining);
         const outputRatio = this.ratioTracker.get(
           this.options.modelProfile,
           this.options.sourceLanguage,
@@ -766,6 +805,8 @@ export class PageTranslationPipeline {
         }
         if (consumed === 0) consumed = 1;
         plan.cursor += consumed;
+        for (const unit of consumedUnits) this.reorderableUnits.delete(unit);
+        this.viewportLaneTracker.unobserve(Array.from(consumedUnits));
         this.metrics.plannedBatches++;
         this.metrics.sourceTokens += batch.sourceTokens;
         this.metrics.contextTokens +=
@@ -775,6 +816,7 @@ export class PageTranslationPipeline {
       return this.enqueueAdmission({
         generation,
         nextBatch,
+        peekUnit,
         resolve: () => undefined,
         active: 0,
         exhausted: false,
@@ -1294,6 +1336,7 @@ export class PageTranslationPipeline {
         const previousSession = this.runtimeSessionId;
         this.currentUrl = location.href;
         ++this.generation;
+        this.viewportLaneTracker.stop();
         this.clearAdmissionQueue();
         this.metrics.navigationCancellations++;
         void abortTranslation({ context: previousSession }).catch(() => undefined);
@@ -1309,6 +1352,7 @@ export class PageTranslationPipeline {
         this.sessionStartedAt = Date.now();
         this.occurrences = [];
         this.liveUnits.clear();
+        this.reorderableUnits.clear();
         this.unitByOccurrence.clear();
         this.pageMemory.clear();
         this.inFlight.clear();
@@ -1353,12 +1397,21 @@ export class PageTranslationPipeline {
         this.unitByOccurrence.set(occurrence, unit);
       }
     }
+    this.viewportLaneTracker.observe(units, (changedUnits) => {
+      for (const unit of changedUnits) {
+        if (!this.reorderableUnits.has(unit)) continue;
+        this.pumpAdmissions();
+        break;
+      }
+    });
   }
 
   private killUnitForOccurrence(occurrence: TextOccurrence): void {
     const unit = this.unitByOccurrence.get(occurrence);
     if (unit === undefined) return;
     this.liveUnits.delete(unit);
+    this.reorderableUnits.delete(unit);
+    this.viewportLaneTracker.unobserve([unit]);
     for (const member of unit.occurrences) {
       this.unitByOccurrence.delete(member);
     }

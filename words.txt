@@ -53,6 +53,7 @@ papaparse
 penpal
 pressend
 pressstart
+reorderable
 rescan
 rescans
 retargeted

@@ -72,6 +72,50 @@ describe('PageTranslationPipeline dynamic lifecycle', () => {
       responseFor(request),
     );
   });
+  test('admits a newly urgent dialog before queued Rest units without replacing the active batch', async () => {
+    document.body.innerHTML =
+      '<main><p>First item</p><p>Second item</p><p>Third item</p></main>';
+    const main = document.querySelector('main');
+    if (main === null) throw new Error('fixture main missing');
+    for (const paragraph of main.querySelectorAll('p')) {
+      paragraph.getBoundingClientRect = () =>
+        DOMRect.fromRect({ y: window.innerHeight * 3, width: 100, height: 20 });
+    }
+    const firstResponse = Promise.withResolvers<PageTranslationBatchResponse>();
+    vi.mocked(translatePageBatch).mockImplementation(async (request) => {
+      if (vi.mocked(translatePageBatch).mock.calls.length === 1) {
+        return firstResponse.promise;
+      }
+      return responseFor(request);
+    });
+    const singleItemProfile = {
+      ...modelProfile,
+      adaptive: { ...modelProfile.adaptive, enabled: false },
+      batching: { ...modelProfile.batching, concurrency: 1, maxItems: 1 },
+    };
+    const pipeline = createPipeline(main, false, 0, singleItemProfile);
+    pipeline.start();
+    await vi.waitFor(() => expect(translatePageBatch).toHaveBeenCalledTimes(1));
+
+    const alert = document.createElement('div');
+    alert.setAttribute('role', 'alert');
+    alert.textContent = 'Urgent dialog item';
+    main.append(alert);
+    await vi.waitFor(() => expect(pipeline.getMetrics().uniqueUnits).toBe(4));
+
+    firstResponse.resolve(responseFor(vi.mocked(translatePageBatch).mock.calls[0][0]));
+    await vi.waitFor(() =>
+      expect(vi.mocked(translatePageBatch).mock.calls.length).toBeGreaterThanOrEqual(2),
+    );
+
+    const firstRequest = vi.mocked(translatePageBatch).mock.calls[0][0];
+    const secondRequest = vi.mocked(translatePageBatch).mock.calls[1][0];
+    expect(firstRequest.targets[0].sourceText).toBe('First item');
+    expect(secondRequest.targets[0].sourceText).toBe('Urgent dialog item');
+    expect(abortTranslation).not.toHaveBeenCalled();
+    pipeline.stop();
+  });
+
   test('keeps static profile behavior without creating an adaptive budget controller', async () => {
     const main = document.querySelector('main');
     if (main === null) throw new Error('fixture main missing');
@@ -370,10 +414,11 @@ describe('PageTranslationPipeline dynamic lifecycle', () => {
     await vi.waitFor(() => expect(translatePageBatch).toHaveBeenCalledTimes(2));
     pipeline.stop();
   });
-  test('rotates a full producer behind a queued peer', async () => {
+  test('pulls the current best producer from the shared admission buffer', async () => {
     type AdmissionProducer = {
       generation: number;
       nextBatch: () => unknown;
+      peekUnit: () => unknown;
       resolve: () => void;
       active: number;
       exhausted: boolean;
@@ -396,6 +441,15 @@ describe('PageTranslationPipeline dynamic lifecycle', () => {
         active: 0,
         exhausted: false,
         resolve: () => undefined,
+        peekUnit: () =>
+          cursor >= batches
+            ? null
+            : {
+                lane: 3,
+                distanceToViewport: 0,
+                priority: 1,
+                documentOrder: label === 'A' ? cursor * 2 : 1,
+              },
         nextBatch: () => {
           if (cursor >= batches) return null;
           order.push(`${label}${++cursor}`);
