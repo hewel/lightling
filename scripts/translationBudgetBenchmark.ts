@@ -732,52 +732,31 @@ function makeProfile(tier: TranslationModelSizeTier): TranslationModelProfile {
 }
 
 function buildCandidates(count: number, calibration: CalibrationFit): TuningCandidate[] {
-  const growth = [
-    numericTuning('growthStep', 0.1) * 0.5,
-    numericTuning('growthStep', 0.1),
-    numericTuning('growthStep', 0.1) * 2,
-  ];
-  const shrink429Base = numericTuning('rateLimitShrinkFactor', 0.5);
-  const shrink429 = [
-    shrink429Base * 0.8,
-    shrink429Base,
-    Math.min(0.9, shrink429Base * 1.2),
-  ];
-  const shrinkLatencyBase = numericTuning('latencyShrinkFactor', 0.8);
-  const shrinkLatency = [
-    shrinkLatencyBase * 0.875,
-    shrinkLatencyBase,
-    Math.min(0.95, shrinkLatencyBase * 1.125),
-  ];
+  const growth = [0.05, 0.1, 0.2, 0.4];
+  const shrink429 = [0.4, 0.5, 0.6];
+  const shrinkLatency = [0.7, 0.8, 0.9];
   const measuredRate = calibration.validationRate ?? 0.05;
   const failureHigh = [
+    0.05,
+    0.1,
+    0.2,
+    0.3,
     clamp(measuredRate * 0.8 + 0.01, 0.01, 0.8),
     clamp(measuredRate + 0.01, 0.01, 0.8),
     clamp(measuredRate * 1.2 + 0.01, 0.01, 0.8),
   ];
   const failureLow = [
+    0,
+    0.02,
+    0.05,
+    0.1,
     clamp(measuredRate * 0.6, 0, 0.7),
     clamp(measuredRate, 0, 0.7),
     clamp(measuredRate * 1.2, 0, 0.7),
   ];
-  const shrinkBatchBase = numericTuning('highFailureBatchFactor', 0.8);
-  const shrinkBatch = [
-    Math.max(0.5, shrinkBatchBase * 0.875),
-    shrinkBatchBase,
-    Math.min(0.95, shrinkBatchBase * 1.125),
-  ];
-  const latencyMultiplierBase = numericTuning('latencyRegressionMultiplier', 1.5);
-  const latencyMultipliers = [
-    Math.max(1.1, latencyMultiplierBase * 0.9),
-    latencyMultiplierBase,
-    latencyMultiplierBase * 1.1,
-  ];
-  const windowBase = numericTuning('cleanObservationWindow', 10);
-  const windows = [
-    Math.max(4, Math.round(windowBase * 0.6)),
-    Math.round(windowBase),
-    Math.round(windowBase * 1.4),
-  ];
+  const shrinkBatch = [0.7, 0.8, 0.9];
+  const latencyMultipliers = [1.25, 1.5, 1.75];
+  const windows = [4, 6, 10, 14];
   const dimensions = [
     growth,
     shrink429,
@@ -1278,6 +1257,25 @@ function assertBenchmarkContracts(): void {
   ) {
     throw new Error(
       'Benchmark self-check failed: global ranking did not join only candidate IDs present in every tier.',
+    );
+  }
+  const grid = buildCandidates(12, { validationRate: null } as CalibrationFit);
+  const repeatedGrid = buildCandidates(12, { validationRate: null } as CalibrationFit);
+  const absoluteGridValues = JSON.stringify(grid);
+  if (
+    absoluteGridValues !== JSON.stringify(repeatedGrid) ||
+    grid.some(
+      (candidate) => ![0.05, 0.1, 0.2, 0.4].includes(candidate.budgetGrowthStep),
+    ) ||
+    grid.some((candidate) => ![0.4, 0.5, 0.6].includes(candidate.budgetShrink429)) ||
+    grid.some((candidate) => ![0.7, 0.8, 0.9].includes(candidate.budgetShrinkLatency)) ||
+    grid.some(
+      (candidate) => ![1.25, 1.5, 1.75].includes(candidate.latencyRegressionMultiplier),
+    ) ||
+    grid.some((candidate) => ![4, 6, 10, 14].includes(candidate.observationWindow))
+  ) {
+    throw new Error(
+      'Benchmark self-check failed: candidate grid is not absolute and stable.',
     );
   }
   const parsed = parseBatch(

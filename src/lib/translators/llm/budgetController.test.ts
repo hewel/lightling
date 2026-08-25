@@ -44,7 +44,7 @@ describe('TranslationBudgetController', () => {
     const afterRateLimit = target.snapshot().budgetTokens;
     expect(afterRateLimit).toBeCloseTo(before * BUDGET_TUNING.rateLimitShrinkFactor);
 
-    for (let index = 0; index < BUDGET_TUNING.cleanObservationWindow; index++) {
+    for (let index = 0; index < BUDGET_TUNING.baselineObservationCount; index++) {
       target.observe(observation());
     }
     expect(target.snapshot().budgetTokens).toBe(afterRateLimit);
@@ -229,7 +229,7 @@ describe('TranslationBudgetController', () => {
     const target = controller();
     const initial = target.snapshot();
     for (let index = 0; index < BUDGET_TUNING.allocationObservationWindow; index++) {
-      target.observe(observation({ targetCount: 10, validationFailures: 1 }));
+      target.observe(observation({ targetCount: 100, validationFailures: 1 }));
     }
     expect(target.snapshot().batchSourceTokens).toBeGreaterThan(
       initial.batchSourceTokens,
@@ -274,7 +274,7 @@ describe('TranslationBudgetController', () => {
     const afterHighFailures = target.snapshot();
 
     for (let index = 0; index < BUDGET_TUNING.allocationObservationWindow; index++) {
-      target.observe(observation({ targetCount: 10, validationFailures: 1 }));
+      target.observe(observation({ targetCount: 10, validationFailures: 0 }));
     }
     expect(target.snapshot().batchSourceTokens).toBeGreaterThan(
       afterHighFailures.batchSourceTokens,

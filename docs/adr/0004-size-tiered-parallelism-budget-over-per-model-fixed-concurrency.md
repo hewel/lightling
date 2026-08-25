@@ -52,11 +52,13 @@ tier. The converged `(B, r)` is persisted per discovery identity
 at 0.8× to avoid overshoot after network or quota changes.
 
 AIMD constants (growth step, shrink factors, failure-rate thresholds,
-window sizes) are deliberately not fixed here: they come from a benchmark
-sweep over `(B, r)` using a Node harness with a stub translator whose
-latency/failure/conflict distributions are fitted by replaying exported
-page-translation logs, validated against two or three real API points. The
-page-translation log schema gains per-batch records (dispatch concurrency,
+window sizes) come from a benchmark sweep over `(B, r)` using a deterministic
+CLI harness whose latency and failure distributions are fitted by replaying
+exported page-translation logs. Measured trace data tightens observable failure
+windows; dimensions without evidence retain conservative values and remain
+marked synthetic in the benchmark report. Real API validation points refine
+later runs instead of being silently fabricated. The page-translation
+log schema gains per-batch records (dispatch concurrency,
 batch tokens, latency, retry/validation flags, terminology-conflict
 attribution, `(B, r)` snapshot) so the loop's real-world convergence can be
 audited. Terminology-conflict rate is recorded but intentionally excluded

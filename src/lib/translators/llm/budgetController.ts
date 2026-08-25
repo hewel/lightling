@@ -3,8 +3,9 @@ import type { TranslationModelProfile } from './modelProfile';
 import { SIZE_TIER_BUDGETS, type TranslationModelSizeTier } from './sizeTier';
 
 /**
- * Provisional controls, fitted by scripts/translationBudgetBenchmark.ts.
- * Keep all AIMD tuning in this object so benchmark sweeps can replace it as a unit.
+ * Conservative defaults anchored by the supplied Ling trace. Dimensions that
+ * trace cannot identify (429 behavior and missing size tiers) retain the ADR's
+ * safety values; the benchmark reports those synthetic caveats explicitly.
  */
 export interface TranslationBudgetTuning {
   growthStep: number;
@@ -28,13 +29,13 @@ export const BUDGET_TUNING: TranslationBudgetTuning = {
   latencyShrinkFactor: 0.8,
   latencyRegressionMultiplier: 1.5,
   baselineObservationCount: 10,
-  rollingObservationWindow: 10,
-  cleanObservationWindow: 10,
-  allocationObservationWindow: 10,
-  highValidationFailureRate: 0.3,
-  lowValidationFailureRate: 0.1,
+  rollingObservationWindow: 6,
+  cleanObservationWindow: 6,
+  allocationObservationWindow: 6,
+  highValidationFailureRate: 0.05,
+  lowValidationFailureRate: 0.03,
   highFailureBatchFactor: 0.8,
-  lowFailureBatchFactor: 1.2,
+  lowFailureBatchFactor: 1.25,
   persistedColdStartFactor: 0.8,
 };
 
