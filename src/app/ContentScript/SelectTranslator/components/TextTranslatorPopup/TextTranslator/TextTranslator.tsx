@@ -19,6 +19,7 @@ import { useTTSLanguages } from '@/lib/hooks/useTTSLanguages';
 import { detectLanguage, getMessage } from '@/lib/language';
 import {
   repairPlaceholderIntegrity,
+  stripSpuriousAngleBrackets,
   validatePlaceholderIntegrity,
 } from '@/lib/pageTranslation/protocol';
 import type { RichMarkup } from '@/lib/richTranslation/model';
@@ -152,12 +153,15 @@ export const TextTranslator: FC<TextTranslatorComponentProps> = ({
           // The plain input gives the translator no reason to emit markup
           // residue (e.g. hallucinated angle brackets) into the result.
           return translate(originalText, from, to).then((retryText) => ({
-            text: retryText,
+            text: stripSpuriousAngleBrackets(originalText, retryText),
             markup: null,
           }));
         }
 
-        return Promise.resolve({ text: raw, markup: null });
+        return Promise.resolve({
+          text: stripSpuriousAngleBrackets(originalText, raw),
+          markup: null,
+        });
       })
       .then(({ text: completedText, markup: completedMarkup }) => {
         if (context !== translateContext.current) return;

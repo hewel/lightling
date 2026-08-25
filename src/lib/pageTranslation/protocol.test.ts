@@ -7,6 +7,7 @@ import {
   normalizeTranslationText,
   parsePageTranslationResponse,
   repairPlaceholderIntegrity,
+  stripSpuriousAngleBrackets,
   validatePlaceholderIntegrity,
   WEBPAGE_TRANSLATION_PROMPT_VERSION,
 } from './protocol';
@@ -248,6 +249,91 @@ describe('page translation protocol', () => {
         '<g id="inline-1">Speichern</g> <g id="inline-1">Speichern</g>',
       ),
     ).toBeNull();
+  });
+
+  test('rejects hallucinated angle-bracket wrappers when the source has none', () => {
+    expect(
+      validatePlaceholderIntegrity(
+        'Gleam is a friendly language for building type-safe systems that scale!',
+        '<Gleam 是一种友好的语言，用于构建类型安全且能扩展的系统>!',
+      ),
+    ).toBe(false);
+    expect(
+      validatePlaceholderIntegrity(
+        'Click <g id="inline-1">Save</g> to continue.',
+        'Klicken Sie auf <g id="inline-1">Speichern</g>, <um fortzufahren>.',
+      ),
+    ).toBe(false);
+  });
+
+  test('accepts angle brackets in the target when the source uses them', () => {
+    expect(validatePlaceholderIntegrity('5 < 7 > 3', '5 < 7 > 3')).toBe(true);
+    expect(validatePlaceholderIntegrity('I <3 you', 'Je t’aime <3')).toBe(true);
+  });
+
+  test('accepts spaced comparisons even when the source has no brackets', () => {
+    expect(validatePlaceholderIntegrity('5 less than 7', '5 < 7 > 3')).toBe(true);
+    expect(stripSpuriousAngleBrackets('5 less than 7', '5 < 7 > 3')).toBe('5 < 7 > 3');
+  });
+
+  test('rejects and strips unclosed hallucinated brackets', () => {
+    const source =
+      'Multilingual Gleam makes it easy to use code written in other BEAM languages.';
+    const broken = '<多语言 Gleam 使使用其他 BEAM 语言编写的代码变得容易。';
+    expect(validatePlaceholderIntegrity(source, broken)).toBe(false);
+    expect(stripSpuriousAngleBrackets(source, broken)).toBe(
+      '多语言 Gleam 使使用其他 BEAM 语言编写的代码变得容易。',
+    );
+    expect(repairPlaceholderIntegrity(source, broken)).toBe(
+      '多语言 Gleam 使使用其他 BEAM 语言编写的代码变得容易。',
+    );
+  });
+
+  test('strips hallucinated wrappers but keeps the wrapped text', () => {
+    expect(
+      stripSpuriousAngleBrackets(
+        'Gleam is a friendly language for building type-safe systems that scale!',
+        '<Gleam 是一种友好的语言，用于构建类型安全且能扩展的系统>!',
+      ),
+    ).toBe('Gleam 是一种友好的语言，用于构建类型安全且能扩展的系统!');
+    // Known artifact tags are dropped whole; unknown wrapped words keep
+    // their text so translated content is never deleted.
+    expect(
+      stripSpuriousAngleBrackets(
+        'Hello world',
+        '<translation>Hallo <Welt></translation>',
+      ),
+    ).toBe('Hallo Welt');
+    // Placeholders are preserved while wrappers around them are stripped.
+    expect(
+      stripSpuriousAngleBrackets(
+        'Click <g id="inline-1">Save</g> now',
+        'Klicken Sie <g id="inline-1">Speichern</g> <jetzt>',
+      ),
+    ).toBe('Klicken Sie <g id="inline-1">Speichern</g> jetzt');
+  });
+
+  test('leaves targets untouched when the source contains angle brackets', () => {
+    expect(stripSpuriousAngleBrackets('5 < 7 > 3', '5 < 7 > 3')).toBe('5 < 7 > 3');
+  });
+
+  test('repairs hallucinated wrappers for placeholder-free sources', () => {
+    expect(
+      repairPlaceholderIntegrity(
+        'Gleam is a friendly language for building type-safe systems that scale!',
+        '<Gleam 是一种友好的语言，用于构建类型安全且能扩展的系统>!',
+      ),
+    ).toBe('Gleam 是一种友好的语言，用于构建类型安全且能扩展的系统!');
+    expect(repairPlaceholderIntegrity('Hello', 'Hallo')).toBeNull();
+  });
+
+  test('repairs hallucinated wrappers alongside valid placeholders', () => {
+    expect(
+      repairPlaceholderIntegrity(
+        'Click <g id="inline-1">Save</g> to continue.',
+        'Klicken Sie auf <g id="inline-1">Speichern</g>, <um fortzufahren>.',
+      ),
+    ).toBe('Klicken Sie auf <g id="inline-1">Speichern</g>, um fortzufahren.');
   });
 
   test('parse accepts repaired placeholders only when repair is enabled', () => {

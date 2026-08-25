@@ -454,23 +454,125 @@ const getPlaceholderSignature = (tokens: PlaceholderToken[]): string =>
     .sort()
     .join('\u0000');
 
-export const validatePlaceholderIntegrity = (source: string, target: string): boolean => {
-  const sourceTokens = readPlaceholders(source);
-  const targetTokens = readPlaceholders(target);
-  return (
-    sourceTokens !== null &&
-    targetTokens !== null &&
-    getPlaceholderSignature(sourceTokens) === getPlaceholderSignature(targetTokens)
-  );
-};
+/**
+ * Matches `<...>` spans with no nested angle brackets and no whitespace at
+ * either inner boundary. Real tags never have a space right after `<` or
+ * right before `>`, while invented math comparisons (`5 < 7 > 3`) do — the
+ * whitespace boundary keeps those untouched. Placeholder tokens are handled
+ * separately; anything else matching this in a translation is a wrapper the
+ * model hallucinated (e.g. `<translation>...` or `<译文>...`).
+ */
+const ANGLE_WRAPPER_PATTERN = /<(\S[^<>]*\S|\S)>/gu;
+
+/**
+ * A `<` glued to a following non-space character (`<多语言`, `<3`), or a
+ * `>` glued to a preceding one: the broken-tag shape of hallucinated
+ * markup, including unclosed wrappers that never got their closing `>`.
+ * Spaced comparisons like `5 < 7` deliberately do not match.
+ */
+const SPURIOUS_BRACKET_TEST_PATTERN = /<\S|\S>/u;
+const ORPHAN_OPEN_PATTERN = /<(?=\S)/gu;
+const ORPHAN_CLOSE_PATTERN = /\S>/gu;
 
 /**
  * Lenient tag form tolerated on the repair path only: unquoted or
  * single-quoted ids and `<x>` without the self-closing slash. Small models
- * frequently emit these instead of the canonical form.
+ * frequently emit these instead of the canonical form. Also used by
+ * `stripSpuriousAngleBrackets` so repairable placeholders are preserved
+ * before canonicalization.
  */
 const TOLERANT_PLACEHOLDER_PATTERN =
   /<g\s+id\s*=\s*["']?([A-Za-z0-9_-]+)["']?\s*>|<\/g\s*>|<x\s+id\s*=\s*["']?([A-Za-z0-9_-]+)["']?\s*\/?>/gu;
+
+/**
+ * Tag names a model plausibly emits as wrapper artifacts: the placeholder
+ * tags it saw in the prompt, generic HTML inline tags, and explicit
+ * translation wrappers.
+ */
+const KNOWN_WRAPPER_TAG_NAMES = new Set([
+  'g',
+  'x',
+  'translation',
+  'br',
+  'p',
+  'div',
+  'span',
+  'b',
+  'i',
+  'em',
+  'strong',
+  'code',
+  'a',
+]);
+
+/**
+ * Decides whether the inner text of a `<...>` span looks like a real tag
+ * rather than wrapped natural language. Only clearly structural spans are
+ * dropped whole — closing/self-closing forms, attribute lists, and known
+ * wrapper tag names. Anything else (a wrapped sentence, a wrapped single
+ * word) keeps its text and loses only the bracket characters, so
+ * translated content is never deleted.
+ */
+const isTagLikeInner = (inner: string): boolean => {
+  const trimmed = inner.trim();
+  if (trimmed.startsWith('/') || trimmed.endsWith('/')) return true;
+  if (trimmed.includes('=')) return true;
+  return (
+    /^[A-Za-z][A-Za-z0-9:-]*$/u.test(trimmed) &&
+    KNOWN_WRAPPER_TAG_NAMES.has(trimmed.toLowerCase())
+  );
+};
+
+const stripSpuriousWrappersInSegment = (segment: string): string =>
+  segment
+    .replace(ANGLE_WRAPPER_PATTERN, (_whole, inner: string) =>
+      isTagLikeInner(inner) ? '' : inner,
+    )
+    // Unclosed or orphaned brackets left over after paired spans are
+    // resolved (e.g. an opening `<多语言` that never got its `>`).
+    .replace(ORPHAN_OPEN_PATTERN, '')
+    .replace(ORPHAN_CLOSE_PATTERN, (match) => match[0]);
+
+/**
+ * Removes angle-bracket wrappers the model invented around plain text.
+ * Only applies when the source itself contains no angle brackets at all
+ * (placeholders excluded): any tag-shaped `<`/`>` in the target is then
+ * necessarily hallucinated. Tag-like spans (`<translation>`, `<br/>`) are
+ * dropped whole; other spans — including unclosed ones like `<多语言` —
+ * keep their inner text and lose only the bracket characters. Spaced
+ * comparisons (`5 < 7 > 3`) and known placeholder tokens are preserved.
+ */
+export const stripSpuriousAngleBrackets = (source: string, target: string): string => {
+  const sourceResidual = source.replace(PLACEHOLDER_PATTERN, '');
+  if (sourceResidual.includes('<') || sourceResidual.includes('>')) return target;
+
+  let result = '';
+  let cursor = 0;
+  for (const match of target.matchAll(TOLERANT_PLACEHOLDER_PATTERN)) {
+    result += stripSpuriousWrappersInSegment(target.slice(cursor, match.index));
+    result += match[0];
+    cursor = match.index + match[0].length;
+  }
+  result += stripSpuriousWrappersInSegment(target.slice(cursor));
+  return result;
+};
+
+export const validatePlaceholderIntegrity = (source: string, target: string): boolean => {
+  const sourceTokens = readPlaceholders(source);
+  const targetTokens = readPlaceholders(target);
+  if (
+    sourceTokens === null ||
+    targetTokens === null ||
+    getPlaceholderSignature(sourceTokens) !== getPlaceholderSignature(targetTokens)
+  ) {
+    return false;
+  }
+  // When the source has no angle brackets at all, a tag-shaped `<`/`>` in
+  // the target is a hallucinated wrapper, not faithful translation output.
+  const sourceResidual = source.replace(PLACEHOLDER_PATTERN, '');
+  if (sourceResidual.includes('<') || sourceResidual.includes('>')) return true;
+  return !SPURIOUS_BRACKET_TEST_PATTERN.test(target.replace(PLACEHOLDER_PATTERN, ''));
+};
 
 interface TolerantPlaceholderToken extends PlaceholderToken {
   start: number;
@@ -536,15 +638,27 @@ const renderPlaceholderToken = (token: PlaceholderToken): string =>
  * 3. Missing trailing closes: when the target equals the source sequence
  *    minus trailing `</g>` tokens AND the source itself ends with those
  *    closes (no trailing text), the closes are appended at the end.
+ *
+ * Before any structural repair, hallucinated angle-bracket wrappers are
+ * stripped via `stripSpuriousAngleBrackets`; they are the only corruption
+ * possible when the source carries no placeholders at all.
  */
 export const repairPlaceholderIntegrity = (
   source: string,
   target: string,
 ): string | null => {
   const sourceTokens = readPlaceholders(source);
-  if (sourceTokens === null || sourceTokens.length === 0) return null;
+  if (sourceTokens === null) return null;
 
-  const targetTokens = readTolerantPlaceholders(target);
+  const strippedTarget = stripSpuriousAngleBrackets(source, target);
+  if (sourceTokens.length === 0) {
+    return strippedTarget !== target &&
+      validatePlaceholderIntegrity(source, strippedTarget)
+      ? strippedTarget
+      : null;
+  }
+
+  const targetTokens = readTolerantPlaceholders(strippedTarget);
   if (targetTokens.length === 0) return null;
 
   const sourceSeq = sourceTokens
@@ -586,11 +700,11 @@ export const repairPlaceholderIntegrity = (
   let cursor = 0;
   let tokenIndex = 0;
   for (const token of targetTokens) {
-    repaired += target.slice(cursor, token.start);
+    repaired += strippedTarget.slice(cursor, token.start);
     repaired += renderPlaceholderToken(remapped[tokenIndex++]);
     cursor = token.end;
   }
-  repaired += target.slice(cursor);
+  repaired += strippedTarget.slice(cursor);
   for (; tokenIndex < remapped.length; tokenIndex++) {
     repaired += renderPlaceholderToken(remapped[tokenIndex]);
   }
