@@ -42,7 +42,7 @@
     "message": "点击记录快捷键"
   },
   "component_hotkey_recordPlaceholder": {
-    "message": "按下键"
+    "message": "按下按键"
   },
   "component_hotkey_resetButton": {
     "message": "重置"
@@ -397,7 +397,7 @@
     "message": "无效值"
   },
   "settings_message_importConfig_invalidFile": {
-    "message": "提供的配置文件不正确或已损坏，无法处理"
+    "message": "配置文件无效或已损坏，无法处理"
   },
   "settings_message_importConfig_success": {
     "message": "导入完成"
@@ -412,7 +412,7 @@
     "message": "测试翻译成功："
   },
   "settings_message_resetConfig_confirm": {
-    "message": "确认将设置重置为默认值"
+    "message": "确定要将所有设置重置为默认值吗？"
   },
   "settings_message_resetConfig_success": {
     "message": "设置已重置"
@@ -427,17 +427,17 @@
     "message": "清除缓存"
   },
   "settings_option_cache_clear_desc": {
-    "message": "如果您注意到翻译错误或在启用缓存时意外翻译了私人文本，您可以删除缓存中的所有数据",
+    "message": "删除所有缓存数据。当您发现翻译错误或意外缓存了私人文本时，此功能很有用",
     "description": "Explanation for user about cases when it's useful to clear cache"
   },
   "settings_option_cache_enable": {
     "message": "启用缓存"
   },
   "settings_option_cache_enable_desc": {
-    "message": "启用缓存后，之前翻译过的文本将立即翻译，无需额外请求翻译服务"
+    "message": "启用后，之前翻译过的文本将直接返回，无需再次请求翻译服务"
   },
   "settings_option_cache_ignoreCase": {
-    "message": "使用不区分大小写的缓存"
+    "message": "不区分大小写的缓存"
   },
   "settings_option_cache_ignoreCase_desc": {
     "message": "启用后，缓存的翻译将用于不同大小写的文本，这可能在某些情况下导致翻译失真"
@@ -511,82 +511,85 @@
     "message": "分析网页上的文本以检测其语言。禁用时，将使用<slot id=docs>页面元数据</slot>中指定的语言"
   },
   "settings_option_pageTranslation_enableContextMenu": {
-    "message": "启用上下文菜单按钮"
+    "message": "右键菜单按钮"
   },
   "settings_option_pageTranslation_enableContextMenu_desc": {
-    "message": "在页面上下文菜单中添加一个按钮以切换页面翻译"
+    "message": "在页面右键菜单中添加用于切换整页翻译的按钮"
   },
   "settings_option_pageTranslation_enableLogExport": {
     "message": "启用翻译日志导出"
   },
   "settings_option_pageTranslation_enableLogExport_desc": {
-    "message": "允许当前页面翻译会话在内存中保留源文本、译文、模型诊断和错误，以便手动导出为 JSON。日志不会被持久保存，且可能包含敏感的页面内容"
+    "message": "在内存中保留当前整页翻译会话的源文本、译文、模型诊断和错误，以便手动导出为 JSON。日志不会持久保存，且可能包含敏感的页面内容"
   },
   "settings_option_pageTranslation_excludeSelectors": {
     "message": "排除翻译的选择器"
   },
   "settings_option_pageTranslation_excludeSelectors_desc": {
-    "message": "要排除翻译的元素的CSS选择器列表。每行一个选择器。如果元素匹配这些选择器中的任何一个，其文本、属性和嵌套元素将不被翻译"
+    "message": "要从翻译中排除的元素的 CSS 选择器，每行一个。如果元素匹配其中任一选择器，其文本、属性和嵌套元素都不会被翻译"
   },
   "settings_option_pageTranslation_lazyTranslate": {
     "message": "仅翻译可见元素"
   },
   "settings_option_pageTranslation_lazyTranslate_desc": {
-    "message": "启用此选项时，仅翻译可见元素。此选项可减少网络流量"
+    "message": "启用后，仅翻译可见元素，从而减少网络流量"
   },
   "settings_option_pageTranslation_originalTextPopup": {
-    "message": "启用原文弹出窗口"
+    "message": "原文弹窗"
   },
   "settings_option_pageTranslation_originalTextPopup_desc": {
-    "message": "在悬停于翻译文本块时显示原文弹出窗口"
+    "message": "悬停在译文文本块上时显示包含原文的弹窗"
   },
   "settings_option_pageTranslation_shortcut_toggleTranslation": {
     "message": "快捷键"
   },
   "settings_option_pageTranslation_shortcut_toggleTranslation_desc": {
-    "message": "切换页面翻译的快捷键\n按ESC重置键"
+    "message": "切换整页翻译的快捷键\n按 ESC 重置"
   },
   "settings_option_pageTranslation_translatableAttributes": {
     "message": "可翻译属性"
   },
   "settings_option_pageTranslation_translatableAttributes_desc": {
-    "message": "输入要翻译的<slot id=htmlAttributes>HTML属性</slot>名称，每行一个属性\n仅翻译此列表中的属性"
+    "message": "输入要翻译的<slot id=htmlAttributes>HTML 属性</slot>名称，每行一个\n仅翻译此列表中的属性"
   },
   "settings_option_popupTab_pageTranslator_showCounters": {
     "message": "显示翻译进度"
   },
   "settings_option_popupTab_pageTranslator_showCounters_desc": {
-    "message": "在扩展弹出窗口中显示页面翻译进度面板"
+    "message": "在扩展弹窗中显示整页翻译进度面板"
   },
   "settings_option_selectTranslation": {
-    "message": "选中文本翻译"
+    "message": "划词翻译"
   },
   "settings_option_selectTranslation_detectTextLanguage": {
     "message": "检测文本语言"
   },
   "settings_option_selectTranslation_detectTextLanguage_desc": {
-    "message": "启用时，选中文本将被分析以检测翻译语言。否则，将使用页面语言"
+    "message": "启用后，会分析选中的文本以检测其语言；否则使用页面语言"
   },
   "settings_option_selectTranslation_disableWhileTranslatePage": {
-    "message": "翻译页面时禁用"
+    "message": "整页翻译期间禁用"
+  },
+  "settings_option_selectTranslation_disableWhileTranslatePage_desc": {
+    "message": "翻译整个页面期间暂时停用划词翻译，避免两者互相干扰"
   },
   "settings_option_selectTranslation_draggablePopup": {
-    "message": "允许拖动翻译弹窗"
+    "message": "可拖动的翻译弹窗"
   },
   "settings_option_selectTranslation_draggablePopup_desc": {
-    "message": "允许你抓住翻译弹窗的背景，将其移动到页面上的任意位置"
+    "message": "按住翻译弹窗的背景即可将其拖动到页面上的任意位置"
   },
   "settings_option_selectTranslation_enable": {
-    "message": "启用选中文本翻译"
+    "message": "启用划词翻译"
   },
   "settings_option_selectTranslation_enable_desc": {
-    "message": "启用此功能后，您可以在页面上选择任何文本并在弹出窗口中翻译"
+    "message": "选中页面上的任意文本，即可在弹窗中翻译"
   },
   "settings_option_selectTranslation_focusOnTranslateButton": {
     "message": "自动聚焦翻译按钮"
   },
   "settings_option_selectTranslation_focusOnTranslateButton_desc": {
-    "message": "当翻译按钮出现在页面上时，将自动聚焦"
+    "message": "翻译按钮出现时自动获得键盘焦点，按下 Enter 即可立即翻译"
   },
   "settings_option_selectTranslation_header_languageChoice": {
     "message": "语言设置"
@@ -595,13 +598,16 @@
     "message": "允许翻译模块检测文本语言"
   },
   "settings_option_selectTranslation_isUseAutoForDetectLang_desc": {
-    "message": "当无法本地检测文本语言且启用此选项时，如果支持，将使用“自动”语言进行翻译。\n禁用此选项时，将使用其他回退方法设置文本的源语言"
+    "message": "当无法在本地检测文本语言时，如果翻译模块支持，将使用“自动”作为源语言进行翻译。\n禁用后，将使用其他回退方法来确定源语言"
   },
   "settings_option_selectTranslation_mode": {
-    "message": "文本选择操作"
+    "message": "选中文本时的动作"
+  },
+  "settings_option_selectTranslation_mode_desc": {
+    "message": "选中文本后的触发方式：在选区旁显示翻译按钮、立即翻译，或添加到右键菜单"
   },
   "settings_option_selectTranslation_mode_item_contextMenu": {
-    "message": "通过上下文菜单翻译文本"
+    "message": "通过右键菜单翻译文本"
   },
   "settings_option_selectTranslation_mode_item_popupButton": {
     "message": "显示翻译按钮"
@@ -613,7 +619,7 @@
     "message": "修饰键"
   },
   "settings_option_selectTranslation_modifiers_desc": {
-    "message": "选择必须在键盘上按下的键以显示翻译"
+    "message": "显示翻译前必须按住的按键"
   },
   "settings_option_selectTranslation_modifiers_key_alt": {
     "message": "alt"
@@ -630,39 +636,42 @@
   "settings_option_selectTranslation_rememberDirection": {
     "message": "记住最近选择的文本语言"
   },
+  "settings_option_selectTranslation_rememberDirection_desc": {
+    "message": "下次划词翻译时，弹窗会直接沿用上次的原文语言，而不是重新检测"
+  },
   "settings_option_selectTranslation_showOnceForSelection": {
     "message": "每次文本选择仅显示一次翻译按钮"
   },
   "settings_option_selectTranslation_showOnceForSelection_desc": {
-    "message": "按钮将仅在每次文本选择时出现一次。要再次显示，请重新选择文本"
+    "message": "每次选中文本后，翻译按钮只显示一次。要再次显示，请重新选择文本"
   },
   "settings_option_selectTranslation_showOriginalText": {
     "message": "显示原始文本"
   },
   "settings_option_selectTranslation_showOriginalText_desc": {
-    "message": "在翻译弹出窗口中添加一个包含原始文本的块"
+    "message": "在翻译弹窗中加入原文内容"
   },
   "settings_option_selectTranslation_strictSelection": {
-    "message": "严格的文本范围选择模式",
+    "message": "严格文本选择模式",
     "description": "This option is about selecting text via mouse"
   },
   "settings_option_selectTranslation_strictSelection_desc": {
-    "message": "如果左键释放在包含选中文本的块之外，则忽略文本范围选择"
+    "message": "如果松开鼠标左键时光标位于所选文本所在块之外，则忽略此次选择"
   },
   "settings_option_selectTranslation_timeoutForHideButton": {
-    "message": "隐藏弹出按钮前的延迟"
+    "message": "隐藏翻译按钮前的延迟"
   },
   "settings_option_selectTranslation_timeoutForHideButton_desc": {
-    "message": "在光标未悬停在按钮上时，按钮隐藏前的延迟时间（以毫秒为单位）。悬停在按钮上会重置计时器。要禁用自动隐藏，请将值设置为小于1"
+    "message": "光标未悬停在按钮上时，按钮隐藏前的等待时间（毫秒）。悬停在按钮上会重置计时器。设为小于 1 可禁用自动隐藏"
   },
   "settings_option_selectTranslation_zIndex": {
     "message": "z-index"
   },
   "settings_option_selectTranslation_zIndex_desc": {
-    "message": "如果某些页面上的元素与翻译文本的弹出窗口重叠，请增加此值"
+    "message": "如果页面元素遮挡了翻译弹窗，请增大此值"
   },
   "settings_option_statistics_desc": {
-    "message": "翻译总次数与 LLM Token 消耗总量。"
+    "message": "翻译总次数与 LLM Token 消耗总量"
   },
   "settings_option_statistics_title": {
     "message": "使用统计"
@@ -680,7 +689,10 @@
     "message": "启用拼写检查"
   },
   "settings_option_textTranslator_suggestLanguage": {
-    "message": "显示检测到的文本语言"
+    "message": "建议检测到的文本语言"
+  },
+  "settings_option_textTranslator_suggestLanguage_desc": {
+    "message": "输入文本时自动检测语言，并建议将源语言切换为检测结果"
   },
   "settings_option_textTranslator_suggestLanguageAlways": {
     "message": "始终检测并建议语言"
@@ -698,13 +710,13 @@
     "message": "文本积累延迟"
   },
   "settings_option_translateScheduler_delay_desc": {
-    "message": "翻译调度器通过积累尽可能多的文本以单个请求发送来减少对翻译服务API的请求次数。调度器将等待指定的毫秒时间以收集更多文本，然后开始翻译"
+    "message": "翻译调度器会将尽可能多的文本积攒到一次请求中，以减少对翻译服务 API 的请求次数。它会等待指定的毫秒数以收集更多文本，然后再开始翻译"
   },
   "settings_option_translateScheduler_retryLimit": {
     "message": "翻译重试次数限制"
   },
   "settings_option_translateScheduler_retryLimit_desc": {
-    "message": "当翻译错误发生时，调度器将重试翻译文本。此选项设置重试次数的限制。设置为负数以允许无限重试"
+    "message": "翻译失败时，调度器会自动重试。此选项设置最大重试次数，设为负数表示无限重试"
   },
   "settings_option_translatorModule": {
     "message": "翻译模块"
@@ -713,7 +725,7 @@
     "message": "翻译的质量和可用语言取决于翻译模块"
   },
   "settings_option_tts": {
-    "message": "文本转语音转换（TTS）"
+    "message": "文本转语音（TTS）"
   },
   "settings_option_ttsCustomModules": {
     "message": "自定义语音合成模块"
@@ -722,13 +734,13 @@
     "message": "管理语音合成模块"
   },
   "settings_option_ttsCustomModules_desc": {
-    "message": "您可以添加使用您喜欢的服务和语音引擎的语音合成模块。请在<slot id=docs>自定义TTS文档</slot>中阅读更多信息"
+    "message": "您可以添加使用您喜欢的服务和语音引擎的语音合成模块。更多信息请参阅<slot id=docs>自定义 TTS 文档</slot>"
   },
   "settings_option_ttsModule": {
-    "message": "选定的TTS模块"
+    "message": "TTS 模块"
   },
   "settings_option_ttsModule_desc": {
-    "message": "用于语音化文本的语音引擎"
+    "message": "用于朗读文本的语音引擎"
   },
   "settings_option_userLanguage": {
     "message": "您的语言"
@@ -742,14 +754,20 @@
   "settings_pageTitle": {
     "message": "设置"
   },
+  "settings_search_noResults": {
+    "message": "没有找到匹配的设置"
+  },
+  "settings_search_placeholder": {
+    "message": "搜索设置"
+  },
   "settings_section_history": {
     "message": "历史记录"
   },
   "settings_section_popup": {
-    "message": "弹出窗口"
+    "message": "弹窗"
   },
   "settings_section_popupAndHistory": {
-    "message": "弹出窗口和历史记录"
+    "message": "弹窗和历史记录"
   },
   "settings_section_statistics": {
     "message": "统计"
@@ -795,7 +813,7 @@
     "message": "尚未添加自定义翻译模块"
   },
   "translatorsManagerWindow_message_translatorRemovingConfirmation": {
-    "message": "您确定要移除“$translator_name$”翻译模块吗?",
+    "message": "您确定要移除“$translator_name$”翻译模块吗？",
     "placeholders": {
       "translator_name": {
         "content": "$1",
@@ -813,16 +831,16 @@
     "message": "编辑"
   },
   "ttsManagerWindow_add": {
-    "message": "添加TTS模块"
+    "message": "添加 TTS 模块"
   },
   "ttsManagerWindow_close": {
     "message": "关闭"
   },
   "ttsManagerWindow_emptyTranslatorsListText": {
-    "message": "尚未添加TTS模块"
+    "message": "尚未添加 TTS 模块"
   },
   "ttsManagerWindow_message_ttsRemoveConfirmation": {
-    "message": "您确定要移除TTS模块“$tts_name$”吗?",
+    "message": "您确定要移除 TTS 模块“$tts_name$”吗？",
     "placeholders": {
       "tts_name": {
         "content": "$1",

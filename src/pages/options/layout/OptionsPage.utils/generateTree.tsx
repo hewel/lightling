@@ -304,6 +304,7 @@ export const generateTree = ({
         {
           title: getMessage('settings_option_selectTranslation_mode'),
           path: 'selectTranslator.mode',
+          description: getMessage('settings_option_selectTranslation_mode_desc'),
           optionContent: {
             type: 'SelectList',
             options: ['popupButton', 'quickTranslate', 'contextMenu'].map((id) => ({
@@ -362,6 +363,9 @@ export const generateTree = ({
         },
         {
           path: 'selectTranslator.disableWhileTranslatePage',
+          description: getMessage(
+            'settings_option_selectTranslation_disableWhileTranslatePage_desc',
+          ),
           optionContent: {
             type: 'Checkbox',
             text: getMessage(
@@ -385,6 +389,9 @@ export const generateTree = ({
           groupContent: [
             {
               path: 'selectTranslator.rememberDirection',
+              description: getMessage(
+                'settings_option_selectTranslation_rememberDirection_desc',
+              ),
               optionContent: {
                 type: 'Checkbox',
                 text: getMessage('settings_option_selectTranslation_rememberDirection'),
@@ -438,6 +445,7 @@ export const generateTree = ({
         },
         {
           path: 'textTranslator.suggestLanguage',
+          description: getMessage('settings_option_textTranslator_suggestLanguage_desc'),
           optionContent: {
             type: 'Checkbox',
             text: getMessage('settings_option_textTranslator_suggestLanguage'),

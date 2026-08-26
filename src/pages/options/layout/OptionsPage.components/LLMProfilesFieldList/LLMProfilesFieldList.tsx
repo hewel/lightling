@@ -676,6 +676,8 @@ export const LLMProfilesFieldList: FC<LLMProfilesFieldListProps> = ({
         />
       ) : (
         <VStack gap={3} width="100%">
+          {/* Field rows bottom-align so controls stay flush when descriptions
+              wrap to different lengths across locales */}
           <HStack gap={2} align="center" justify="end" wrap="wrap">
             {!selectedIsActive && (
               <Button
@@ -719,7 +721,7 @@ export const LLMProfilesFieldList: FC<LLMProfilesFieldListProps> = ({
             </StackItem>
           </HStack>
 
-          <HStack gap={2} align="start" wrap="wrap" width="100%">
+          <HStack gap={2} align="end" wrap="wrap" width="100%">
             <StackItem size="fill" xstyle={styles.wideFieldItem}>
               <Textinput
                 label={getMessage('settings_option_llmTranslator_apiUrl')}
@@ -815,11 +817,11 @@ export const LLMProfilesFieldList: FC<LLMProfilesFieldListProps> = ({
             </StackItem>
           </HStack>
 
-          <HStack gap={2} align="start" wrap="wrap" width="100%">
+          <HStack gap={2} align="end" wrap="wrap" width="100%">
             <StackItem size="fill" xstyle={styles.fieldItem}>
               <Selector
                 label={getMessage('llmProfiles_quality')}
-                description={getMessage('llmProfiles_quality_desc')}
+                labelTooltip={getMessage('llmProfiles_quality_desc')}
                 options={qualityOptions}
                 value={selectedProfile.qualityMode}
                 width="100%"
@@ -833,7 +835,7 @@ export const LLMProfilesFieldList: FC<LLMProfilesFieldListProps> = ({
             <StackItem size="fill" xstyle={styles.fieldItem}>
               <Selector
                 label={getMessage('llmProfiles_fallback')}
-                description={getMessage('llmProfiles_fallback_desc')}
+                labelTooltip={getMessage('llmProfiles_fallback_desc')}
                 options={[
                   { value: '', label: getMessage('llmProfiles_fallback_none') },
                   ...value.profiles
@@ -859,11 +861,11 @@ export const LLMProfilesFieldList: FC<LLMProfilesFieldListProps> = ({
               trigger={getMessage('llmProfiles_advancedExecution')}
               defaultIsOpen={false}
             >
-              <HStack gap={2} align="start" wrap="wrap" width="100%">
+              <HStack gap={2} align="end" wrap="wrap" width="100%">
                 <StackItem size="fill" xstyle={styles.fieldItem}>
                   <NumberInput
                     label={getMessage('llmProfiles_contextWindowTokens')}
-                    description={getMessage(
+                    labelTooltip={getMessage(
                       'llmProfiles_contextWindowTokens_desc',
                       String(resolvedSettings.contextWindowTokens),
                     )}
@@ -883,7 +885,7 @@ export const LLMProfilesFieldList: FC<LLMProfilesFieldListProps> = ({
                 <StackItem size="fill" xstyle={styles.fieldItem}>
                   <NumberInput
                     label={getMessage('llmProfiles_preferredInputTokens')}
-                    description={getMessage(
+                    labelTooltip={getMessage(
                       'llmProfiles_preferredInputTokens_desc',
                       String(resolvedSettings.preferredInputTokens),
                     )}
@@ -903,7 +905,7 @@ export const LLMProfilesFieldList: FC<LLMProfilesFieldListProps> = ({
                 <StackItem size="fill" xstyle={styles.fieldItem}>
                   <NumberInput
                     label={getMessage('llmProfiles_maxOutputTokens')}
-                    description={getMessage(
+                    labelTooltip={getMessage(
                       'llmProfiles_maxOutputTokens_desc',
                       autoMaxOutputDescription,
                     )}
@@ -923,7 +925,7 @@ export const LLMProfilesFieldList: FC<LLMProfilesFieldListProps> = ({
                 <StackItem size="fill" xstyle={styles.fieldItem}>
                   <NumberInput
                     label={getMessage('llmProfiles_maxConcurrentRequests')}
-                    description={getMessage(
+                    labelTooltip={getMessage(
                       'llmProfiles_maxConcurrentRequests_desc',
                       String(resolvedSettings.maxConcurrentRequests),
                     )}

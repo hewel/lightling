@@ -9,8 +9,8 @@ export const optionsPageStyles = stylex.create({
     },
     maxWidth: '100%',
   },
-  optionsTree: {
-    margin: '4rem 0',
+  optionsLayout: {
+    marginBlockStart: 'var(--spacing-6)',
   },
   confirmMenu: {
     position: 'fixed',
@@ -36,7 +36,14 @@ export const optionsPageStyles = stylex.create({
   contentColumn: {
     flexGrow: 1,
     minWidth: 0,
+    maxWidth: 'calc(var(--spacing-10) * 19)',
     paddingBlockEnd: 'calc(var(--spacing-10) * 2)',
+  },
+  mobileSectionPicker: {
+    display: {
+      default: 'none',
+      '@media (width <= 768px)': 'flex',
+    },
   },
   headerSubtitle: {
     marginBlockEnd: 'var(--typography-layout-indent-m-all)',
@@ -58,7 +65,7 @@ export const optionsPageStyles = stylex.create({
   mainGroups: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '4rem',
+    gap: 'var(--spacing-10)',
   },
   subgroups: {
     display: 'flex',

@@ -11,9 +11,11 @@ import {
   useRef,
   useState,
 } from 'react';
+import { Selector } from '@astryxdesign/core/Selector';
 import { Spinner } from '@astryxdesign/core/Spinner';
 import { HStack, VStack } from '@astryxdesign/core/Stack';
 import { Text } from '@astryxdesign/core/Text';
+import { TextInput } from '@astryxdesign/core/TextInput';
 import { useToast } from '@astryxdesign/core/Toast';
 
 import { Page } from '@/components/layouts/Page/Page';
@@ -43,6 +45,7 @@ import {
 } from './OptionsPage.components/LLMProfilesFieldList/LLMProfilesFieldList';
 import { optionsPageStyles } from './OptionsPage.stylex';
 import { generateTree } from './OptionsPage.utils/generateTree';
+import { filterOptionsTree } from './OptionsPage.utils/searchOptions';
 import { type OptionValue, OptionsTree } from './OptionsTree/OptionsTree';
 import { PageSection } from './PageSection/PageSection';
 
@@ -346,35 +349,60 @@ export const OptionsPage: FC<OptionsPageProps> = () => {
   );
 
   const [activeSection, setActiveSection] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const isSearchActive = searchQuery.trim() !== '';
 
-  // Scroll-spy: highlight the section crossing the upper viewport band
+  // Sections render one at a time; the URL hash deep-links and restores them
   useEffect(() => {
-    if (!loaded || sections.length === 0) return;
+    if (sections.length === 0) return;
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) {
-            setActiveSection(entry.target.id);
-          }
-        }
-      },
-      { rootMargin: '-20% 0px -70% 0px' },
-    );
-
-    for (const { id } of sections) {
-      const element = document.getElementById(id);
-      if (element !== null) {
-        observer.observe(element);
+    const hashSection = window.location.hash.replace(/^#/, '');
+    setActiveSection((currentSection) => {
+      if (currentSection !== null && sections.some(({ id }) => id === currentSection)) {
+        return currentSection;
       }
-    }
 
-    return () => observer.disconnect();
-  }, [loaded, sections]);
+      return sections.some(({ id }) => id === hashSection) ? hashSection : sections[0].id;
+    });
+  }, [sections]);
 
-  const handleSelectSection = useCallback((id: string) => {
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, []);
+  // Sync browser back/forward navigation with the visible section
+  useEffect(() => {
+    const handlePopState = () => {
+      const hashSection = window.location.hash.replace(/^#/, '');
+      setActiveSection((currentSection) =>
+        sections.some(({ id }) => id === hashSection) ? hashSection : currentSection,
+      );
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [sections]);
+
+  const handleSelectSection = useCallback(
+    (id: string) => {
+      if (id !== activeSection) {
+        window.history.pushState(null, '', `#${id}`);
+      }
+
+      setActiveSection(id);
+      setSearchQuery('');
+      window.scrollTo({ top: 0 });
+    },
+    [activeSection],
+  );
+
+  const searchResults = useMemo(
+    () => (isSearchActive ? filterOptionsTree(configTree, searchQuery) : []),
+    [configTree, isSearchActive, searchQuery],
+  );
+
+  const visibleTree = useMemo(() => {
+    if (isSearchActive) return searchResults;
+
+    const activeGroup = configTree.find(({ id }) => id === activeSection);
+    return activeGroup === undefined ? [] : [activeGroup];
+  }, [activeSection, configTree, isSearchActive, searchResults]);
 
   //
   // Render
@@ -414,22 +442,49 @@ export const OptionsPage: FC<OptionsPageProps> = () => {
               </Button>
             </ActionsStack>
 
-            <HStack gap={6} align="start" xstyle={optionsPageStyles.optionsTree}>
+            <HStack gap={6} align="start" xstyle={optionsPageStyles.optionsLayout}>
               <VStack gap={0} xstyle={optionsPageStyles.navColumn}>
                 <OptionsNav
                   sections={sections}
-                  activeId={activeSection}
+                  activeId={isSearchActive ? null : activeSection}
                   onSelect={handleSelectSection}
                 />
               </VStack>
-              <VStack gap={0} xstyle={optionsPageStyles.contentColumn}>
-                <OptionsTree
-                  tree={configTree}
-                  errors={errors ?? undefined}
-                  config={config}
-                  modifiedConfig={modifiedConfig}
-                  setOptionValue={setOptionValue}
+              <VStack gap={4} xstyle={optionsPageStyles.contentColumn}>
+                <VStack gap={0} xstyle={optionsPageStyles.mobileSectionPicker}>
+                  <Selector
+                    label={getMessage('settings_pageTitle')}
+                    isLabelHidden
+                    options={sections.map(({ id, title }) => ({
+                      value: id,
+                      label: title,
+                    }))}
+                    value={activeSection ?? undefined}
+                    width="100%"
+                    onChange={handleSelectSection}
+                  />
+                </VStack>
+                <TextInput
+                  label={getMessage('settings_search_placeholder')}
+                  isLabelHidden
+                  placeholder={getMessage('settings_search_placeholder')}
+                  startIcon="search"
+                  hasClear
+                  value={searchQuery}
+                  width="100%"
+                  onChange={setSearchQuery}
                 />
+                {isSearchActive && visibleTree.length === 0 ? (
+                  <Text color="secondary">{getMessage('settings_search_noResults')}</Text>
+                ) : (
+                  <OptionsTree
+                    tree={visibleTree}
+                    errors={errors ?? undefined}
+                    config={config}
+                    modifiedConfig={modifiedConfig}
+                    setOptionValue={setOptionValue}
+                  />
+                )}
               </VStack>
             </HStack>
           </PageSection>

@@ -142,6 +142,26 @@ describe('LLMProfilesFieldList', () => {
     return trigger;
   }
 
+  // Field descriptions render as label tooltips: open the info icon's tooltip
+  // and read its content from the top-layer portal
+  async function readFieldTooltip(labelText: string): Promise<string> {
+    const field = findInput(labelText).closest('.astryx-field');
+    const icon = field?.querySelector('label svg');
+    if (!(icon instanceof SVGElement)) {
+      throw new Error(`Expected tooltip icon for "${labelText}"`);
+    }
+
+    await act(async () => {
+      icon.dispatchEvent(new MouseEvent('mouseenter'));
+      // Tooltip content appears after its default show delay
+      const { promise, resolve } = Promise.withResolvers<void>();
+      setTimeout(resolve, 300);
+      await promise;
+    });
+
+    return document.body.textContent ?? '';
+  }
+
   async function inputText(input: HTMLInputElement, value: string) {
     const valueDescriptor = Object.getOwnPropertyDescriptor(
       HTMLInputElement.prototype,
@@ -579,7 +599,7 @@ describe('LLMProfilesFieldList', () => {
 
     await act(async () => findCollapsibleTrigger().click());
 
-    expect(container.textContent).toContain(
+    expect(await readFieldTooltip('llmProfiles_maxOutputTokens')).toContain(
       'llmProfiles_maxOutputTokens_desc:llmProfiles_outputAutoDetected:1024',
     );
 
@@ -598,7 +618,7 @@ describe('LLMProfilesFieldList', () => {
     if (option === undefined) throw new Error('Expected GPT-4o option');
     await act(async () => option.click());
 
-    expect(container.textContent).toContain(
+    expect(await readFieldTooltip('llmProfiles_maxOutputTokens')).toContain(
       'llmProfiles_maxOutputTokens_desc:llmProfiles_outputAutoUncapped',
     );
   });
