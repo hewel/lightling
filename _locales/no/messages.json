@@ -20,11 +20,20 @@
   "common_error": {
     "message": "Feil"
   },
+  "common_listen": {
+    "message": "Lytt"
+  },
+  "common_llmTranslator": {
+    "message": "LLM"
+  },
   "common_offlineTranslator": {
     "message": "$1 - Frakoblet oversetter"
   },
   "common_retry": {
     "message": "Prøv igjen"
+  },
+  "common_search": {
+    "message": "Søk"
   },
   "common_translate": {
     "message": "Oversett"
@@ -159,11 +168,137 @@
   "lang_detect": {
     "message": "Auto-deteksjon"
   },
+  "lang_searchPlaceholder": {
+    "message": "Søk etter språk"
+  },
   "lang_select": {
     "message": "Velg språk"
   },
   "lang_swap": {
     "message": "Bytt språk"
+  },
+  "llmProfiles_active": {
+    "message": "Aktiv"
+  },
+  "llmProfiles_add": {
+    "message": "Legg til"
+  },
+  "llmProfiles_addProvider": {
+    "message": "Forhåndsinnstilling for leverandør"
+  },
+  "llmProfiles_advancedExecution": {
+    "message": "Avansert kjøring"
+  },
+  "llmProfiles_auto": {
+    "message": "Auto"
+  },
+  "llmProfiles_contextWindowTokens": {
+    "message": "Kontekstvindu"
+  },
+  "llmProfiles_contextWindowTokens_desc": {
+    "message": "Modellens totale kontekstvindu i token (minimum 512). Auto: $1 token"
+  },
+  "llmProfiles_delete": {
+    "message": "Slett"
+  },
+  "llmProfiles_deleteConfirm": {
+    "message": "Er du sikker på at du vil slette leverandøren \"$provider_name$\"?",
+    "placeholders": {
+      "provider_name": {
+        "content": "$1",
+        "example": "OpenAI"
+      }
+    }
+  },
+  "llmProfiles_duplicateName": {
+    "message": "En leverandør med dette navnet finnes allerede"
+  },
+  "llmProfiles_edit": {
+    "message": "Rediger"
+  },
+  "llmProfiles_editProfile": {
+    "message": "Rediger leverandør"
+  },
+  "llmProfiles_emptyList": {
+    "message": "Ingen leverandører ennå. Legg til en med en forhåndsinnstilling nedenfor."
+  },
+  "llmProfiles_emptyName": {
+    "message": "Skriv inn et leverandørnavn"
+  },
+  "llmProfiles_fallback": {
+    "message": "Reservemodellprofil"
+  },
+  "llmProfiles_fallback_desc": {
+    "message": "Brukes bare etter gjentatte strukturelle valideringsfeil."
+  },
+  "llmProfiles_fallback_none": {
+    "message": "Ingen reserve"
+  },
+  "llmProfiles_managerTitle": {
+    "message": "LLM-leverandører"
+  },
+  "llmProfiles_maxConcurrentRequests": {
+    "message": "Parallelle forespørsler"
+  },
+  "llmProfiles_maxConcurrentRequests_desc": {
+    "message": "Maksimalt antall samtidige oversettelsesforespørsler (1–8). Auto: $1 forespørsler"
+  },
+  "llmProfiles_maxOutputTokens": {
+    "message": "Maksimalt antall utdatatoken"
+  },
+  "llmProfiles_maxOutputTokens_desc": {
+    "message": "Maksimalt antall token som genereres per oversettelsesforespørsel (minimum 1). Auto: $1"
+  },
+  "llmProfiles_outputAutoDetected": {
+    "message": "Opptil $1 token (oppdaget)"
+  },
+  "llmProfiles_outputAutoUncapped": {
+    "message": "Dimensjoneres per gruppe (minimum 256; ingen oppdaget grense)"
+  },
+  "llmProfiles_preferredInputTokens": {
+    "message": "Foretrukket inndata"
+  },
+  "llmProfiles_preferredInputTokens_desc": {
+    "message": "Målstørrelse for promptgruppe i token (minimum 1). Auto: $1 token"
+  },
+  "llmProfiles_profileName": {
+    "message": "Navn"
+  },
+  "llmProfiles_provider": {
+    "message": "Leverandør"
+  },
+  "llmProfiles_quality": {
+    "message": "Oversettelseskvalitet"
+  },
+  "llmProfiles_quality_accurate": {
+    "message": "Nøyaktig"
+  },
+  "llmProfiles_quality_balanced": {
+    "message": "Balansert"
+  },
+  "llmProfiles_quality_desc": {
+    "message": "Styrer promptdybde, kontekstbruk, gruppestørrelse og nye forsøk."
+  },
+  "llmProfiles_quality_fast": {
+    "message": "Rask"
+  },
+  "llmProfiles_save": {
+    "message": "Lagre"
+  },
+  "llmProfiles_setActive": {
+    "message": "Angi som aktiv"
+  },
+  "llmProfiles_unitRequests": {
+    "message": "forespørsler"
+  },
+  "llmProfiles_unitTokens": {
+    "message": "token"
+  },
+  "llmProvider_custom": {
+    "message": "Tilpasset"
+  },
+  "llmProvider_openaiCompatible": {
+    "message": "OpenAI-kompatibel"
   },
   "message_unknownError": {
     "message": "Ukjent feil"
@@ -182,6 +317,9 @@
   },
   "pageTranslator_commonPreferences_title": {
     "message": "Felles innstillinger for dette språket"
+  },
+  "pageTranslator_exportLog": {
+    "message": "Eksporter oversettelseslogg"
   },
   "pageTranslator_option_autoTranslate": {
     "message": "Automatisk oversettelse"
@@ -264,6 +402,15 @@
   "settings_message_importConfig_success": {
     "message": "Import fullført"
   },
+  "settings_message_llmTranslator_modelsEmpty": {
+    "message": "API-en returnerte en tom modelliste"
+  },
+  "settings_message_llmTranslator_modelsLoaded": {
+    "message": "Modellisten er lastet inn"
+  },
+  "settings_message_llmTranslator_testSuccess": {
+    "message": "Testoversettelsen lyktes:"
+  },
   "settings_message_resetConfig_confirm": {
     "message": "Bekreft for å tilbakestille innstillingene til standardverdier"
   },
@@ -315,6 +462,45 @@
   "settings_option_history_enable_desc": {
     "message": "Når aktivert, vil oversettelser bli registrert og vises på <slot id=historyPage>historikksiden</slot>"
   },
+  "settings_option_llmTranslator_activeProfile": {
+    "message": "Aktiv leverandør"
+  },
+  "settings_option_llmTranslator_activeProfile_desc": {
+    "message": "Leverandørprofil som brukes av LLM-oversettelsesmodulen"
+  },
+  "settings_option_llmTranslator_apiKey": {
+    "message": "API-nøkkel"
+  },
+  "settings_option_llmTranslator_apiUrl": {
+    "message": "API-URL"
+  },
+  "settings_option_llmTranslator_fetchModelsButton": {
+    "message": "Hent modeller"
+  },
+  "settings_option_llmTranslator_header": {
+    "message": "LLM-oversetter"
+  },
+  "settings_option_llmTranslator_manage": {
+    "message": "LLM-leverandører"
+  },
+  "settings_option_llmTranslator_manageButton": {
+    "message": "Administrer leverandører"
+  },
+  "settings_option_llmTranslator_manage_desc": {
+    "message": "Legg til, rediger eller fjern LLM-leverandørprofiler"
+  },
+  "settings_option_llmTranslator_model": {
+    "message": "Modell"
+  },
+  "settings_option_llmTranslator_test": {
+    "message": "Test tilkoblingen"
+  },
+  "settings_option_llmTranslator_testButton": {
+    "message": "Test"
+  },
+  "settings_option_llmTranslator_test_desc": {
+    "message": "Send en liten oversettelsesforespørsel med den aktive leverandørprofilen for å verifisere innstillingene"
+  },
   "settings_option_pageTranslation": {
     "message": "Full sideoversettelse"
   },
@@ -329,6 +515,12 @@
   },
   "settings_option_pageTranslation_enableContextMenu_desc": {
     "message": "Legg til en knapp for å veksle sideoversettelse i sidens kontekstmeny"
+  },
+  "settings_option_pageTranslation_enableLogExport": {
+    "message": "Aktiver eksport av oversettelseslogg"
+  },
+  "settings_option_pageTranslation_enableLogExport_desc": {
+    "message": "La den aktive sideoversettelsesøkten beholde kildetekst, oversatt tekst, modelldiagnostikk og feil i minnet for manuell JSON-eksport. Logger lagres aldri og kan inneholde sensitivt sideinnhold"
   },
   "settings_option_pageTranslation_excludeSelectors": {
     "message": "Velgere som skal utelates fra oversettelse"
@@ -377,6 +569,12 @@
   },
   "settings_option_selectTranslation_disableWhileTranslatePage": {
     "message": "Deaktiver mens siden oversettes"
+  },
+  "settings_option_selectTranslation_draggablePopup": {
+    "message": "Tillat å dra oversettelsespopupen"
+  },
+  "settings_option_selectTranslation_draggablePopup_desc": {
+    "message": "Lar deg ta tak i oversettelsespopupen på bakgrunnen og flytte den hvor som helst på siden"
   },
   "settings_option_selectTranslation_enable": {
     "message": "Aktiver oversettelse av valgt tekst"
@@ -463,6 +661,12 @@
   "settings_option_selectTranslation_zIndex_desc": {
     "message": "Øk denne verdien hvis elementer på noen sider overlapper popup-vinduet med oversatt tekst"
   },
+  "settings_option_statistics_desc": {
+    "message": "Totalt antall oversettelser og forbrukte LLM-token."
+  },
+  "settings_option_statistics_title": {
+    "message": "Bruksstatistikk"
+  },
   "settings_option_textTranslator": {
     "message": "Tekstoversettelse"
   },
@@ -532,6 +736,9 @@
   "settings_option_userLanguage_desc": {
     "message": "Språket som tekster vil bli oversatt til"
   },
+  "settings_pageDescription": {
+    "message": "Administrer oversettelsesmotorer, hurtigbuffer og grensesnittinnstillinger"
+  },
   "settings_pageTitle": {
     "message": "Innstillinger"
   },
@@ -540,6 +747,27 @@
   },
   "settings_section_popup": {
     "message": "Popup"
+  },
+  "settings_section_popupAndHistory": {
+    "message": "Popup og historikk"
+  },
+  "settings_section_statistics": {
+    "message": "Statistikk"
+  },
+  "statistics_llmInputTokens": {
+    "message": "LLM-inndatatoken"
+  },
+  "statistics_llmOutputTokens": {
+    "message": "LLM-utdatatoken"
+  },
+  "statistics_reset": {
+    "message": "Tilbakestill statistikk"
+  },
+  "statistics_resetConfirm": {
+    "message": "Tilbakestille all bruksstatistikk?"
+  },
+  "statistics_translations": {
+    "message": "Oversettelser"
   },
   "textTranslator_suggestLanguage": {
     "message": "Det ser ut til at tekstspråket er <slot id=languageSuggest>$language_name$</slot>",

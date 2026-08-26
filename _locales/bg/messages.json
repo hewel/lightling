@@ -20,11 +20,20 @@
   "common_error": {
     "message": "Грешка"
   },
+  "common_listen": {
+    "message": "Слушай"
+  },
+  "common_llmTranslator": {
+    "message": "LLM"
+  },
   "common_offlineTranslator": {
     "message": "$1 - Офлайн преводач"
   },
   "common_retry": {
     "message": "Опитай отново"
+  },
+  "common_search": {
+    "message": "Търсене"
   },
   "common_translate": {
     "message": "Преведи"
@@ -159,11 +168,137 @@
   "lang_detect": {
     "message": "Автоматично разпознаване"
   },
+  "lang_searchPlaceholder": {
+    "message": "Търсене на език"
+  },
   "lang_select": {
     "message": "Избор на език"
   },
   "lang_swap": {
     "message": "Размяна на езици"
+  },
+  "llmProfiles_active": {
+    "message": "Активен"
+  },
+  "llmProfiles_add": {
+    "message": "Добави"
+  },
+  "llmProfiles_addProvider": {
+    "message": "Предустановка на доставчик"
+  },
+  "llmProfiles_advancedExecution": {
+    "message": "Разширено изпълнение"
+  },
+  "llmProfiles_auto": {
+    "message": "Автоматично"
+  },
+  "llmProfiles_contextWindowTokens": {
+    "message": "Контекстен прозорец"
+  },
+  "llmProfiles_contextWindowTokens_desc": {
+    "message": "Общ контекстен прозорец на модела в токени (минимум 512). Автоматично: $1 токена"
+  },
+  "llmProfiles_delete": {
+    "message": "Изтрий"
+  },
+  "llmProfiles_deleteConfirm": {
+    "message": "Сигурни ли сте, че искате да изтриете доставчика \"$provider_name$\"?",
+    "placeholders": {
+      "provider_name": {
+        "content": "$1",
+        "example": "OpenAI"
+      }
+    }
+  },
+  "llmProfiles_duplicateName": {
+    "message": "Вече съществува доставчик с това име"
+  },
+  "llmProfiles_edit": {
+    "message": "Редактирай"
+  },
+  "llmProfiles_editProfile": {
+    "message": "Редактиране на доставчика"
+  },
+  "llmProfiles_emptyList": {
+    "message": "Все още няма доставчици. Добавете такъв с предустановка по-долу."
+  },
+  "llmProfiles_emptyName": {
+    "message": "Въведете име на доставчика"
+  },
+  "llmProfiles_fallback": {
+    "message": "Резервен моделен профил"
+  },
+  "llmProfiles_fallback_desc": {
+    "message": "Използва се само след многократни неуспехи при структурна проверка."
+  },
+  "llmProfiles_fallback_none": {
+    "message": "Без резервен"
+  },
+  "llmProfiles_managerTitle": {
+    "message": "LLM доставчици"
+  },
+  "llmProfiles_maxConcurrentRequests": {
+    "message": "Паралелни заявки"
+  },
+  "llmProfiles_maxConcurrentRequests_desc": {
+    "message": "Максимален брой едновременни заявки за превод (1–8). Автоматично: $1 заявки"
+  },
+  "llmProfiles_maxOutputTokens": {
+    "message": "Максимални изходни токени"
+  },
+  "llmProfiles_maxOutputTokens_desc": {
+    "message": "Максимални токени, генерирани на заявка за превод (минимум 1). Автоматично: $1"
+  },
+  "llmProfiles_outputAutoDetected": {
+    "message": "До $1 токена (открито)"
+  },
+  "llmProfiles_outputAutoUncapped": {
+    "message": "Оразмерено според пакета (минимум 256; няма открит лимит)"
+  },
+  "llmProfiles_preferredInputTokens": {
+    "message": "Предпочитан вход"
+  },
+  "llmProfiles_preferredInputTokens_desc": {
+    "message": "Целеви размер на пакета подкани в токени (минимум 1). Автоматично: $1 токена"
+  },
+  "llmProfiles_profileName": {
+    "message": "Име"
+  },
+  "llmProfiles_provider": {
+    "message": "Доставчик"
+  },
+  "llmProfiles_quality": {
+    "message": "Качество на превода"
+  },
+  "llmProfiles_quality_accurate": {
+    "message": "Точен"
+  },
+  "llmProfiles_quality_balanced": {
+    "message": "Балансиран"
+  },
+  "llmProfiles_quality_desc": {
+    "message": "Контролира дълбочината на подканата, използването на контекст, размера на пакета и повторните опити."
+  },
+  "llmProfiles_quality_fast": {
+    "message": "Бърз"
+  },
+  "llmProfiles_save": {
+    "message": "Запази"
+  },
+  "llmProfiles_setActive": {
+    "message": "Задай като активен"
+  },
+  "llmProfiles_unitRequests": {
+    "message": "заявки"
+  },
+  "llmProfiles_unitTokens": {
+    "message": "токени"
+  },
+  "llmProvider_custom": {
+    "message": "Персонализиран"
+  },
+  "llmProvider_openaiCompatible": {
+    "message": "Съвместим с OpenAI"
   },
   "message_unknownError": {
     "message": "Неизвестна грешка"
@@ -182,6 +317,9 @@
   },
   "pageTranslator_commonPreferences_title": {
     "message": "Общи предпочитания за този език"
+  },
+  "pageTranslator_exportLog": {
+    "message": "Експортиране на журнала на преводите"
   },
   "pageTranslator_option_autoTranslate": {
     "message": "Автоматичен превод"
@@ -264,6 +402,15 @@
   "settings_message_importConfig_success": {
     "message": "Импортирането е завършено"
   },
+  "settings_message_llmTranslator_modelsEmpty": {
+    "message": "API върна празен списък с модели"
+  },
+  "settings_message_llmTranslator_modelsLoaded": {
+    "message": "Списъкът с модели е зареден"
+  },
+  "settings_message_llmTranslator_testSuccess": {
+    "message": "Тестовият превод е успешен:"
+  },
   "settings_message_resetConfig_confirm": {
     "message": "Потвърдете, за да нулирате настройките до стойностите по подразбиране"
   },
@@ -315,6 +462,45 @@
   "settings_option_history_enable_desc": {
     "message": "Когато е активирано, преводите ще бъдат записани и ще се появят на <slot id=historyPage>страницата с история</slot>"
   },
+  "settings_option_llmTranslator_activeProfile": {
+    "message": "Активен доставчик"
+  },
+  "settings_option_llmTranslator_activeProfile_desc": {
+    "message": "Профил на доставчик, използван от LLM модула за превод"
+  },
+  "settings_option_llmTranslator_apiKey": {
+    "message": "API ключ"
+  },
+  "settings_option_llmTranslator_apiUrl": {
+    "message": "API URL"
+  },
+  "settings_option_llmTranslator_fetchModelsButton": {
+    "message": "Извличане на моделите"
+  },
+  "settings_option_llmTranslator_header": {
+    "message": "LLM преводач"
+  },
+  "settings_option_llmTranslator_manage": {
+    "message": "LLM доставчици"
+  },
+  "settings_option_llmTranslator_manageButton": {
+    "message": "Управление на доставчиците"
+  },
+  "settings_option_llmTranslator_manage_desc": {
+    "message": "Добавяне, редактиране или премахване на профили на LLM доставчици"
+  },
+  "settings_option_llmTranslator_model": {
+    "message": "Модел"
+  },
+  "settings_option_llmTranslator_test": {
+    "message": "Тестване на връзката"
+  },
+  "settings_option_llmTranslator_testButton": {
+    "message": "Тест"
+  },
+  "settings_option_llmTranslator_test_desc": {
+    "message": "Изпратете малка заявка за превод с активния профил на доставчик, за да проверите настройките му"
+  },
   "settings_option_pageTranslation": {
     "message": "Пълен превод на страницата"
   },
@@ -329,6 +515,12 @@
   },
   "settings_option_pageTranslation_enableContextMenu_desc": {
     "message": "Добавете бутон за превключване на превода на страницата в контекстното меню на страницата"
+  },
+  "settings_option_pageTranslation_enableLogExport": {
+    "message": "Разрешаване на експортирането на журнала на преводите"
+  },
+  "settings_option_pageTranslation_enableLogExport_desc": {
+    "message": "Позволява на активната сесия за превод на страницата да запазва в паметта изходния текст, преведения текст, диагностиката на модела и грешките за ръчно експортиране в JSON. Журналите никога не се съхраняват трайно и може да съдържат чувствително съдържание от страницата"
   },
   "settings_option_pageTranslation_excludeSelectors": {
     "message": "Селектори за изключване от превод"
@@ -377,6 +569,12 @@
   },
   "settings_option_selectTranslation_disableWhileTranslatePage": {
     "message": "Деактивиране по време на превод на страницата"
+  },
+  "settings_option_selectTranslation_draggablePopup": {
+    "message": "Разрешаване на плъзгане на изскачащия прозорец за превод"
+  },
+  "settings_option_selectTranslation_draggablePopup_desc": {
+    "message": "Позволява ви да хванете изскачащия прозорец за превод от фона му и да го преместите навсякъде на страницата"
   },
   "settings_option_selectTranslation_enable": {
     "message": "Активиране на превод на избран текст"
@@ -463,6 +661,12 @@
   "settings_option_selectTranslation_zIndex_desc": {
     "message": "Увеличете тази стойност, ако елементи на някои страници припокриват изскачащия прозорец с преведен текст"
   },
+  "settings_option_statistics_desc": {
+    "message": "Общ брой преводи и изразходвани LLM токени."
+  },
+  "settings_option_statistics_title": {
+    "message": "Статистика на използването"
+  },
   "settings_option_textTranslator": {
     "message": "Превод на текст"
   },
@@ -532,6 +736,9 @@
   "settings_option_userLanguage_desc": {
     "message": "Езикът, на който ще бъдат преведени текстовете"
   },
+  "settings_pageDescription": {
+    "message": "Управление на преводаческите машини, кеша и предпочитанията на интерфейса"
+  },
   "settings_pageTitle": {
     "message": "Настройки"
   },
@@ -540,6 +747,27 @@
   },
   "settings_section_popup": {
     "message": "Изскачащ прозорец"
+  },
+  "settings_section_popupAndHistory": {
+    "message": "Изскачащ прозорец и история"
+  },
+  "settings_section_statistics": {
+    "message": "Статистика"
+  },
+  "statistics_llmInputTokens": {
+    "message": "Входни LLM токени"
+  },
+  "statistics_llmOutputTokens": {
+    "message": "Изходни LLM токени"
+  },
+  "statistics_reset": {
+    "message": "Нулиране на статистиката"
+  },
+  "statistics_resetConfirm": {
+    "message": "Да се нулира ли цялата статистика на използването?"
+  },
+  "statistics_translations": {
+    "message": "Преводи"
   },
   "textTranslator_suggestLanguage": {
     "message": "Изглежда, че езикът на текста е <slot id=languageSuggest>$language_name$</slot>",

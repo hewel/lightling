@@ -20,11 +20,20 @@
   "common_error": {
     "message": "Error"
   },
+  "common_listen": {
+    "message": "Escoltar"
+  },
+  "common_llmTranslator": {
+    "message": "LLM"
+  },
   "common_offlineTranslator": {
     "message": "$1 - Traductor fora de línia"
   },
   "common_retry": {
     "message": "Reintentar"
+  },
+  "common_search": {
+    "message": "Cercar"
   },
   "common_translate": {
     "message": "Traduir"
@@ -159,11 +168,137 @@
   "lang_detect": {
     "message": "Detecció automàtica"
   },
+  "lang_searchPlaceholder": {
+    "message": "Cercar idioma"
+  },
   "lang_select": {
     "message": "Seleccionar idioma"
   },
   "lang_swap": {
     "message": "Intercanviar idiomes"
+  },
+  "llmProfiles_active": {
+    "message": "Actiu"
+  },
+  "llmProfiles_add": {
+    "message": "Afegir"
+  },
+  "llmProfiles_addProvider": {
+    "message": "Preconfiguració de proveïdor"
+  },
+  "llmProfiles_advancedExecution": {
+    "message": "Execució avançada"
+  },
+  "llmProfiles_auto": {
+    "message": "Automàtic"
+  },
+  "llmProfiles_contextWindowTokens": {
+    "message": "Finestra de context"
+  },
+  "llmProfiles_contextWindowTokens_desc": {
+    "message": "Finestra de context total del model en tokens (mínim 512). Automàtic: $1 tokens"
+  },
+  "llmProfiles_delete": {
+    "message": "Eliminar"
+  },
+  "llmProfiles_deleteConfirm": {
+    "message": "Esteu segur que voleu eliminar el proveïdor \"$provider_name$\"?",
+    "placeholders": {
+      "provider_name": {
+        "content": "$1",
+        "example": "OpenAI"
+      }
+    }
+  },
+  "llmProfiles_duplicateName": {
+    "message": "Ja existeix un proveïdor amb aquest nom"
+  },
+  "llmProfiles_edit": {
+    "message": "Editar"
+  },
+  "llmProfiles_editProfile": {
+    "message": "Editar proveïdor"
+  },
+  "llmProfiles_emptyList": {
+    "message": "Encara no hi ha proveïdors. Afegiu-ne un amb una preconfiguració a continuació."
+  },
+  "llmProfiles_emptyName": {
+    "message": "Introduïu un nom de proveïdor"
+  },
+  "llmProfiles_fallback": {
+    "message": "Perfil de model alternatiu"
+  },
+  "llmProfiles_fallback_desc": {
+    "message": "S'utilitza només després de fallades repetides de validació estructural."
+  },
+  "llmProfiles_fallback_none": {
+    "message": "Sense alternatiu"
+  },
+  "llmProfiles_managerTitle": {
+    "message": "Proveïdors LLM"
+  },
+  "llmProfiles_maxConcurrentRequests": {
+    "message": "Sol·licituds paral·leles"
+  },
+  "llmProfiles_maxConcurrentRequests_desc": {
+    "message": "Nombre màxim de sol·licituds de traducció simultànies (1–8). Automàtic: $1 sol·licituds"
+  },
+  "llmProfiles_maxOutputTokens": {
+    "message": "Tokens de sortida màxims"
+  },
+  "llmProfiles_maxOutputTokens_desc": {
+    "message": "Tokens màxims generats per sol·licitud de traducció (mínim 1). Automàtic: $1"
+  },
+  "llmProfiles_outputAutoDetected": {
+    "message": "Fins a $1 tokens (detectat)"
+  },
+  "llmProfiles_outputAutoUncapped": {
+    "message": "Dimensionat per lot (mínim 256; no s'ha detectat cap límit)"
+  },
+  "llmProfiles_preferredInputTokens": {
+    "message": "Entrada preferida"
+  },
+  "llmProfiles_preferredInputTokens_desc": {
+    "message": "Mida objectiu del lot de peticions en tokens (mínim 1). Automàtic: $1 tokens"
+  },
+  "llmProfiles_profileName": {
+    "message": "Nom"
+  },
+  "llmProfiles_provider": {
+    "message": "Proveïdor"
+  },
+  "llmProfiles_quality": {
+    "message": "Qualitat de la traducció"
+  },
+  "llmProfiles_quality_accurate": {
+    "message": "Precisa"
+  },
+  "llmProfiles_quality_balanced": {
+    "message": "Equilibrada"
+  },
+  "llmProfiles_quality_desc": {
+    "message": "Controla la profunditat de la petició, l'ús del context, la mida del lot i els reintents."
+  },
+  "llmProfiles_quality_fast": {
+    "message": "Ràpida"
+  },
+  "llmProfiles_save": {
+    "message": "Desar"
+  },
+  "llmProfiles_setActive": {
+    "message": "Establir com a actiu"
+  },
+  "llmProfiles_unitRequests": {
+    "message": "sol·licituds"
+  },
+  "llmProfiles_unitTokens": {
+    "message": "tokens"
+  },
+  "llmProvider_custom": {
+    "message": "Personalitzat"
+  },
+  "llmProvider_openaiCompatible": {
+    "message": "Compatible amb OpenAI"
   },
   "message_unknownError": {
     "message": "Error desconegut"
@@ -182,6 +317,9 @@
   },
   "pageTranslator_commonPreferences_title": {
     "message": "Preferències comunes per a aquest idioma"
+  },
+  "pageTranslator_exportLog": {
+    "message": "Exportar el registre de traduccions"
   },
   "pageTranslator_option_autoTranslate": {
     "message": "Traducció automàtica"
@@ -264,6 +402,15 @@
   "settings_message_importConfig_success": {
     "message": "Importació completada"
   },
+  "settings_message_llmTranslator_modelsEmpty": {
+    "message": "L'API ha retornat una llista de models buida"
+  },
+  "settings_message_llmTranslator_modelsLoaded": {
+    "message": "Llista de models carregada"
+  },
+  "settings_message_llmTranslator_testSuccess": {
+    "message": "La traducció de prova ha tingut èxit:"
+  },
   "settings_message_resetConfig_confirm": {
     "message": "Confirmeu per restablir la configuració als valors per defecte"
   },
@@ -315,6 +462,45 @@
   "settings_option_history_enable_desc": {
     "message": "Quan estigui activat, les traduccions es registraran i apareixeran a la <slot id=historyPage>pàgina d'historial</slot>"
   },
+  "settings_option_llmTranslator_activeProfile": {
+    "message": "Proveïdor actiu"
+  },
+  "settings_option_llmTranslator_activeProfile_desc": {
+    "message": "Perfil de proveïdor utilitzat pel mòdul de traducció LLM"
+  },
+  "settings_option_llmTranslator_apiKey": {
+    "message": "Clau de l'API"
+  },
+  "settings_option_llmTranslator_apiUrl": {
+    "message": "URL de l'API"
+  },
+  "settings_option_llmTranslator_fetchModelsButton": {
+    "message": "Obtenir models"
+  },
+  "settings_option_llmTranslator_header": {
+    "message": "Traductor LLM"
+  },
+  "settings_option_llmTranslator_manage": {
+    "message": "Proveïdors LLM"
+  },
+  "settings_option_llmTranslator_manageButton": {
+    "message": "Gestionar proveïdors"
+  },
+  "settings_option_llmTranslator_manage_desc": {
+    "message": "Afegir, editar o eliminar perfils de proveïdors LLM"
+  },
+  "settings_option_llmTranslator_model": {
+    "message": "Model"
+  },
+  "settings_option_llmTranslator_test": {
+    "message": "Provar la connexió"
+  },
+  "settings_option_llmTranslator_testButton": {
+    "message": "Provar"
+  },
+  "settings_option_llmTranslator_test_desc": {
+    "message": "Envieu una petita sol·licitud de traducció amb el perfil de proveïdor actiu per verificar-ne la configuració"
+  },
   "settings_option_pageTranslation": {
     "message": "La traducció de pàgina completa"
   },
@@ -329,6 +515,12 @@
   },
   "settings_option_pageTranslation_enableContextMenu_desc": {
     "message": "Afegir un botó per activar la traducció de pàgina al menú contextual de la pàgina"
+  },
+  "settings_option_pageTranslation_enableLogExport": {
+    "message": "Activar l'exportació del registre de traduccions"
+  },
+  "settings_option_pageTranslation_enableLogExport_desc": {
+    "message": "Permet que la sessió activa de traducció de pàgina conservi a la memòria el text d'origen, el text traduït, els diagnòstics del model i els errors per a una exportació manual en JSON. Els registres mai no es desen i poden contenir contingut sensible de la pàgina"
   },
   "settings_option_pageTranslation_excludeSelectors": {
     "message": "Selectors per excloure de la traducció"
@@ -377,6 +569,12 @@
   },
   "settings_option_selectTranslation_disableWhileTranslatePage": {
     "message": "Desactivar mentre es tradueix la pàgina"
+  },
+  "settings_option_selectTranslation_draggablePopup": {
+    "message": "Permetre arrossegar la finestra emergent de traducció"
+  },
+  "settings_option_selectTranslation_draggablePopup_desc": {
+    "message": "Us permet agafar la finestra emergent de traducció pel seu fons i moure-la a qualsevol lloc de la pàgina"
   },
   "settings_option_selectTranslation_enable": {
     "message": "Activar la traducció de text seleccionat"
@@ -463,6 +661,12 @@
   "settings_option_selectTranslation_zIndex_desc": {
     "message": "Augmenta aquest valor si els elements d'algunes pàgines se superposen al popup amb el text traduït"
   },
+  "settings_option_statistics_desc": {
+    "message": "Nombre total de traduccions i de tokens LLM consumits."
+  },
+  "settings_option_statistics_title": {
+    "message": "Estadístiques d'ús"
+  },
   "settings_option_textTranslator": {
     "message": "Traducció de text"
   },
@@ -532,6 +736,9 @@
   "settings_option_userLanguage_desc": {
     "message": "La llengua a la qual es traduiran els textos"
   },
+  "settings_pageDescription": {
+    "message": "Gestionar motors de traducció, memòria cau i preferències de la interfície"
+  },
   "settings_pageTitle": {
     "message": "Configuració"
   },
@@ -540,6 +747,27 @@
   },
   "settings_section_popup": {
     "message": "Finestra emergent"
+  },
+  "settings_section_popupAndHistory": {
+    "message": "Finestra emergent i historial"
+  },
+  "settings_section_statistics": {
+    "message": "Estadístiques"
+  },
+  "statistics_llmInputTokens": {
+    "message": "Tokens d'entrada LLM"
+  },
+  "statistics_llmOutputTokens": {
+    "message": "Tokens de sortida LLM"
+  },
+  "statistics_reset": {
+    "message": "Restablir les estadístiques"
+  },
+  "statistics_resetConfirm": {
+    "message": "Voleu restablir totes les estadístiques d'ús?"
+  },
+  "statistics_translations": {
+    "message": "Traduccions"
   },
   "textTranslator_suggestLanguage": {
     "message": "Sembla que la llengua del text és <slot id=languageSuggest>$language_name$</slot>",

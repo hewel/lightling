@@ -20,11 +20,20 @@
   "common_error": {
     "message": "エラー"
   },
+  "common_listen": {
+    "message": "聞く"
+  },
+  "common_llmTranslator": {
+    "message": "LLM"
+  },
   "common_offlineTranslator": {
     "message": "$1 - オフライントランスレーター"
   },
   "common_retry": {
     "message": "再試行"
+  },
+  "common_search": {
+    "message": "検索"
   },
   "common_translate": {
     "message": "翻訳"
@@ -159,11 +168,137 @@
   "lang_detect": {
     "message": "自動検出"
   },
+  "lang_searchPlaceholder": {
+    "message": "言語を検索"
+  },
   "lang_select": {
     "message": "言語を選択"
   },
   "lang_swap": {
     "message": "言語を入れ替え"
+  },
+  "llmProfiles_active": {
+    "message": "アクティブ"
+  },
+  "llmProfiles_add": {
+    "message": "追加"
+  },
+  "llmProfiles_addProvider": {
+    "message": "プロバイダープリセット"
+  },
+  "llmProfiles_advancedExecution": {
+    "message": "高度な実行"
+  },
+  "llmProfiles_auto": {
+    "message": "自動"
+  },
+  "llmProfiles_contextWindowTokens": {
+    "message": "コンテキストウィンドウ"
+  },
+  "llmProfiles_contextWindowTokens_desc": {
+    "message": "モデルのコンテキストウィンドウの合計トークン数（最小 512）。自動: $1 トークン"
+  },
+  "llmProfiles_delete": {
+    "message": "削除"
+  },
+  "llmProfiles_deleteConfirm": {
+    "message": "「$provider_name$」プロバイダーを削除してもよろしいですか？",
+    "placeholders": {
+      "provider_name": {
+        "content": "$1",
+        "example": "OpenAI"
+      }
+    }
+  },
+  "llmProfiles_duplicateName": {
+    "message": "この名前のプロバイダーはすでに存在します"
+  },
+  "llmProfiles_edit": {
+    "message": "編集"
+  },
+  "llmProfiles_editProfile": {
+    "message": "プロバイダーを編集"
+  },
+  "llmProfiles_emptyList": {
+    "message": "プロバイダーがまだありません。下のプリセットから追加してください"
+  },
+  "llmProfiles_emptyName": {
+    "message": "プロバイダー名を入力してください"
+  },
+  "llmProfiles_fallback": {
+    "message": "フォールバックモデルプロファイル"
+  },
+  "llmProfiles_fallback_desc": {
+    "message": "構造検証に繰り返し失敗した場合にのみ使用されます"
+  },
+  "llmProfiles_fallback_none": {
+    "message": "フォールバックなし"
+  },
+  "llmProfiles_managerTitle": {
+    "message": "LLM プロバイダー"
+  },
+  "llmProfiles_maxConcurrentRequests": {
+    "message": "並列リクエスト"
+  },
+  "llmProfiles_maxConcurrentRequests_desc": {
+    "message": "同時翻訳リクエストの最大数（1〜8）。自動: $1 リクエスト"
+  },
+  "llmProfiles_maxOutputTokens": {
+    "message": "最大出力トークン数"
+  },
+  "llmProfiles_maxOutputTokens_desc": {
+    "message": "翻訳リクエストごとに生成される最大トークン数（最小 1）。自動: $1"
+  },
+  "llmProfiles_outputAutoDetected": {
+    "message": "最大 $1 トークン（検出済み）"
+  },
+  "llmProfiles_outputAutoUncapped": {
+    "message": "バッチごとにサイズ決定（最小 256。検出された上限なし）"
+  },
+  "llmProfiles_preferredInputTokens": {
+    "message": "優先入力"
+  },
+  "llmProfiles_preferredInputTokens_desc": {
+    "message": "プロンプトバッチの目標トークン数（最小 1）。自動: $1 トークン"
+  },
+  "llmProfiles_profileName": {
+    "message": "名前"
+  },
+  "llmProfiles_provider": {
+    "message": "プロバイダー"
+  },
+  "llmProfiles_quality": {
+    "message": "翻訳品質"
+  },
+  "llmProfiles_quality_accurate": {
+    "message": "高精度"
+  },
+  "llmProfiles_quality_balanced": {
+    "message": "バランス"
+  },
+  "llmProfiles_quality_desc": {
+    "message": "プロンプトの深さ、コンテキストの使用、バッチサイズ、再試行を制御します"
+  },
+  "llmProfiles_quality_fast": {
+    "message": "高速"
+  },
+  "llmProfiles_save": {
+    "message": "保存"
+  },
+  "llmProfiles_setActive": {
+    "message": "アクティブに設定"
+  },
+  "llmProfiles_unitRequests": {
+    "message": "リクエスト"
+  },
+  "llmProfiles_unitTokens": {
+    "message": "トークン"
+  },
+  "llmProvider_custom": {
+    "message": "カスタム"
+  },
+  "llmProvider_openaiCompatible": {
+    "message": "OpenAI 互換"
   },
   "message_unknownError": {
     "message": "不明なエラー"
@@ -182,6 +317,9 @@
   },
   "pageTranslator_commonPreferences_title": {
     "message": "この言語の共通設定"
+  },
+  "pageTranslator_exportLog": {
+    "message": "翻訳ログをエクスポート"
   },
   "pageTranslator_option_autoTranslate": {
     "message": "自動翻訳"
@@ -264,6 +402,15 @@
   "settings_message_importConfig_success": {
     "message": "インポート完了"
   },
+  "settings_message_llmTranslator_modelsEmpty": {
+    "message": "API が空のモデルリストを返しました"
+  },
+  "settings_message_llmTranslator_modelsLoaded": {
+    "message": "モデルリストを読み込みました"
+  },
+  "settings_message_llmTranslator_testSuccess": {
+    "message": "テスト翻訳に成功しました:"
+  },
   "settings_message_resetConfig_confirm": {
     "message": "設定をデフォルト値にリセットすることを確認"
   },
@@ -315,6 +462,45 @@
   "settings_option_history_enable_desc": {
     "message": "有効にすると、翻訳が記録され、<slot id=historyPage>履歴ページ</slot>に表示されます"
   },
+  "settings_option_llmTranslator_activeProfile": {
+    "message": "アクティブなプロバイダー"
+  },
+  "settings_option_llmTranslator_activeProfile_desc": {
+    "message": "LLM 翻訳モジュールで使用されるプロバイダープロファイル"
+  },
+  "settings_option_llmTranslator_apiKey": {
+    "message": "API キー"
+  },
+  "settings_option_llmTranslator_apiUrl": {
+    "message": "API URL"
+  },
+  "settings_option_llmTranslator_fetchModelsButton": {
+    "message": "モデルを取得"
+  },
+  "settings_option_llmTranslator_header": {
+    "message": "LLM 翻訳"
+  },
+  "settings_option_llmTranslator_manage": {
+    "message": "LLM プロバイダー"
+  },
+  "settings_option_llmTranslator_manageButton": {
+    "message": "プロバイダーを管理"
+  },
+  "settings_option_llmTranslator_manage_desc": {
+    "message": "LLM プロバイダープロファイルの追加、編集、削除"
+  },
+  "settings_option_llmTranslator_model": {
+    "message": "モデル"
+  },
+  "settings_option_llmTranslator_test": {
+    "message": "接続をテスト"
+  },
+  "settings_option_llmTranslator_testButton": {
+    "message": "テスト"
+  },
+  "settings_option_llmTranslator_test_desc": {
+    "message": "アクティブなプロバイダープロファイルで小さな翻訳リクエストを送信し、設定を確認します"
+  },
   "settings_option_pageTranslation": {
     "message": "ページ全体の翻訳"
   },
@@ -329,6 +515,12 @@
   },
   "settings_option_pageTranslation_enableContextMenu_desc": {
     "message": "ページのコンテキストメニューにページ翻訳を切り替えるボタンを追加します"
+  },
+  "settings_option_pageTranslation_enableLogExport": {
+    "message": "翻訳ログのエクスポートを有効化"
+  },
+  "settings_option_pageTranslation_enableLogExport_desc": {
+    "message": "アクティブなページ翻訳セッションが原文、訳文、モデル診断、エラーをメモリに保持し、JSON として手動エクスポートできるようにします。ログは永続化されず、機密性の高いページコンテンツが含まれる場合があります"
   },
   "settings_option_pageTranslation_excludeSelectors": {
     "message": "翻訳から除外するセレクター"
@@ -377,6 +569,12 @@
   },
   "settings_option_selectTranslation_disableWhileTranslatePage": {
     "message": "ページを翻訳中は無効にする"
+  },
+  "settings_option_selectTranslation_draggablePopup": {
+    "message": "翻訳ポップアップのドラッグを許可"
+  },
+  "settings_option_selectTranslation_draggablePopup_desc": {
+    "message": "翻訳ポップアップの背景をつかんで、ページ上の任意の場所に移動できます"
   },
   "settings_option_selectTranslation_enable": {
     "message": "選択したテキストの翻訳を有効にする"
@@ -463,6 +661,12 @@
   "settings_option_selectTranslation_zIndex_desc": {
     "message": "一部のページで要素が翻訳されたテキストのポップアップと重なる場合、この値を増やしてください"
   },
+  "settings_option_statistics_desc": {
+    "message": "翻訳の合計数と消費された LLM トークン数。"
+  },
+  "settings_option_statistics_title": {
+    "message": "使用統計"
+  },
   "settings_option_textTranslator": {
     "message": "テキスト翻訳"
   },
@@ -532,6 +736,9 @@
   "settings_option_userLanguage_desc": {
     "message": "テキストが翻訳される言語"
   },
+  "settings_pageDescription": {
+    "message": "翻訳エンジン、キャッシュ、インターフェース設定を管理"
+  },
   "settings_pageTitle": {
     "message": "設定"
   },
@@ -540,6 +747,27 @@
   },
   "settings_section_popup": {
     "message": "ポップアップ"
+  },
+  "settings_section_popupAndHistory": {
+    "message": "ポップアップと履歴"
+  },
+  "settings_section_statistics": {
+    "message": "統計"
+  },
+  "statistics_llmInputTokens": {
+    "message": "LLM 入力トークン"
+  },
+  "statistics_llmOutputTokens": {
+    "message": "LLM 出力トークン"
+  },
+  "statistics_reset": {
+    "message": "統計をリセット"
+  },
+  "statistics_resetConfirm": {
+    "message": "すべての使用統計をリセットしますか？"
+  },
+  "statistics_translations": {
+    "message": "翻訳数"
   },
   "textTranslator_suggestLanguage": {
     "message": "テキストの言語は<slot id=languageSuggest>$language_name$</slot>のようです",

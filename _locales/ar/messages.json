@@ -20,11 +20,20 @@
   "common_error": {
     "message": "خطأ"
   },
+  "common_listen": {
+    "message": "استمع"
+  },
+  "common_llmTranslator": {
+    "message": "LLM"
+  },
   "common_offlineTranslator": {
     "message": "$1 - مترجم غير متصل"
   },
   "common_retry": {
     "message": "إعادة المحاولة"
+  },
+  "common_search": {
+    "message": "بحث"
   },
   "common_translate": {
     "message": "ترجمة"
@@ -159,11 +168,137 @@
   "lang_detect": {
     "message": "الكشف التلقائي"
   },
+  "lang_searchPlaceholder": {
+    "message": "ابحث عن لغة"
+  },
   "lang_select": {
     "message": "اختر اللغة"
   },
   "lang_swap": {
     "message": "تبديل اللغات"
+  },
+  "llmProfiles_active": {
+    "message": "نشط"
+  },
+  "llmProfiles_add": {
+    "message": "إضافة"
+  },
+  "llmProfiles_addProvider": {
+    "message": "قالب المزود المسبق"
+  },
+  "llmProfiles_advancedExecution": {
+    "message": "التنفيذ المتقدم"
+  },
+  "llmProfiles_auto": {
+    "message": "تلقائي"
+  },
+  "llmProfiles_contextWindowTokens": {
+    "message": "نافذة السياق"
+  },
+  "llmProfiles_contextWindowTokens_desc": {
+    "message": "إجمالي نافذة سياق النموذج بالرموز (الحد الأدنى 512). تلقائي: $1 رموز"
+  },
+  "llmProfiles_delete": {
+    "message": "حذف"
+  },
+  "llmProfiles_deleteConfirm": {
+    "message": "هل أنت متأكد أنك تريد حذف المزود \"$provider_name$\"؟",
+    "placeholders": {
+      "provider_name": {
+        "content": "$1",
+        "example": "OpenAI"
+      }
+    }
+  },
+  "llmProfiles_duplicateName": {
+    "message": "يوجد مزود بهذا الاسم بالفعل"
+  },
+  "llmProfiles_edit": {
+    "message": "تعديل"
+  },
+  "llmProfiles_editProfile": {
+    "message": "تعديل المزود"
+  },
+  "llmProfiles_emptyList": {
+    "message": "لا يوجد مزودون بعد. أضف واحدًا باستخدام قالب مسبق أدناه."
+  },
+  "llmProfiles_emptyName": {
+    "message": "أدخل اسم المزود"
+  },
+  "llmProfiles_fallback": {
+    "message": "ملف النموذج الاحتياطي"
+  },
+  "llmProfiles_fallback_desc": {
+    "message": "يُستخدم فقط بعد فشل التحقق الهيكلي المتكرر."
+  },
+  "llmProfiles_fallback_none": {
+    "message": "بدون احتياطي"
+  },
+  "llmProfiles_managerTitle": {
+    "message": "مزودو LLM"
+  },
+  "llmProfiles_maxConcurrentRequests": {
+    "message": "الطلبات المتوازية"
+  },
+  "llmProfiles_maxConcurrentRequests_desc": {
+    "message": "الحد الأقصى لعدد طلبات الترجمة المتزامنة (1–8). تلقائي: $1 طلبات"
+  },
+  "llmProfiles_maxOutputTokens": {
+    "message": "الحد الأقصى لرموز الإخراج"
+  },
+  "llmProfiles_maxOutputTokens_desc": {
+    "message": "الحد الأقصى للرموز المولدة لكل طلب ترجمة (الحد الأدنى 1). تلقائي: $1"
+  },
+  "llmProfiles_outputAutoDetected": {
+    "message": "حتى $1 رموز (مكتشف)"
+  },
+  "llmProfiles_outputAutoUncapped": {
+    "message": "الحجم حسب الدفعة (الحد الأدنى 256؛ لم يتم اكتشاف حد أقصى)"
+  },
+  "llmProfiles_preferredInputTokens": {
+    "message": "الإدخال المفضل"
+  },
+  "llmProfiles_preferredInputTokens_desc": {
+    "message": "حجم دفعة الطلب المستهدف بالرموز (الحد الأدنى 1). تلقائي: $1 رموز"
+  },
+  "llmProfiles_profileName": {
+    "message": "الاسم"
+  },
+  "llmProfiles_provider": {
+    "message": "المزود"
+  },
+  "llmProfiles_quality": {
+    "message": "جودة الترجمة"
+  },
+  "llmProfiles_quality_accurate": {
+    "message": "دقيق"
+  },
+  "llmProfiles_quality_balanced": {
+    "message": "متوازن"
+  },
+  "llmProfiles_quality_desc": {
+    "message": "يتحكم في عمق الطلب واستخدام السياق وحجم الدفعة وإعادات المحاولة."
+  },
+  "llmProfiles_quality_fast": {
+    "message": "سريع"
+  },
+  "llmProfiles_save": {
+    "message": "حفظ"
+  },
+  "llmProfiles_setActive": {
+    "message": "تعيين كنشط"
+  },
+  "llmProfiles_unitRequests": {
+    "message": "طلبات"
+  },
+  "llmProfiles_unitTokens": {
+    "message": "رموز"
+  },
+  "llmProvider_custom": {
+    "message": "مخصص"
+  },
+  "llmProvider_openaiCompatible": {
+    "message": "متوافق مع OpenAI"
   },
   "message_unknownError": {
     "message": "خطأ غير معروف"
@@ -182,6 +317,9 @@
   },
   "pageTranslator_commonPreferences_title": {
     "message": "التفضيلات العامة لهذه اللغة"
+  },
+  "pageTranslator_exportLog": {
+    "message": "تصدير سجل الترجمة"
   },
   "pageTranslator_option_autoTranslate": {
     "message": "الترجمة التلقائية"
@@ -264,6 +402,15 @@
   "settings_message_importConfig_success": {
     "message": "اكتمل الاستيراد"
   },
+  "settings_message_llmTranslator_modelsEmpty": {
+    "message": "أعادت API قائمة نماذج فارغة"
+  },
+  "settings_message_llmTranslator_modelsLoaded": {
+    "message": "تم تحميل قائمة النماذج"
+  },
+  "settings_message_llmTranslator_testSuccess": {
+    "message": "نجحت ترجمة الاختبار:"
+  },
   "settings_message_resetConfig_confirm": {
     "message": "تأكيد إعادة تعيين الإعدادات إلى القيم الافتراضية"
   },
@@ -315,6 +462,45 @@
   "settings_option_history_enable_desc": {
     "message": "عند التمكين، سيتم تسجيل الترجمات وستظهر في <slot id=historyPage>صفحة السجل</slot>"
   },
+  "settings_option_llmTranslator_activeProfile": {
+    "message": "المزود النشط"
+  },
+  "settings_option_llmTranslator_activeProfile_desc": {
+    "message": "ملف المزود المستخدم من وحدة ترجمة LLM"
+  },
+  "settings_option_llmTranslator_apiKey": {
+    "message": "مفتاح API"
+  },
+  "settings_option_llmTranslator_apiUrl": {
+    "message": "API URL"
+  },
+  "settings_option_llmTranslator_fetchModelsButton": {
+    "message": "جلب النماذج"
+  },
+  "settings_option_llmTranslator_header": {
+    "message": "مترجم LLM"
+  },
+  "settings_option_llmTranslator_manage": {
+    "message": "مزودو LLM"
+  },
+  "settings_option_llmTranslator_manageButton": {
+    "message": "إدارة المزودين"
+  },
+  "settings_option_llmTranslator_manage_desc": {
+    "message": "إضافة أو تعديل أو إزالة ملفات مزودي LLM"
+  },
+  "settings_option_llmTranslator_model": {
+    "message": "النموذج"
+  },
+  "settings_option_llmTranslator_test": {
+    "message": "اختبار الاتصال"
+  },
+  "settings_option_llmTranslator_testButton": {
+    "message": "اختبار"
+  },
+  "settings_option_llmTranslator_test_desc": {
+    "message": "أرسل طلب ترجمة صغيرًا باستخدام ملف المزود النشط للتحقق من إعداداته"
+  },
   "settings_option_pageTranslation": {
     "message": "ترجمة الصفحة الكاملة"
   },
@@ -329,6 +515,12 @@
   },
   "settings_option_pageTranslation_enableContextMenu_desc": {
     "message": "إضافة زر لتبديل ترجمة الصفحة في قائمة السياق"
+  },
+  "settings_option_pageTranslation_enableLogExport": {
+    "message": "تمكين تصدير سجل الترجمة"
+  },
+  "settings_option_pageTranslation_enableLogExport_desc": {
+    "message": "اسمح لجلسة ترجمة الصفحة النشطة بالاحتفاظ بالنص المصدر والنص المترجم وتشخيصات النموذج والأخطاء في الذاكرة للتصدير اليدوي بتنسيق JSON. لا يتم حفظ السجلات أبدًا وقد تحتوي على محتوى صفحة حساس"
   },
   "settings_option_pageTranslation_excludeSelectors": {
     "message": "المحددات المستبعدة من الترجمة"
@@ -377,6 +569,12 @@
   },
   "settings_option_selectTranslation_disableWhileTranslatePage": {
     "message": "تعطيل أثناء ترجمة الصفحة"
+  },
+  "settings_option_selectTranslation_draggablePopup": {
+    "message": "السماح بسحب نافذة الترجمة المنبثقة"
+  },
+  "settings_option_selectTranslation_draggablePopup_desc": {
+    "message": "يتيح لك الإمساك بنافذة الترجمة المنبثقة من خلفيتها ونقلها إلى أي مكان في الصفحة"
   },
   "settings_option_selectTranslation_enable": {
     "message": "تمكين ترجمة النص المحدد"
@@ -463,6 +661,12 @@
   "settings_option_selectTranslation_zIndex_desc": {
     "message": "قم بزيادة هذه القيمة إذا كانت العناصر في بعض الصفحات تتداخل مع النافذة المنبثقة للنص المترجم"
   },
+  "settings_option_statistics_desc": {
+    "message": "إجمالي عدد الترجمات ورموز LLM المستهلكة."
+  },
+  "settings_option_statistics_title": {
+    "message": "إحصائيات الاستخدام"
+  },
   "settings_option_textTranslator": {
     "message": "ترجمة النص"
   },
@@ -532,6 +736,9 @@
   "settings_option_userLanguage_desc": {
     "message": "اللغة التي سيتم ترجمة النصوص إليها"
   },
+  "settings_pageDescription": {
+    "message": "إدارة محركات الترجمة وذاكرة التخزين المؤقت وتفضيلات الواجهة"
+  },
   "settings_pageTitle": {
     "message": "الإعدادات"
   },
@@ -540,6 +747,27 @@
   },
   "settings_section_popup": {
     "message": "النافذة المنبثقة"
+  },
+  "settings_section_popupAndHistory": {
+    "message": "النافذة المنبثقة والسجل"
+  },
+  "settings_section_statistics": {
+    "message": "الإحصائيات"
+  },
+  "statistics_llmInputTokens": {
+    "message": "رموز إدخال LLM"
+  },
+  "statistics_llmOutputTokens": {
+    "message": "رموز إخراج LLM"
+  },
+  "statistics_reset": {
+    "message": "إعادة تعيين الإحصائيات"
+  },
+  "statistics_resetConfirm": {
+    "message": "إعادة تعيين جميع إحصائيات الاستخدام؟"
+  },
+  "statistics_translations": {
+    "message": "الترجمات"
   },
   "textTranslator_suggestLanguage": {
     "message": "يبدو أن لغة النص هي <slot id=languageSuggest>$language_name$</slot>",

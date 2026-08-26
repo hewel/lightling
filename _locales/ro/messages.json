@@ -20,11 +20,20 @@
   "common_error": {
     "message": "Eroare"
   },
+  "common_listen": {
+    "message": "Ascultă"
+  },
+  "common_llmTranslator": {
+    "message": "LLM"
+  },
   "common_offlineTranslator": {
     "message": "$1 - Traducător offline"
   },
   "common_retry": {
     "message": "Reîncearcă"
+  },
+  "common_search": {
+    "message": "Caută"
   },
   "common_translate": {
     "message": "Tradu"
@@ -159,11 +168,137 @@
   "lang_detect": {
     "message": "Detectare automată"
   },
+  "lang_searchPlaceholder": {
+    "message": "Caută limbă"
+  },
   "lang_select": {
     "message": "Selectează limba"
   },
   "lang_swap": {
     "message": "Schimbă limbile"
+  },
+  "llmProfiles_active": {
+    "message": "Activ"
+  },
+  "llmProfiles_add": {
+    "message": "Adaugă"
+  },
+  "llmProfiles_addProvider": {
+    "message": "Presetare furnizor"
+  },
+  "llmProfiles_advancedExecution": {
+    "message": "Execuție avansată"
+  },
+  "llmProfiles_auto": {
+    "message": "Auto"
+  },
+  "llmProfiles_contextWindowTokens": {
+    "message": "Fereastră de context"
+  },
+  "llmProfiles_contextWindowTokens_desc": {
+    "message": "Fereastra de context totală a modelului în tokenuri (minim 512). Auto: $1 tokenuri"
+  },
+  "llmProfiles_delete": {
+    "message": "Șterge"
+  },
+  "llmProfiles_deleteConfirm": {
+    "message": "Ești sigur că vrei să ștergi furnizorul \"$provider_name$\"?",
+    "placeholders": {
+      "provider_name": {
+        "content": "$1",
+        "example": "OpenAI"
+      }
+    }
+  },
+  "llmProfiles_duplicateName": {
+    "message": "Există deja un furnizor cu acest nume"
+  },
+  "llmProfiles_edit": {
+    "message": "Editează"
+  },
+  "llmProfiles_editProfile": {
+    "message": "Editează furnizorul"
+  },
+  "llmProfiles_emptyList": {
+    "message": "Niciun furnizor încă. Adaugă unul cu o presetare de mai jos."
+  },
+  "llmProfiles_emptyName": {
+    "message": "Introdu un nume de furnizor"
+  },
+  "llmProfiles_fallback": {
+    "message": "Profil de model de rezervă"
+  },
+  "llmProfiles_fallback_desc": {
+    "message": "Utilizat doar după eșecuri repetate de validare structurală."
+  },
+  "llmProfiles_fallback_none": {
+    "message": "Fără rezervă"
+  },
+  "llmProfiles_managerTitle": {
+    "message": "Furnizori LLM"
+  },
+  "llmProfiles_maxConcurrentRequests": {
+    "message": "Cereri paralele"
+  },
+  "llmProfiles_maxConcurrentRequests_desc": {
+    "message": "Numărul maxim de cereri de traducere simultane (1–8). Auto: $1 cereri"
+  },
+  "llmProfiles_maxOutputTokens": {
+    "message": "Tokenuri de ieșire maxime"
+  },
+  "llmProfiles_maxOutputTokens_desc": {
+    "message": "Tokenuri maxime generate per cerere de traducere (minim 1). Auto: $1"
+  },
+  "llmProfiles_outputAutoDetected": {
+    "message": "Până la $1 tokenuri (detectat)"
+  },
+  "llmProfiles_outputAutoUncapped": {
+    "message": "Dimensionat per lot (minim 256; fără limită detectată)"
+  },
+  "llmProfiles_preferredInputTokens": {
+    "message": "Intrare preferată"
+  },
+  "llmProfiles_preferredInputTokens_desc": {
+    "message": "Dimensiunea țintă a lotului de prompturi în tokenuri (minim 1). Auto: $1 tokenuri"
+  },
+  "llmProfiles_profileName": {
+    "message": "Nume"
+  },
+  "llmProfiles_provider": {
+    "message": "Furnizor"
+  },
+  "llmProfiles_quality": {
+    "message": "Calitatea traducerii"
+  },
+  "llmProfiles_quality_accurate": {
+    "message": "Precisă"
+  },
+  "llmProfiles_quality_balanced": {
+    "message": "Echilibrată"
+  },
+  "llmProfiles_quality_desc": {
+    "message": "Controlează profunzimea promptului, utilizarea contextului, dimensiunea lotului și reîncercările."
+  },
+  "llmProfiles_quality_fast": {
+    "message": "Rapidă"
+  },
+  "llmProfiles_save": {
+    "message": "Salvează"
+  },
+  "llmProfiles_setActive": {
+    "message": "Setează activ"
+  },
+  "llmProfiles_unitRequests": {
+    "message": "cereri"
+  },
+  "llmProfiles_unitTokens": {
+    "message": "tokenuri"
+  },
+  "llmProvider_custom": {
+    "message": "Personalizat"
+  },
+  "llmProvider_openaiCompatible": {
+    "message": "Compatibil cu OpenAI"
   },
   "message_unknownError": {
     "message": "Eroare necunoscută"
@@ -182,6 +317,9 @@
   },
   "pageTranslator_commonPreferences_title": {
     "message": "Preferințe comune pentru această limbă"
+  },
+  "pageTranslator_exportLog": {
+    "message": "Exportă jurnalul de traduceri"
   },
   "pageTranslator_option_autoTranslate": {
     "message": "Traducere automată"
@@ -264,6 +402,15 @@
   "settings_message_importConfig_success": {
     "message": "Import complet"
   },
+  "settings_message_llmTranslator_modelsEmpty": {
+    "message": "API-ul a returnat o listă de modele goală"
+  },
+  "settings_message_llmTranslator_modelsLoaded": {
+    "message": "Lista de modele a fost încărcată"
+  },
+  "settings_message_llmTranslator_testSuccess": {
+    "message": "Traducerea de test a reușit:"
+  },
   "settings_message_resetConfig_confirm": {
     "message": "Confirmă resetarea setărilor la valorile implicite"
   },
@@ -315,6 +462,45 @@
   "settings_option_history_enable_desc": {
     "message": "Când este activat, traducerile vor fi înregistrate și vor apărea pe <slot id=historyPage>pagina de istoric</slot>"
   },
+  "settings_option_llmTranslator_activeProfile": {
+    "message": "Furnizor activ"
+  },
+  "settings_option_llmTranslator_activeProfile_desc": {
+    "message": "Profilul de furnizor utilizat de modulul de traducere LLM"
+  },
+  "settings_option_llmTranslator_apiKey": {
+    "message": "Cheie API"
+  },
+  "settings_option_llmTranslator_apiUrl": {
+    "message": "URL API"
+  },
+  "settings_option_llmTranslator_fetchModelsButton": {
+    "message": "Preia modelele"
+  },
+  "settings_option_llmTranslator_header": {
+    "message": "Traducător LLM"
+  },
+  "settings_option_llmTranslator_manage": {
+    "message": "Furnizori LLM"
+  },
+  "settings_option_llmTranslator_manageButton": {
+    "message": "Gestionează furnizorii"
+  },
+  "settings_option_llmTranslator_manage_desc": {
+    "message": "Adaugă, editează sau elimină profiluri de furnizori LLM"
+  },
+  "settings_option_llmTranslator_model": {
+    "message": "Model"
+  },
+  "settings_option_llmTranslator_test": {
+    "message": "Testează conexiunea"
+  },
+  "settings_option_llmTranslator_testButton": {
+    "message": "Testează"
+  },
+  "settings_option_llmTranslator_test_desc": {
+    "message": "Trimite o cerere mică de traducere cu profilul de furnizor activ pentru a verifica setările"
+  },
   "settings_option_pageTranslation": {
     "message": "Traducerea completă a paginii"
   },
@@ -329,6 +515,12 @@
   },
   "settings_option_pageTranslation_enableContextMenu_desc": {
     "message": "Adaugă un buton pentru a comuta traducerea paginii în meniul contextual al paginii"
+  },
+  "settings_option_pageTranslation_enableLogExport": {
+    "message": "Activează exportul jurnalului de traduceri"
+  },
+  "settings_option_pageTranslation_enableLogExport_desc": {
+    "message": "Permite sesiunii active de traducere a paginii să păstreze în memorie textul sursă, textul tradus, diagnosticele modelului și erorile pentru export manual JSON. Jurnalele nu sunt niciodată stocate permanent și pot conține conținut sensibil al paginii"
   },
   "settings_option_pageTranslation_excludeSelectors": {
     "message": "Selectori de exclus din traducere"
@@ -377,6 +569,12 @@
   },
   "settings_option_selectTranslation_disableWhileTranslatePage": {
     "message": "Dezactivează în timpul traducerii paginii"
+  },
+  "settings_option_selectTranslation_draggablePopup": {
+    "message": "Permite tragerea ferestrei pop-up de traducere"
+  },
+  "settings_option_selectTranslation_draggablePopup_desc": {
+    "message": "Îți permite să apuci fereastra pop-up de traducere de fundalul său și să o muți oriunde pe pagină"
   },
   "settings_option_selectTranslation_enable": {
     "message": "Activează traducerea textului selectat"
@@ -463,6 +661,12 @@
   "settings_option_selectTranslation_zIndex_desc": {
     "message": "Măriți această valoare dacă elementele de pe unele pagini se suprapun cu fereastra pop-up cu text tradus"
   },
+  "settings_option_statistics_desc": {
+    "message": "Numărul total de traduceri și de tokenuri LLM consumate."
+  },
+  "settings_option_statistics_title": {
+    "message": "Statistici de utilizare"
+  },
   "settings_option_textTranslator": {
     "message": "Traducere text"
   },
@@ -532,6 +736,9 @@
   "settings_option_userLanguage_desc": {
     "message": "Limba în care vor fi traduse textele"
   },
+  "settings_pageDescription": {
+    "message": "Gestionează motoarele de traducere, cache-ul și preferințele interfeței"
+  },
   "settings_pageTitle": {
     "message": "Setări"
   },
@@ -540,6 +747,27 @@
   },
   "settings_section_popup": {
     "message": "Fereastră pop-up"
+  },
+  "settings_section_popupAndHistory": {
+    "message": "Pop-up și istoric"
+  },
+  "settings_section_statistics": {
+    "message": "Statistici"
+  },
+  "statistics_llmInputTokens": {
+    "message": "Tokenuri de intrare LLM"
+  },
+  "statistics_llmOutputTokens": {
+    "message": "Tokenuri de ieșire LLM"
+  },
+  "statistics_reset": {
+    "message": "Resetează statisticile"
+  },
+  "statistics_resetConfirm": {
+    "message": "Resetezi toate statisticile de utilizare?"
+  },
+  "statistics_translations": {
+    "message": "Traduceri"
   },
   "textTranslator_suggestLanguage": {
     "message": "Se pare că limba textului este <slot id=languageSuggest>$language_name$</slot>",

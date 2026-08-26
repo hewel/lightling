@@ -20,11 +20,20 @@
   "common_error": {
     "message": "Hiba"
   },
+  "common_listen": {
+    "message": "Meghallgatás"
+  },
+  "common_llmTranslator": {
+    "message": "LLM"
+  },
   "common_offlineTranslator": {
     "message": "$1 - Offline fordító"
   },
   "common_retry": {
     "message": "Újrapróbálkozás"
+  },
+  "common_search": {
+    "message": "Keresés"
   },
   "common_translate": {
     "message": "Fordítás"
@@ -159,11 +168,137 @@
   "lang_detect": {
     "message": "Automatikus felismerés"
   },
+  "lang_searchPlaceholder": {
+    "message": "Nyelv keresése"
+  },
   "lang_select": {
     "message": "Nyelv kiválasztása"
   },
   "lang_swap": {
     "message": "Nyelvek cseréje"
+  },
+  "llmProfiles_active": {
+    "message": "Aktív"
+  },
+  "llmProfiles_add": {
+    "message": "Hozzáadás"
+  },
+  "llmProfiles_addProvider": {
+    "message": "Szolgáltató-előbeállítás"
+  },
+  "llmProfiles_advancedExecution": {
+    "message": "Speciális végrehajtás"
+  },
+  "llmProfiles_auto": {
+    "message": "Automatikus"
+  },
+  "llmProfiles_contextWindowTokens": {
+    "message": "Kontextusablak"
+  },
+  "llmProfiles_contextWindowTokens_desc": {
+    "message": "A modell teljes kontextusablaka tokenekben (minimum 512). Automatikus: $1 token"
+  },
+  "llmProfiles_delete": {
+    "message": "Törlés"
+  },
+  "llmProfiles_deleteConfirm": {
+    "message": "Biztosan törölni szeretné a(z) \"$provider_name$\" szolgáltatót?",
+    "placeholders": {
+      "provider_name": {
+        "content": "$1",
+        "example": "OpenAI"
+      }
+    }
+  },
+  "llmProfiles_duplicateName": {
+    "message": "Már létezik szolgáltató ezzel a névvel"
+  },
+  "llmProfiles_edit": {
+    "message": "Szerkesztés"
+  },
+  "llmProfiles_editProfile": {
+    "message": "Szolgáltató szerkesztése"
+  },
+  "llmProfiles_emptyList": {
+    "message": "Még nincsenek szolgáltatók. Adjon hozzá egyet az alábbi előbeállításokkal."
+  },
+  "llmProfiles_emptyName": {
+    "message": "Adja meg a szolgáltató nevét"
+  },
+  "llmProfiles_fallback": {
+    "message": "Tartalék modellprofil"
+  },
+  "llmProfiles_fallback_desc": {
+    "message": "Csak ismételt szerkezeti érvényesítési hibák után kerül felhasználásra."
+  },
+  "llmProfiles_fallback_none": {
+    "message": "Nincs tartalék"
+  },
+  "llmProfiles_managerTitle": {
+    "message": "LLM-szolgáltatók"
+  },
+  "llmProfiles_maxConcurrentRequests": {
+    "message": "Párhuzamos kérések"
+  },
+  "llmProfiles_maxConcurrentRequests_desc": {
+    "message": "Egyidejű fordítási kérések maximális száma (1–8). Automatikus: $1 kérés"
+  },
+  "llmProfiles_maxOutputTokens": {
+    "message": "Maximális kimeneti tokenek"
+  },
+  "llmProfiles_maxOutputTokens_desc": {
+    "message": "Fordítási kérésenként generált maximális tokenek száma (minimum 1). Automatikus: $1"
+  },
+  "llmProfiles_outputAutoDetected": {
+    "message": "Legfeljebb $1 token (észlelt)"
+  },
+  "llmProfiles_outputAutoUncapped": {
+    "message": "Kötegenként méretezve (minimum 256; nincs észlelt korlát)"
+  },
+  "llmProfiles_preferredInputTokens": {
+    "message": "Előnyben részesített bemenet"
+  },
+  "llmProfiles_preferredInputTokens_desc": {
+    "message": "Célzott prompt-kötegméret tokenekben (minimum 1). Automatikus: $1 token"
+  },
+  "llmProfiles_profileName": {
+    "message": "Név"
+  },
+  "llmProfiles_provider": {
+    "message": "Szolgáltató"
+  },
+  "llmProfiles_quality": {
+    "message": "Fordítási minőség"
+  },
+  "llmProfiles_quality_accurate": {
+    "message": "Pontos"
+  },
+  "llmProfiles_quality_balanced": {
+    "message": "Kiegyensúlyozott"
+  },
+  "llmProfiles_quality_desc": {
+    "message": "Szabályozza a prompt mélységét, a kontextushasználatot, a kötegméretet és az újrapróbálkozásokat."
+  },
+  "llmProfiles_quality_fast": {
+    "message": "Gyors"
+  },
+  "llmProfiles_save": {
+    "message": "Mentés"
+  },
+  "llmProfiles_setActive": {
+    "message": "Beállítás aktívként"
+  },
+  "llmProfiles_unitRequests": {
+    "message": "kérés"
+  },
+  "llmProfiles_unitTokens": {
+    "message": "token"
+  },
+  "llmProvider_custom": {
+    "message": "Egyéni"
+  },
+  "llmProvider_openaiCompatible": {
+    "message": "OpenAI-kompatibilis"
   },
   "message_unknownError": {
     "message": "Ismeretlen hiba"
@@ -182,6 +317,9 @@
   },
   "pageTranslator_commonPreferences_title": {
     "message": "Általános beállítások ehhez a nyelvhez"
+  },
+  "pageTranslator_exportLog": {
+    "message": "Fordítási napló exportálása"
   },
   "pageTranslator_option_autoTranslate": {
     "message": "Automatikus fordítás"
@@ -264,6 +402,15 @@
   "settings_message_importConfig_success": {
     "message": "Importálás befejezve"
   },
+  "settings_message_llmTranslator_modelsEmpty": {
+    "message": "Az API üres modelllistát adott vissza"
+  },
+  "settings_message_llmTranslator_modelsLoaded": {
+    "message": "Modelllista betöltve"
+  },
+  "settings_message_llmTranslator_testSuccess": {
+    "message": "A tesztfordítás sikeres:"
+  },
   "settings_message_resetConfig_confirm": {
     "message": "Erősítse meg az alapértelmezett beállítások visszaállítását"
   },
@@ -315,6 +462,45 @@
   "settings_option_history_enable_desc": {
     "message": "Ha engedélyezve van, a fordítások rögzítésre kerülnek és megjelennek az <slot id=historyPage>előzmények oldalon</slot>"
   },
+  "settings_option_llmTranslator_activeProfile": {
+    "message": "Aktív szolgáltató"
+  },
+  "settings_option_llmTranslator_activeProfile_desc": {
+    "message": "Az LLM-fordítómodul által használt szolgáltatóprofil"
+  },
+  "settings_option_llmTranslator_apiKey": {
+    "message": "API-kulcs"
+  },
+  "settings_option_llmTranslator_apiUrl": {
+    "message": "API URL"
+  },
+  "settings_option_llmTranslator_fetchModelsButton": {
+    "message": "Modellek lekérése"
+  },
+  "settings_option_llmTranslator_header": {
+    "message": "LLM-fordító"
+  },
+  "settings_option_llmTranslator_manage": {
+    "message": "LLM-szolgáltatók"
+  },
+  "settings_option_llmTranslator_manageButton": {
+    "message": "Szolgáltatók kezelése"
+  },
+  "settings_option_llmTranslator_manage_desc": {
+    "message": "LLM-szolgáltatóprofilok hozzáadása, szerkesztése vagy eltávolítása"
+  },
+  "settings_option_llmTranslator_model": {
+    "message": "Modell"
+  },
+  "settings_option_llmTranslator_test": {
+    "message": "Kapcsolat tesztelése"
+  },
+  "settings_option_llmTranslator_testButton": {
+    "message": "Teszt"
+  },
+  "settings_option_llmTranslator_test_desc": {
+    "message": "Küldjön egy kis fordítási kérést az aktív szolgáltatóprofillal a beállítások ellenőrzéséhez"
+  },
   "settings_option_pageTranslation": {
     "message": "Teljes oldal fordítása"
   },
@@ -329,6 +515,12 @@
   },
   "settings_option_pageTranslation_enableContextMenu_desc": {
     "message": "Gomb hozzáadása az oldal fordításának váltásához az oldal kontextus menüjében"
+  },
+  "settings_option_pageTranslation_enableLogExport": {
+    "message": "Fordítási napló exportálásának engedélyezése"
+  },
+  "settings_option_pageTranslation_enableLogExport_desc": {
+    "message": "Lehetővé teszi, hogy az aktív oldalfordítási munkamenet a memóriában tartsa a forrásszöveget, a lefordított szöveget, a modell diagnosztikáját és a hibákat kézi JSON-exportálás céljából. A naplók soha nem kerülnek tartósan tárolásra, és érzékeny oldaltartalmat tartalmazhatnak"
   },
   "settings_option_pageTranslation_excludeSelectors": {
     "message": "Kizárandó szelektorok a fordításból"
@@ -377,6 +569,12 @@
   },
   "settings_option_selectTranslation_disableWhileTranslatePage": {
     "message": "Letiltás az oldal fordítása közben"
+  },
+  "settings_option_selectTranslation_draggablePopup": {
+    "message": "A fordítási felugró ablak húzásának engedélyezése"
+  },
+  "settings_option_selectTranslation_draggablePopup_desc": {
+    "message": "Lehetővé teszi, hogy a fordítási felugró ablakot a hátterénél fogva megfogja, és az oldalon bárhová áthelyezze"
   },
   "settings_option_selectTranslation_enable": {
     "message": "Kijelölt szöveg fordításának engedélyezése"
@@ -463,6 +661,12 @@
   "settings_option_selectTranslation_zIndex_desc": {
     "message": "Növelje ezt az értéket, ha egyes oldalak elemei átfedik a fordított szöveget tartalmazó felugró ablakot"
   },
+  "settings_option_statistics_desc": {
+    "message": "A fordítások és a felhasznált LLM-tokenek teljes száma."
+  },
+  "settings_option_statistics_title": {
+    "message": "Használati statisztikák"
+  },
   "settings_option_textTranslator": {
     "message": "Szövegfordítás"
   },
@@ -532,6 +736,9 @@
   "settings_option_userLanguage_desc": {
     "message": "A nyelv, amelyre a szövegek le lesznek fordítva"
   },
+  "settings_pageDescription": {
+    "message": "Fordítómotorok, gyorsítótár és felületi beállítások kezelése"
+  },
   "settings_pageTitle": {
     "message": "Beállítások"
   },
@@ -540,6 +747,27 @@
   },
   "settings_section_popup": {
     "message": "Felugró ablak"
+  },
+  "settings_section_popupAndHistory": {
+    "message": "Felugró ablak és előzmények"
+  },
+  "settings_section_statistics": {
+    "message": "Statisztikák"
+  },
+  "statistics_llmInputTokens": {
+    "message": "LLM-bemeneti tokenek"
+  },
+  "statistics_llmOutputTokens": {
+    "message": "LLM-kimeneti tokenek"
+  },
+  "statistics_reset": {
+    "message": "Statisztikák visszaállítása"
+  },
+  "statistics_resetConfirm": {
+    "message": "Visszaállítja az összes használati statisztikát?"
+  },
+  "statistics_translations": {
+    "message": "Fordítások"
   },
   "textTranslator_suggestLanguage": {
     "message": "Úgy tűnik, a szöveg nyelve <slot id=languageSuggest>$language_name$</slot>",

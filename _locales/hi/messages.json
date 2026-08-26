@@ -20,11 +20,20 @@
   "common_error": {
     "message": "त्रुटि"
   },
+  "common_listen": {
+    "message": "सुनें"
+  },
+  "common_llmTranslator": {
+    "message": "LLM"
+  },
   "common_offlineTranslator": {
     "message": "$1 - ऑफ़लाइन अनुवादक"
   },
   "common_retry": {
     "message": "पुनः प्रयास करें"
+  },
+  "common_search": {
+    "message": "खोजें"
   },
   "common_translate": {
     "message": "अनुवाद करें"
@@ -159,11 +168,137 @@
   "lang_detect": {
     "message": "स्वतः पहचान"
   },
+  "lang_searchPlaceholder": {
+    "message": "भाषा खोजें"
+  },
   "lang_select": {
     "message": "भाषा चुनें"
   },
   "lang_swap": {
     "message": "भाषाएँ बदलें"
+  },
+  "llmProfiles_active": {
+    "message": "सक्रिय"
+  },
+  "llmProfiles_add": {
+    "message": "जोड़ें"
+  },
+  "llmProfiles_addProvider": {
+    "message": "प्रदाता प्रीसेट"
+  },
+  "llmProfiles_advancedExecution": {
+    "message": "उन्नत निष्पादन"
+  },
+  "llmProfiles_auto": {
+    "message": "ऑटो"
+  },
+  "llmProfiles_contextWindowTokens": {
+    "message": "संदर्भ विंडो"
+  },
+  "llmProfiles_contextWindowTokens_desc": {
+    "message": "टोकन में कुल मॉडल संदर्भ विंडो (न्यूनतम 512)। ऑटो: $1 टोकन"
+  },
+  "llmProfiles_delete": {
+    "message": "हटाएँ"
+  },
+  "llmProfiles_deleteConfirm": {
+    "message": "क्या आप वाकई \"$provider_name$\" प्रदाता को हटाना चाहते हैं?",
+    "placeholders": {
+      "provider_name": {
+        "content": "$1",
+        "example": "OpenAI"
+      }
+    }
+  },
+  "llmProfiles_duplicateName": {
+    "message": "इस नाम का प्रदाता पहले से मौजूद है"
+  },
+  "llmProfiles_edit": {
+    "message": "संपादित करें"
+  },
+  "llmProfiles_editProfile": {
+    "message": "प्रदाता संपादित करें"
+  },
+  "llmProfiles_emptyList": {
+    "message": "अभी कोई प्रदाता नहीं है। नीचे दिए गए प्रीसेट से एक जोड़ें।"
+  },
+  "llmProfiles_emptyName": {
+    "message": "प्रदाता का नाम दर्ज करें"
+  },
+  "llmProfiles_fallback": {
+    "message": "फ़ॉलबैक मॉडल प्रोफ़ाइल"
+  },
+  "llmProfiles_fallback_desc": {
+    "message": "केवल बार-बार संरचनात्मक सत्यापन विफलताओं के बाद उपयोग किया जाता है।"
+  },
+  "llmProfiles_fallback_none": {
+    "message": "कोई फ़ॉलबैक नहीं"
+  },
+  "llmProfiles_managerTitle": {
+    "message": "LLM प्रदाता"
+  },
+  "llmProfiles_maxConcurrentRequests": {
+    "message": "समानांतर अनुरोध"
+  },
+  "llmProfiles_maxConcurrentRequests_desc": {
+    "message": "एक साथ अनुवाद अनुरोधों की अधिकतम संख्या (1–8)। ऑटो: $1 अनुरोध"
+  },
+  "llmProfiles_maxOutputTokens": {
+    "message": "अधिकतम आउटपुट टोकन"
+  },
+  "llmProfiles_maxOutputTokens_desc": {
+    "message": "प्रति अनुवाद अनुरोध उत्पन्न अधिकतम टोकन (न्यूनतम 1)। ऑटो: $1"
+  },
+  "llmProfiles_outputAutoDetected": {
+    "message": "$1 टोकन तक (पता लगाया गया)"
+  },
+  "llmProfiles_outputAutoUncapped": {
+    "message": "प्रति बैच आकार (न्यूनतम 256; कोई सीमा नहीं मिली)"
+  },
+  "llmProfiles_preferredInputTokens": {
+    "message": "पसंदीदा इनपुट"
+  },
+  "llmProfiles_preferredInputTokens_desc": {
+    "message": "टोकन में लक्ष्य प्रॉम्प्ट बैच आकार (न्यूनतम 1)। ऑटो: $1 टोकन"
+  },
+  "llmProfiles_profileName": {
+    "message": "नाम"
+  },
+  "llmProfiles_provider": {
+    "message": "प्रदाता"
+  },
+  "llmProfiles_quality": {
+    "message": "अनुवाद गुणवत्ता"
+  },
+  "llmProfiles_quality_accurate": {
+    "message": "सटीक"
+  },
+  "llmProfiles_quality_balanced": {
+    "message": "संतुलित"
+  },
+  "llmProfiles_quality_desc": {
+    "message": "प्रॉम्प्ट की गहराई, संदर्भ उपयोग, बैच आकार और पुनः प्रयासों को नियंत्रित करता है।"
+  },
+  "llmProfiles_quality_fast": {
+    "message": "तेज़"
+  },
+  "llmProfiles_save": {
+    "message": "सहेजें"
+  },
+  "llmProfiles_setActive": {
+    "message": "सक्रिय के रूप में सेट करें"
+  },
+  "llmProfiles_unitRequests": {
+    "message": "अनुरोध"
+  },
+  "llmProfiles_unitTokens": {
+    "message": "टोकन"
+  },
+  "llmProvider_custom": {
+    "message": "कस्टम"
+  },
+  "llmProvider_openaiCompatible": {
+    "message": "OpenAI-संगत"
   },
   "message_unknownError": {
     "message": "अज्ञात त्रुटि"
@@ -182,6 +317,9 @@
   },
   "pageTranslator_commonPreferences_title": {
     "message": "इस भाषा के लिए सामान्य प्राथमिकताएँ"
+  },
+  "pageTranslator_exportLog": {
+    "message": "अनुवाद लॉग निर्यात करें"
   },
   "pageTranslator_option_autoTranslate": {
     "message": "स्वतः अनुवाद"
@@ -264,6 +402,15 @@
   "settings_message_importConfig_success": {
     "message": "आयात पूर्ण"
   },
+  "settings_message_llmTranslator_modelsEmpty": {
+    "message": "API ने खाली मॉडल सूची लौटाई"
+  },
+  "settings_message_llmTranslator_modelsLoaded": {
+    "message": "मॉडल सूची लोड हो गई"
+  },
+  "settings_message_llmTranslator_testSuccess": {
+    "message": "परीक्षण अनुवाद सफल रहा:"
+  },
   "settings_message_resetConfig_confirm": {
     "message": "सेटिंग्स को डिफ़ॉल्ट मानों पर रीसेट करने की पुष्टि करें"
   },
@@ -315,6 +462,45 @@
   "settings_option_history_enable_desc": {
     "message": "जब सक्षम किया जाता है, तो अनुवाद रिकॉर्ड किए जाएंगे और <slot id=historyPage>इतिहास पृष्ठ</slot> पर दिखाई देंगे"
   },
+  "settings_option_llmTranslator_activeProfile": {
+    "message": "सक्रिय प्रदाता"
+  },
+  "settings_option_llmTranslator_activeProfile_desc": {
+    "message": "LLM अनुवाद मॉड्यूल द्वारा उपयोग की जाने वाली प्रदाता प्रोफ़ाइल"
+  },
+  "settings_option_llmTranslator_apiKey": {
+    "message": "API कुंजी"
+  },
+  "settings_option_llmTranslator_apiUrl": {
+    "message": "API URL"
+  },
+  "settings_option_llmTranslator_fetchModelsButton": {
+    "message": "मॉडल प्राप्त करें"
+  },
+  "settings_option_llmTranslator_header": {
+    "message": "LLM अनुवादक"
+  },
+  "settings_option_llmTranslator_manage": {
+    "message": "LLM प्रदाता"
+  },
+  "settings_option_llmTranslator_manageButton": {
+    "message": "प्रदाताओं को प्रबंधित करें"
+  },
+  "settings_option_llmTranslator_manage_desc": {
+    "message": "LLM प्रदाता प्रोफ़ाइल जोड़ें, संपादित करें या हटाएँ"
+  },
+  "settings_option_llmTranslator_model": {
+    "message": "मॉडल"
+  },
+  "settings_option_llmTranslator_test": {
+    "message": "कनेक्शन जांचें"
+  },
+  "settings_option_llmTranslator_testButton": {
+    "message": "जांचें"
+  },
+  "settings_option_llmTranslator_test_desc": {
+    "message": "सक्रिय प्रदाता प्रोफ़ाइल के साथ एक छोटा अनुवाद अनुरोध भेजकर उसकी सेटिंग्स सत्यापित करें"
+  },
   "settings_option_pageTranslation": {
     "message": "पूर्ण पृष्ठ अनुवाद"
   },
@@ -329,6 +515,12 @@
   },
   "settings_option_pageTranslation_enableContextMenu_desc": {
     "message": "पृष्ठ संदर्भ मेनू में पृष्ठ अनुवाद को टॉगल करने के लिए एक बटन जोड़ें"
+  },
+  "settings_option_pageTranslation_enableLogExport": {
+    "message": "अनुवाद लॉग निर्यात सक्षम करें"
+  },
+  "settings_option_pageTranslation_enableLogExport_desc": {
+    "message": "सक्रिय पृष्ठ अनुवाद सत्र को मैन्युअल JSON निर्यात के लिए स्रोत पाठ, अनुवादित पाठ, मॉडल डायग्नोस्टिक्स और त्रुटियों को मेमोरी में रखने की अनुमति दें। लॉग कभी सहेजे नहीं जाते और इनमें संवेदनशील पृष्ठ सामग्री हो सकती है"
   },
   "settings_option_pageTranslation_excludeSelectors": {
     "message": "अनुवाद से बाहर करने के लिए चयनकर्ता"
@@ -377,6 +569,12 @@
   },
   "settings_option_selectTranslation_disableWhileTranslatePage": {
     "message": "पृष्ठ का अनुवाद करते समय अक्षम करें"
+  },
+  "settings_option_selectTranslation_draggablePopup": {
+    "message": "अनुवाद पॉपअप को खींचने की अनुमति दें"
+  },
+  "settings_option_selectTranslation_draggablePopup_desc": {
+    "message": "आपको अनुवाद पॉपअप को उसकी पृष्ठभूमि से पकड़कर पृष्ठ पर कहीं भी ले जाने देता है"
   },
   "settings_option_selectTranslation_enable": {
     "message": "चयनित पाठ अनुवाद सक्षम करें"
@@ -463,6 +661,12 @@
   "settings_option_selectTranslation_zIndex_desc": {
     "message": "यदि कुछ पृष्ठों पर तत्व अनुवादित पाठ के साथ पॉपअप को ओवरलैप करते हैं तो इस मान को बढ़ाएं"
   },
+  "settings_option_statistics_desc": {
+    "message": "किए गए अनुवादों और खपत किए गए LLM टोकन की कुल संख्या।"
+  },
+  "settings_option_statistics_title": {
+    "message": "उपयोग सांख्यिकी"
+  },
   "settings_option_textTranslator": {
     "message": "पाठ अनुवाद"
   },
@@ -532,6 +736,9 @@
   "settings_option_userLanguage_desc": {
     "message": "वह भाषा जिसमें पाठ का अनुवाद किया जाएगा"
   },
+  "settings_pageDescription": {
+    "message": "अनुवाद इंजन, कैश और इंटरफ़ेस प्राथमिकताएँ प्रबंधित करें"
+  },
   "settings_pageTitle": {
     "message": "सेटिंग्स"
   },
@@ -540,6 +747,27 @@
   },
   "settings_section_popup": {
     "message": "पॉपअप"
+  },
+  "settings_section_popupAndHistory": {
+    "message": "पॉपअप और इतिहास"
+  },
+  "settings_section_statistics": {
+    "message": "सांख्यिकी"
+  },
+  "statistics_llmInputTokens": {
+    "message": "LLM इनपुट टोकन"
+  },
+  "statistics_llmOutputTokens": {
+    "message": "LLM आउटपुट टोकन"
+  },
+  "statistics_reset": {
+    "message": "सांख्यिकी रीसेट करें"
+  },
+  "statistics_resetConfirm": {
+    "message": "सभी उपयोग सांख्यिकी रीसेट करें?"
+  },
+  "statistics_translations": {
+    "message": "अनुवाद"
   },
   "textTranslator_suggestLanguage": {
     "message": "ऐसा लगता है कि पाठ की भाषा <slot id=languageSuggest>$language_name$</slot> है",

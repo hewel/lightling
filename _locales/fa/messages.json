@@ -20,11 +20,20 @@
   "common_error": {
     "message": "خطا"
   },
+  "common_listen": {
+    "message": "گوش دادن"
+  },
+  "common_llmTranslator": {
+    "message": "LLM"
+  },
   "common_offlineTranslator": {
     "message": "$1 - مترجم آفلاین"
   },
   "common_retry": {
     "message": "تلاش مجدد"
+  },
+  "common_search": {
+    "message": "جستجو"
   },
   "common_translate": {
     "message": "ترجمه"
@@ -159,11 +168,137 @@
   "lang_detect": {
     "message": "تشخیص خودکار"
   },
+  "lang_searchPlaceholder": {
+    "message": "جستجوی زبان"
+  },
   "lang_select": {
     "message": "انتخاب زبان"
   },
   "lang_swap": {
     "message": "تبادل زبان‌ها"
+  },
+  "llmProfiles_active": {
+    "message": "فعال"
+  },
+  "llmProfiles_add": {
+    "message": "افزودن"
+  },
+  "llmProfiles_addProvider": {
+    "message": "قالب آماده ارائه‌دهنده"
+  },
+  "llmProfiles_advancedExecution": {
+    "message": "اجرای پیشرفته"
+  },
+  "llmProfiles_auto": {
+    "message": "خودکار"
+  },
+  "llmProfiles_contextWindowTokens": {
+    "message": "پنجره زمینه"
+  },
+  "llmProfiles_contextWindowTokens_desc": {
+    "message": "مجموع پنجره زمینه مدل به توکن (حداقل 512). خودکار: $1 توکن"
+  },
+  "llmProfiles_delete": {
+    "message": "حذف"
+  },
+  "llmProfiles_deleteConfirm": {
+    "message": "آیا مطمئن هستید که می‌خواهید ارائه‌دهنده \"$provider_name$\" را حذف کنید؟",
+    "placeholders": {
+      "provider_name": {
+        "content": "$1",
+        "example": "OpenAI"
+      }
+    }
+  },
+  "llmProfiles_duplicateName": {
+    "message": "ارائه‌دهنده‌ای با این نام از قبل وجود دارد"
+  },
+  "llmProfiles_edit": {
+    "message": "ویرایش"
+  },
+  "llmProfiles_editProfile": {
+    "message": "ویرایش ارائه‌دهنده"
+  },
+  "llmProfiles_emptyList": {
+    "message": "هنوز ارائه‌دهنده‌ای وجود ندارد. با قالب آماده زیر یکی اضافه کنید."
+  },
+  "llmProfiles_emptyName": {
+    "message": "نام ارائه‌دهنده را وارد کنید"
+  },
+  "llmProfiles_fallback": {
+    "message": "نمایه مدل جایگزین"
+  },
+  "llmProfiles_fallback_desc": {
+    "message": "فقط پس از شکست‌های مکرر اعتبارسنجی ساختاری استفاده می‌شود."
+  },
+  "llmProfiles_fallback_none": {
+    "message": "بدون جایگزین"
+  },
+  "llmProfiles_managerTitle": {
+    "message": "ارائه‌دهندگان LLM"
+  },
+  "llmProfiles_maxConcurrentRequests": {
+    "message": "درخواست‌های موازی"
+  },
+  "llmProfiles_maxConcurrentRequests_desc": {
+    "message": "حداکثر تعداد درخواست‌های ترجمه هم‌زمان (1–8). خودکار: $1 درخواست"
+  },
+  "llmProfiles_maxOutputTokens": {
+    "message": "حداکثر توکن‌های خروجی"
+  },
+  "llmProfiles_maxOutputTokens_desc": {
+    "message": "حداکثر توکن‌های تولیدشده برای هر درخواست ترجمه (حداقل 1). خودکار: $1"
+  },
+  "llmProfiles_outputAutoDetected": {
+    "message": "تا $1 توکن (شناسایی شده)"
+  },
+  "llmProfiles_outputAutoUncapped": {
+    "message": "اندازه به ازای هر دسته (حداقل 256؛ سقفی شناسایی نشد)"
+  },
+  "llmProfiles_preferredInputTokens": {
+    "message": "ورودی ترجیحی"
+  },
+  "llmProfiles_preferredInputTokens_desc": {
+    "message": "اندازه دسته درخواست هدف به توکن (حداقل 1). خودکار: $1 توکن"
+  },
+  "llmProfiles_profileName": {
+    "message": "نام"
+  },
+  "llmProfiles_provider": {
+    "message": "ارائه‌دهنده"
+  },
+  "llmProfiles_quality": {
+    "message": "کیفیت ترجمه"
+  },
+  "llmProfiles_quality_accurate": {
+    "message": "دقیق"
+  },
+  "llmProfiles_quality_balanced": {
+    "message": "متعادل"
+  },
+  "llmProfiles_quality_desc": {
+    "message": "عمق درخواست، استفاده از زمینه، اندازه دسته و تلاش‌های مجدد را کنترل می‌کند."
+  },
+  "llmProfiles_quality_fast": {
+    "message": "سریع"
+  },
+  "llmProfiles_save": {
+    "message": "ذخیره"
+  },
+  "llmProfiles_setActive": {
+    "message": "تنظیم به‌عنوان فعال"
+  },
+  "llmProfiles_unitRequests": {
+    "message": "درخواست"
+  },
+  "llmProfiles_unitTokens": {
+    "message": "توکن"
+  },
+  "llmProvider_custom": {
+    "message": "سفارشی"
+  },
+  "llmProvider_openaiCompatible": {
+    "message": "سازگار با OpenAI"
   },
   "message_unknownError": {
     "message": "خطای ناشناخته"
@@ -182,6 +317,9 @@
   },
   "pageTranslator_commonPreferences_title": {
     "message": "ترجیحات عمومی برای این زبان"
+  },
+  "pageTranslator_exportLog": {
+    "message": "صادر کردن گزارش ترجمه"
   },
   "pageTranslator_option_autoTranslate": {
     "message": "ترجمه خودکار"
@@ -264,6 +402,15 @@
   "settings_message_importConfig_success": {
     "message": "وارد کردن کامل شد"
   },
+  "settings_message_llmTranslator_modelsEmpty": {
+    "message": "API فهرست مدل خالی برگرداند"
+  },
+  "settings_message_llmTranslator_modelsLoaded": {
+    "message": "فهرست مدل‌ها بارگیری شد"
+  },
+  "settings_message_llmTranslator_testSuccess": {
+    "message": "ترجمه آزمایشی موفقیت‌آمیز بود:"
+  },
   "settings_message_resetConfig_confirm": {
     "message": "تأیید برای بازنشانی تنظیمات به مقادیر پیش‌فرض"
   },
@@ -315,6 +462,45 @@
   "settings_option_history_enable_desc": {
     "message": "هنگامی که فعال باشد، ترجمه‌ها ضبط شده و در <slot id=historyPage>صفحه تاریخچه</slot> ظاهر می‌شوند"
   },
+  "settings_option_llmTranslator_activeProfile": {
+    "message": "ارائه‌دهنده فعال"
+  },
+  "settings_option_llmTranslator_activeProfile_desc": {
+    "message": "نمایه ارائه‌دهنده‌ای که ماژول ترجمه LLM استفاده می‌کند"
+  },
+  "settings_option_llmTranslator_apiKey": {
+    "message": "کلید API"
+  },
+  "settings_option_llmTranslator_apiUrl": {
+    "message": "API URL"
+  },
+  "settings_option_llmTranslator_fetchModelsButton": {
+    "message": "دریافت مدل‌ها"
+  },
+  "settings_option_llmTranslator_header": {
+    "message": "مترجم LLM"
+  },
+  "settings_option_llmTranslator_manage": {
+    "message": "ارائه‌دهندگان LLM"
+  },
+  "settings_option_llmTranslator_manageButton": {
+    "message": "مدیریت ارائه‌دهندگان"
+  },
+  "settings_option_llmTranslator_manage_desc": {
+    "message": "افزودن، ویرایش یا حذف نمایه‌های ارائه‌دهندگان LLM"
+  },
+  "settings_option_llmTranslator_model": {
+    "message": "مدل"
+  },
+  "settings_option_llmTranslator_test": {
+    "message": "آزمایش اتصال"
+  },
+  "settings_option_llmTranslator_testButton": {
+    "message": "آزمایش"
+  },
+  "settings_option_llmTranslator_test_desc": {
+    "message": "یک درخواست ترجمه کوچک با نمایه ارائه‌دهنده فعال ارسال کنید تا تنظیمات آن بررسی شود"
+  },
   "settings_option_pageTranslation": {
     "message": "ترجمه کامل صفحه"
   },
@@ -329,6 +515,12 @@
   },
   "settings_option_pageTranslation_enableContextMenu_desc": {
     "message": "افزودن دکمه‌ای برای تغییر ترجمه صفحه در منوی زمینه صفحه"
+  },
+  "settings_option_pageTranslation_enableLogExport": {
+    "message": "فعال‌سازی صادر کردن گزارش ترجمه"
+  },
+  "settings_option_pageTranslation_enableLogExport_desc": {
+    "message": "به جلسه فعال ترجمه صفحه اجازه دهید متن منبع، متن ترجمه‌شده، تشخیص‌های مدل و خطاها را برای صادر کردن دستی JSON در حافظه نگه دارد. گزارش‌ها هرگز ذخیره نمی‌شوند و ممکن است حاوی محتوای حساس صفحه باشند"
   },
   "settings_option_pageTranslation_excludeSelectors": {
     "message": "انتخابگرهایی که از ترجمه مستثنی می‌شوند"
@@ -377,6 +569,12 @@
   },
   "settings_option_selectTranslation_disableWhileTranslatePage": {
     "message": "غیرفعال کردن در حین ترجمه صفحه"
+  },
+  "settings_option_selectTranslation_draggablePopup": {
+    "message": "اجازه کشیدن پاپ‌آپ ترجمه"
+  },
+  "settings_option_selectTranslation_draggablePopup_desc": {
+    "message": "به شما اجازه می‌دهد پاپ‌آپ ترجمه را از پس‌زمینه‌اش بگیرید و آن را به هر جای صفحه منتقل کنید"
   },
   "settings_option_selectTranslation_enable": {
     "message": "فعال کردن ترجمه متن انتخاب شده"
@@ -463,6 +661,12 @@
   "settings_option_selectTranslation_zIndex_desc": {
     "message": "اگر عناصر در برخی صفحات با پنجره پاپ‌آپ متن ترجمه شده همپوشانی دارند، این مقدار را افزایش دهید"
   },
+  "settings_option_statistics_desc": {
+    "message": "تعداد کل ترجمه‌ها و توکن‌های LLM مصرف‌شده."
+  },
+  "settings_option_statistics_title": {
+    "message": "آمار استفاده"
+  },
   "settings_option_textTranslator": {
     "message": "ترجمه متن"
   },
@@ -532,6 +736,9 @@
   "settings_option_userLanguage_desc": {
     "message": "زبانی که متون به آن ترجمه خواهند شد"
   },
+  "settings_pageDescription": {
+    "message": "مدیریت موتورهای ترجمه، حافظه پنهان و ترجیحات رابط کاربری"
+  },
   "settings_pageTitle": {
     "message": "تنظیمات"
   },
@@ -540,6 +747,27 @@
   },
   "settings_section_popup": {
     "message": "پاپ‌آپ"
+  },
+  "settings_section_popupAndHistory": {
+    "message": "پاپ‌آپ و تاریخچه"
+  },
+  "settings_section_statistics": {
+    "message": "آمار"
+  },
+  "statistics_llmInputTokens": {
+    "message": "توکن‌های ورودی LLM"
+  },
+  "statistics_llmOutputTokens": {
+    "message": "توکن‌های خروجی LLM"
+  },
+  "statistics_reset": {
+    "message": "بازنشانی آمار"
+  },
+  "statistics_resetConfirm": {
+    "message": "همه آمار استفاده بازنشانی شود؟"
+  },
+  "statistics_translations": {
+    "message": "ترجمه‌ها"
   },
   "textTranslator_suggestLanguage": {
     "message": "به نظر می‌رسد زبان متن <slot id=languageSuggest>$language_name$</slot> است",

@@ -20,11 +20,20 @@
   "common_error": {
     "message": "Erreur"
   },
+  "common_listen": {
+    "message": "Écouter"
+  },
+  "common_llmTranslator": {
+    "message": "LLM"
+  },
   "common_offlineTranslator": {
     "message": "$1 - Traducteur hors ligne"
   },
   "common_retry": {
     "message": "Réessayer"
+  },
+  "common_search": {
+    "message": "Rechercher"
   },
   "common_translate": {
     "message": "Traduire"
@@ -159,11 +168,137 @@
   "lang_detect": {
     "message": "Détection automatique"
   },
+  "lang_searchPlaceholder": {
+    "message": "Rechercher une langue"
+  },
   "lang_select": {
     "message": "Sélectionner la langue"
   },
   "lang_swap": {
     "message": "Échanger les langues"
+  },
+  "llmProfiles_active": {
+    "message": "Actif"
+  },
+  "llmProfiles_add": {
+    "message": "Ajouter"
+  },
+  "llmProfiles_addProvider": {
+    "message": "Préréglage de fournisseur"
+  },
+  "llmProfiles_advancedExecution": {
+    "message": "Exécution avancée"
+  },
+  "llmProfiles_auto": {
+    "message": "Auto"
+  },
+  "llmProfiles_contextWindowTokens": {
+    "message": "Fenêtre de contexte"
+  },
+  "llmProfiles_contextWindowTokens_desc": {
+    "message": "Fenêtre de contexte totale du modèle en jetons (minimum 512). Auto : $1 jetons"
+  },
+  "llmProfiles_delete": {
+    "message": "Supprimer"
+  },
+  "llmProfiles_deleteConfirm": {
+    "message": "Êtes-vous sûr de vouloir supprimer le fournisseur « $provider_name$ » ?",
+    "placeholders": {
+      "provider_name": {
+        "content": "$1",
+        "example": "OpenAI"
+      }
+    }
+  },
+  "llmProfiles_duplicateName": {
+    "message": "Un fournisseur avec ce nom existe déjà"
+  },
+  "llmProfiles_edit": {
+    "message": "Modifier"
+  },
+  "llmProfiles_editProfile": {
+    "message": "Modifier le fournisseur"
+  },
+  "llmProfiles_emptyList": {
+    "message": "Aucun fournisseur pour le moment. Ajoutez-en un avec un préréglage ci-dessous."
+  },
+  "llmProfiles_emptyName": {
+    "message": "Saisissez un nom de fournisseur"
+  },
+  "llmProfiles_fallback": {
+    "message": "Profil de modèle de secours"
+  },
+  "llmProfiles_fallback_desc": {
+    "message": "Utilisé uniquement après des échecs répétés de validation structurelle."
+  },
+  "llmProfiles_fallback_none": {
+    "message": "Aucun secours"
+  },
+  "llmProfiles_managerTitle": {
+    "message": "Fournisseurs LLM"
+  },
+  "llmProfiles_maxConcurrentRequests": {
+    "message": "Requêtes parallèles"
+  },
+  "llmProfiles_maxConcurrentRequests_desc": {
+    "message": "Nombre maximum de requêtes de traduction simultanées (1–8). Auto : $1 requêtes"
+  },
+  "llmProfiles_maxOutputTokens": {
+    "message": "Jetons de sortie maximum"
+  },
+  "llmProfiles_maxOutputTokens_desc": {
+    "message": "Jetons maximum générés par requête de traduction (minimum 1). Auto : $1"
+  },
+  "llmProfiles_outputAutoDetected": {
+    "message": "Jusqu'à $1 jetons (détecté)"
+  },
+  "llmProfiles_outputAutoUncapped": {
+    "message": "Dimensionné par lot (minimum 256 ; aucune limite détectée)"
+  },
+  "llmProfiles_preferredInputTokens": {
+    "message": "Entrée préférée"
+  },
+  "llmProfiles_preferredInputTokens_desc": {
+    "message": "Taille cible du lot de prompts en jetons (minimum 1). Auto : $1 jetons"
+  },
+  "llmProfiles_profileName": {
+    "message": "Nom"
+  },
+  "llmProfiles_provider": {
+    "message": "Fournisseur"
+  },
+  "llmProfiles_quality": {
+    "message": "Qualité de traduction"
+  },
+  "llmProfiles_quality_accurate": {
+    "message": "Précise"
+  },
+  "llmProfiles_quality_balanced": {
+    "message": "Équilibrée"
+  },
+  "llmProfiles_quality_desc": {
+    "message": "Contrôle la profondeur du prompt, l'utilisation du contexte, la taille des lots et les tentatives."
+  },
+  "llmProfiles_quality_fast": {
+    "message": "Rapide"
+  },
+  "llmProfiles_save": {
+    "message": "Enregistrer"
+  },
+  "llmProfiles_setActive": {
+    "message": "Définir comme actif"
+  },
+  "llmProfiles_unitRequests": {
+    "message": "requêtes"
+  },
+  "llmProfiles_unitTokens": {
+    "message": "jetons"
+  },
+  "llmProvider_custom": {
+    "message": "Personnalisé"
+  },
+  "llmProvider_openaiCompatible": {
+    "message": "Compatible OpenAI"
   },
   "message_unknownError": {
     "message": "Erreur inconnue"
@@ -182,6 +317,9 @@
   },
   "pageTranslator_commonPreferences_title": {
     "message": "Préférences communes pour cette langue"
+  },
+  "pageTranslator_exportLog": {
+    "message": "Exporter le journal de traduction"
   },
   "pageTranslator_option_autoTranslate": {
     "message": "Traduction automatique"
@@ -264,6 +402,15 @@
   "settings_message_importConfig_success": {
     "message": "Importation terminée"
   },
+  "settings_message_llmTranslator_modelsEmpty": {
+    "message": "L'API a renvoyé une liste de modèles vide"
+  },
+  "settings_message_llmTranslator_modelsLoaded": {
+    "message": "Liste de modèles chargée"
+  },
+  "settings_message_llmTranslator_testSuccess": {
+    "message": "Traduction de test réussie :"
+  },
   "settings_message_resetConfig_confirm": {
     "message": "Confirmer la réinitialisation des paramètres aux valeurs par défaut"
   },
@@ -315,6 +462,45 @@
   "settings_option_history_enable_desc": {
     "message": "Lorsqu'il est activé, les traductions seront enregistrées et apparaîtront sur la <slot id=historyPage>page d'historique</slot>"
   },
+  "settings_option_llmTranslator_activeProfile": {
+    "message": "Fournisseur actif"
+  },
+  "settings_option_llmTranslator_activeProfile_desc": {
+    "message": "Profil de fournisseur utilisé par le module de traduction LLM"
+  },
+  "settings_option_llmTranslator_apiKey": {
+    "message": "Clé API"
+  },
+  "settings_option_llmTranslator_apiUrl": {
+    "message": "URL de l'API"
+  },
+  "settings_option_llmTranslator_fetchModelsButton": {
+    "message": "Récupérer les modèles"
+  },
+  "settings_option_llmTranslator_header": {
+    "message": "Traducteur LLM"
+  },
+  "settings_option_llmTranslator_manage": {
+    "message": "Fournisseurs LLM"
+  },
+  "settings_option_llmTranslator_manageButton": {
+    "message": "Gérer les fournisseurs"
+  },
+  "settings_option_llmTranslator_manage_desc": {
+    "message": "Ajouter, modifier ou supprimer des profils de fournisseurs LLM"
+  },
+  "settings_option_llmTranslator_model": {
+    "message": "Modèle"
+  },
+  "settings_option_llmTranslator_test": {
+    "message": "Tester la connexion"
+  },
+  "settings_option_llmTranslator_testButton": {
+    "message": "Tester"
+  },
+  "settings_option_llmTranslator_test_desc": {
+    "message": "Envoyez une petite requête de traduction avec le profil de fournisseur actif pour vérifier ses paramètres"
+  },
   "settings_option_pageTranslation": {
     "message": "La traduction de la page entière"
   },
@@ -329,6 +515,12 @@
   },
   "settings_option_pageTranslation_enableContextMenu_desc": {
     "message": "Ajouter un bouton pour basculer la traduction de la page dans le menu contextuel de la page"
+  },
+  "settings_option_pageTranslation_enableLogExport": {
+    "message": "Activer l'exportation du journal de traduction"
+  },
+  "settings_option_pageTranslation_enableLogExport_desc": {
+    "message": "Permet à la session de traduction de page active de conserver en mémoire le texte source, le texte traduit, les diagnostics du modèle et les erreurs pour une exportation JSON manuelle. Les journaux ne sont jamais conservés et peuvent contenir du contenu sensible de la page"
   },
   "settings_option_pageTranslation_excludeSelectors": {
     "message": "Sélecteurs à exclure de la traduction"
@@ -377,6 +569,12 @@
   },
   "settings_option_selectTranslation_disableWhileTranslatePage": {
     "message": "Désactiver pendant la traduction de la page"
+  },
+  "settings_option_selectTranslation_draggablePopup": {
+    "message": "Autoriser le déplacement de la fenêtre de traduction"
+  },
+  "settings_option_selectTranslation_draggablePopup_desc": {
+    "message": "Permet de saisir la fenêtre de traduction par son arrière-plan et de la déplacer n'importe où sur la page"
   },
   "settings_option_selectTranslation_enable": {
     "message": "Activer la traduction du texte sélectionné"
@@ -463,6 +661,12 @@
   "settings_option_selectTranslation_zIndex_desc": {
     "message": "Augmentez cette valeur si des éléments sur certaines pages chevauchent la fenêtre contextuelle avec le texte traduit"
   },
+  "settings_option_statistics_desc": {
+    "message": "Nombre total de traductions et de jetons LLM consommés."
+  },
+  "settings_option_statistics_title": {
+    "message": "Statistiques d'utilisation"
+  },
   "settings_option_textTranslator": {
     "message": "Traduction de texte"
   },
@@ -532,6 +736,9 @@
   "settings_option_userLanguage_desc": {
     "message": "La langue dans laquelle les textes seront traduits"
   },
+  "settings_pageDescription": {
+    "message": "Gérez les moteurs de traduction, le cache et les préférences de l'interface"
+  },
   "settings_pageTitle": {
     "message": "Paramètres"
   },
@@ -540,6 +747,27 @@
   },
   "settings_section_popup": {
     "message": "Popup"
+  },
+  "settings_section_popupAndHistory": {
+    "message": "Popup et historique"
+  },
+  "settings_section_statistics": {
+    "message": "Statistiques"
+  },
+  "statistics_llmInputTokens": {
+    "message": "Jetons d'entrée LLM"
+  },
+  "statistics_llmOutputTokens": {
+    "message": "Jetons de sortie LLM"
+  },
+  "statistics_reset": {
+    "message": "Réinitialiser les statistiques"
+  },
+  "statistics_resetConfirm": {
+    "message": "Réinitialiser toutes les statistiques d'utilisation ?"
+  },
+  "statistics_translations": {
+    "message": "Traductions"
   },
   "textTranslator_suggestLanguage": {
     "message": "Il semble que la langue du texte soit <slot id=languageSuggest>$language_name$</slot>",

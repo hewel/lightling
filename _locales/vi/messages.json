@@ -20,11 +20,20 @@
   "common_error": {
     "message": "Lỗi"
   },
+  "common_listen": {
+    "message": "Nghe"
+  },
+  "common_llmTranslator": {
+    "message": "LLM"
+  },
   "common_offlineTranslator": {
     "message": "$1 - Trình dịch ngoại tuyến"
   },
   "common_retry": {
     "message": "Thử lại"
+  },
+  "common_search": {
+    "message": "Tìm kiếm"
   },
   "common_translate": {
     "message": "Dịch"
@@ -159,11 +168,137 @@
   "lang_detect": {
     "message": "Tự động phát hiện"
   },
+  "lang_searchPlaceholder": {
+    "message": "Tìm kiếm ngôn ngữ"
+  },
   "lang_select": {
     "message": "Chọn ngôn ngữ"
   },
   "lang_swap": {
     "message": "Hoán đổi ngôn ngữ"
+  },
+  "llmProfiles_active": {
+    "message": "Đang dùng"
+  },
+  "llmProfiles_add": {
+    "message": "Thêm"
+  },
+  "llmProfiles_addProvider": {
+    "message": "Mẫu nhà cung cấp"
+  },
+  "llmProfiles_advancedExecution": {
+    "message": "Thực thi nâng cao"
+  },
+  "llmProfiles_auto": {
+    "message": "Tự động"
+  },
+  "llmProfiles_contextWindowTokens": {
+    "message": "Cửa sổ ngữ cảnh"
+  },
+  "llmProfiles_contextWindowTokens_desc": {
+    "message": "Tổng cửa sổ ngữ cảnh của mô hình tính bằng token (tối thiểu 512). Tự động: $1 token"
+  },
+  "llmProfiles_delete": {
+    "message": "Xóa"
+  },
+  "llmProfiles_deleteConfirm": {
+    "message": "Bạn có chắc chắn muốn xóa nhà cung cấp \"$provider_name$\" không?",
+    "placeholders": {
+      "provider_name": {
+        "content": "$1",
+        "example": "OpenAI"
+      }
+    }
+  },
+  "llmProfiles_duplicateName": {
+    "message": "Đã tồn tại nhà cung cấp có tên này"
+  },
+  "llmProfiles_edit": {
+    "message": "Sửa"
+  },
+  "llmProfiles_editProfile": {
+    "message": "Sửa nhà cung cấp"
+  },
+  "llmProfiles_emptyList": {
+    "message": "Chưa có nhà cung cấp nào. Thêm một nhà cung cấp bằng mẫu bên dưới"
+  },
+  "llmProfiles_emptyName": {
+    "message": "Nhập tên nhà cung cấp"
+  },
+  "llmProfiles_fallback": {
+    "message": "Hồ sơ mô hình dự phòng"
+  },
+  "llmProfiles_fallback_desc": {
+    "message": "Chỉ được dùng sau khi xác thực cấu trúc thất bại nhiều lần"
+  },
+  "llmProfiles_fallback_none": {
+    "message": "Không dự phòng"
+  },
+  "llmProfiles_managerTitle": {
+    "message": "Nhà cung cấp LLM"
+  },
+  "llmProfiles_maxConcurrentRequests": {
+    "message": "Yêu cầu song song"
+  },
+  "llmProfiles_maxConcurrentRequests_desc": {
+    "message": "Số yêu cầu dịch đồng thời tối đa (1–8). Tự động: $1 yêu cầu"
+  },
+  "llmProfiles_maxOutputTokens": {
+    "message": "Số token đầu ra tối đa"
+  },
+  "llmProfiles_maxOutputTokens_desc": {
+    "message": "Số token tối đa được tạo cho mỗi yêu cầu dịch (tối thiểu 1). Tự động: $1"
+  },
+  "llmProfiles_outputAutoDetected": {
+    "message": "Tối đa $1 token (đã phát hiện)"
+  },
+  "llmProfiles_outputAutoUncapped": {
+    "message": "Định cỡ theo lô (tối thiểu 256; không phát hiện giới hạn)"
+  },
+  "llmProfiles_preferredInputTokens": {
+    "message": "Đầu vào ưu tiên"
+  },
+  "llmProfiles_preferredInputTokens_desc": {
+    "message": "Kích thước lô lời nhắc mục tiêu tính bằng token (tối thiểu 1). Tự động: $1 token"
+  },
+  "llmProfiles_profileName": {
+    "message": "Tên"
+  },
+  "llmProfiles_provider": {
+    "message": "Nhà cung cấp"
+  },
+  "llmProfiles_quality": {
+    "message": "Chất lượng dịch"
+  },
+  "llmProfiles_quality_accurate": {
+    "message": "Chính xác"
+  },
+  "llmProfiles_quality_balanced": {
+    "message": "Cân bằng"
+  },
+  "llmProfiles_quality_desc": {
+    "message": "Kiểm soát độ sâu lời nhắc, mức dùng ngữ cảnh, kích thước lô và số lần thử lại"
+  },
+  "llmProfiles_quality_fast": {
+    "message": "Nhanh"
+  },
+  "llmProfiles_save": {
+    "message": "Lưu"
+  },
+  "llmProfiles_setActive": {
+    "message": "Đặt làm đang dùng"
+  },
+  "llmProfiles_unitRequests": {
+    "message": "yêu cầu"
+  },
+  "llmProfiles_unitTokens": {
+    "message": "token"
+  },
+  "llmProvider_custom": {
+    "message": "Tùy chỉnh"
+  },
+  "llmProvider_openaiCompatible": {
+    "message": "Tương thích OpenAI"
   },
   "message_unknownError": {
     "message": "Lỗi không xác định"
@@ -182,6 +317,9 @@
   },
   "pageTranslator_commonPreferences_title": {
     "message": "Tùy chọn chung cho ngôn ngữ này"
+  },
+  "pageTranslator_exportLog": {
+    "message": "Xuất nhật ký dịch"
   },
   "pageTranslator_option_autoTranslate": {
     "message": "Tự động dịch"
@@ -264,6 +402,15 @@
   "settings_message_importConfig_success": {
     "message": "Nhập hoàn tất"
   },
+  "settings_message_llmTranslator_modelsEmpty": {
+    "message": "API đã trả về danh sách mô hình trống"
+  },
+  "settings_message_llmTranslator_modelsLoaded": {
+    "message": "Đã tải danh sách mô hình"
+  },
+  "settings_message_llmTranslator_testSuccess": {
+    "message": "Dịch thử thành công:"
+  },
   "settings_message_resetConfig_confirm": {
     "message": "Xác nhận đặt lại cài đặt về giá trị mặc định"
   },
@@ -315,6 +462,45 @@
   "settings_option_history_enable_desc": {
     "message": "Khi bật, các bản dịch sẽ được ghi lại và xuất hiện trên <slot id=historyPage>trang lịch sử</slot>"
   },
+  "settings_option_llmTranslator_activeProfile": {
+    "message": "Nhà cung cấp đang dùng"
+  },
+  "settings_option_llmTranslator_activeProfile_desc": {
+    "message": "Hồ sơ nhà cung cấp được mô-đun dịch LLM sử dụng"
+  },
+  "settings_option_llmTranslator_apiKey": {
+    "message": "Khóa API"
+  },
+  "settings_option_llmTranslator_apiUrl": {
+    "message": "URL API"
+  },
+  "settings_option_llmTranslator_fetchModelsButton": {
+    "message": "Tải mô hình"
+  },
+  "settings_option_llmTranslator_header": {
+    "message": "Trình dịch LLM"
+  },
+  "settings_option_llmTranslator_manage": {
+    "message": "Nhà cung cấp LLM"
+  },
+  "settings_option_llmTranslator_manageButton": {
+    "message": "Quản lý nhà cung cấp"
+  },
+  "settings_option_llmTranslator_manage_desc": {
+    "message": "Thêm, sửa hoặc xóa hồ sơ nhà cung cấp LLM"
+  },
+  "settings_option_llmTranslator_model": {
+    "message": "Mô hình"
+  },
+  "settings_option_llmTranslator_test": {
+    "message": "Kiểm tra kết nối"
+  },
+  "settings_option_llmTranslator_testButton": {
+    "message": "Kiểm tra"
+  },
+  "settings_option_llmTranslator_test_desc": {
+    "message": "Gửi một yêu cầu dịch nhỏ bằng hồ sơ nhà cung cấp đang dùng để xác minh cài đặt"
+  },
   "settings_option_pageTranslation": {
     "message": "Dịch toàn bộ trang"
   },
@@ -329,6 +515,12 @@
   },
   "settings_option_pageTranslation_enableContextMenu_desc": {
     "message": "Thêm nút để chuyển đổi dịch trang trong menu ngữ cảnh của trang"
+  },
+  "settings_option_pageTranslation_enableLogExport": {
+    "message": "Bật xuất nhật ký dịch"
+  },
+  "settings_option_pageTranslation_enableLogExport_desc": {
+    "message": "Cho phép phiên dịch trang đang hoạt động giữ lại văn bản nguồn, văn bản đã dịch, chẩn đoán mô hình và lỗi trong bộ nhớ để xuất JSON thủ công. Nhật ký không bao giờ được lưu trữ và có thể chứa nội dung trang nhạy cảm"
   },
   "settings_option_pageTranslation_excludeSelectors": {
     "message": "Bộ chọn để loại trừ khỏi dịch"
@@ -377,6 +569,12 @@
   },
   "settings_option_selectTranslation_disableWhileTranslatePage": {
     "message": "Vô hiệu hóa khi đang dịch trang"
+  },
+  "settings_option_selectTranslation_draggablePopup": {
+    "message": "Cho phép kéo cửa sổ bật lên dịch"
+  },
+  "settings_option_selectTranslation_draggablePopup_desc": {
+    "message": "Cho phép bạn nắm nền của cửa sổ bật lên dịch và di chuyển nó đến bất kỳ đâu trên trang"
   },
   "settings_option_selectTranslation_enable": {
     "message": "Bật dịch văn bản đã chọn"
@@ -463,6 +661,12 @@
   "settings_option_selectTranslation_zIndex_desc": {
     "message": "Tăng giá trị này nếu các phần tử trên một số trang chồng lên cửa sổ bật lên với văn bản đã dịch"
   },
+  "settings_option_statistics_desc": {
+    "message": "Tổng số bản dịch và token LLM đã tiêu thụ."
+  },
+  "settings_option_statistics_title": {
+    "message": "Thống kê sử dụng"
+  },
   "settings_option_textTranslator": {
     "message": "Dịch văn bản"
   },
@@ -532,6 +736,9 @@
   "settings_option_userLanguage_desc": {
     "message": "Ngôn ngữ mà văn bản sẽ được dịch sang"
   },
+  "settings_pageDescription": {
+    "message": "Quản lý công cụ dịch, bộ nhớ đệm và tùy chọn giao diện"
+  },
   "settings_pageTitle": {
     "message": "Cài đặt"
   },
@@ -540,6 +747,27 @@
   },
   "settings_section_popup": {
     "message": "Cửa sổ bật lên"
+  },
+  "settings_section_popupAndHistory": {
+    "message": "Cửa sổ bật lên và lịch sử"
+  },
+  "settings_section_statistics": {
+    "message": "Thống kê"
+  },
+  "statistics_llmInputTokens": {
+    "message": "Token đầu vào LLM"
+  },
+  "statistics_llmOutputTokens": {
+    "message": "Token đầu ra LLM"
+  },
+  "statistics_reset": {
+    "message": "Đặt lại thống kê"
+  },
+  "statistics_resetConfirm": {
+    "message": "Đặt lại tất cả thống kê sử dụng?"
+  },
+  "statistics_translations": {
+    "message": "Bản dịch"
   },
   "textTranslator_suggestLanguage": {
     "message": "Có vẻ như ngôn ngữ của văn bản là <slot id=languageSuggest>$language_name$</slot>",

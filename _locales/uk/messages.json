@@ -20,11 +20,20 @@
   "common_error": {
     "message": "Помилка"
   },
+  "common_listen": {
+    "message": "Слухати"
+  },
+  "common_llmTranslator": {
+    "message": "LLM"
+  },
   "common_offlineTranslator": {
     "message": "$1 - Офлайн перекладач"
   },
   "common_retry": {
     "message": "Повторити"
+  },
+  "common_search": {
+    "message": "Пошук"
   },
   "common_translate": {
     "message": "Перекласти"
@@ -159,11 +168,137 @@
   "lang_detect": {
     "message": "Автовизначення"
   },
+  "lang_searchPlaceholder": {
+    "message": "Пошук мови"
+  },
   "lang_select": {
     "message": "Вибрати мову"
   },
   "lang_swap": {
     "message": "Поміняти мови місцями"
+  },
+  "llmProfiles_active": {
+    "message": "Активний"
+  },
+  "llmProfiles_add": {
+    "message": "Додати"
+  },
+  "llmProfiles_addProvider": {
+    "message": "Пресет провайдера"
+  },
+  "llmProfiles_advancedExecution": {
+    "message": "Розширене виконання"
+  },
+  "llmProfiles_auto": {
+    "message": "Авто"
+  },
+  "llmProfiles_contextWindowTokens": {
+    "message": "Контекстне вікно"
+  },
+  "llmProfiles_contextWindowTokens_desc": {
+    "message": "Загальний розмір контекстного вікна моделі в токенах (мінімум 512). Авто: $1 токенів"
+  },
+  "llmProfiles_delete": {
+    "message": "Видалити"
+  },
+  "llmProfiles_deleteConfirm": {
+    "message": "Ви впевнені, що хочете видалити провайдера \"$provider_name$\"?",
+    "placeholders": {
+      "provider_name": {
+        "content": "$1",
+        "example": "OpenAI"
+      }
+    }
+  },
+  "llmProfiles_duplicateName": {
+    "message": "Провайдер із такою назвою вже існує"
+  },
+  "llmProfiles_edit": {
+    "message": "Редагувати"
+  },
+  "llmProfiles_editProfile": {
+    "message": "Редагувати провайдера"
+  },
+  "llmProfiles_emptyList": {
+    "message": "Провайдерів ще немає. Додайте один із пресетів нижче."
+  },
+  "llmProfiles_emptyName": {
+    "message": "Введіть назву провайдера"
+  },
+  "llmProfiles_fallback": {
+    "message": "Резервний профіль моделі"
+  },
+  "llmProfiles_fallback_desc": {
+    "message": "Використовується лише після повторних помилок структурної валідації."
+  },
+  "llmProfiles_fallback_none": {
+    "message": "Без резервного"
+  },
+  "llmProfiles_managerTitle": {
+    "message": "LLM-провайдери"
+  },
+  "llmProfiles_maxConcurrentRequests": {
+    "message": "Паралельні запити"
+  },
+  "llmProfiles_maxConcurrentRequests_desc": {
+    "message": "Максимальна кількість одночасних запитів на переклад (1–8). Авто: $1 запитів"
+  },
+  "llmProfiles_maxOutputTokens": {
+    "message": "Максимум вихідних токенів"
+  },
+  "llmProfiles_maxOutputTokens_desc": {
+    "message": "Максимум токенів, що генеруються за один запит на переклад (мінімум 1). Авто: $1"
+  },
+  "llmProfiles_outputAutoDetected": {
+    "message": "До $1 токенів (виявлено)"
+  },
+  "llmProfiles_outputAutoUncapped": {
+    "message": "За розміром пакета (мінімум 256; обмеження не виявлено)"
+  },
+  "llmProfiles_preferredInputTokens": {
+    "message": "Бажаний ввід"
+  },
+  "llmProfiles_preferredInputTokens_desc": {
+    "message": "Цільовий розмір пакета промпту в токенах (мінімум 1). Авто: $1 токенів"
+  },
+  "llmProfiles_profileName": {
+    "message": "Назва"
+  },
+  "llmProfiles_provider": {
+    "message": "Провайдер"
+  },
+  "llmProfiles_quality": {
+    "message": "Якість перекладу"
+  },
+  "llmProfiles_quality_accurate": {
+    "message": "Точний"
+  },
+  "llmProfiles_quality_balanced": {
+    "message": "Збалансований"
+  },
+  "llmProfiles_quality_desc": {
+    "message": "Керує глибиною промпту, використанням контексту, розміром пакета та повторними спробами."
+  },
+  "llmProfiles_quality_fast": {
+    "message": "Швидкий"
+  },
+  "llmProfiles_save": {
+    "message": "Зберегти"
+  },
+  "llmProfiles_setActive": {
+    "message": "Зробити активним"
+  },
+  "llmProfiles_unitRequests": {
+    "message": "запитів"
+  },
+  "llmProfiles_unitTokens": {
+    "message": "токенів"
+  },
+  "llmProvider_custom": {
+    "message": "Користувацький"
+  },
+  "llmProvider_openaiCompatible": {
+    "message": "Сумісний з OpenAI"
   },
   "message_unknownError": {
     "message": "Невідома помилка"
@@ -182,6 +317,9 @@
   },
   "pageTranslator_commonPreferences_title": {
     "message": "Загальні налаштування для цієї мови"
+  },
+  "pageTranslator_exportLog": {
+    "message": "Експортувати журнал перекладу"
   },
   "pageTranslator_option_autoTranslate": {
     "message": "Автопереклад"
@@ -264,6 +402,15 @@
   "settings_message_importConfig_success": {
     "message": "Імпорт завершено"
   },
+  "settings_message_llmTranslator_modelsEmpty": {
+    "message": "API повернув порожній список моделей"
+  },
+  "settings_message_llmTranslator_modelsLoaded": {
+    "message": "Список моделей завантажено"
+  },
+  "settings_message_llmTranslator_testSuccess": {
+    "message": "Тестовий переклад виконано успішно:"
+  },
   "settings_message_resetConfig_confirm": {
     "message": "Підтвердьте скидання налаштувань до значень за замовчуванням"
   },
@@ -315,6 +462,45 @@
   "settings_option_history_enable_desc": {
     "message": "Коли увімкнено, переклади будуть записуватися і з'являтися на <slot id=historyPage>сторінці історії</slot>"
   },
+  "settings_option_llmTranslator_activeProfile": {
+    "message": "Активний провайдер"
+  },
+  "settings_option_llmTranslator_activeProfile_desc": {
+    "message": "Профіль провайдера, який використовує модуль LLM-перекладу"
+  },
+  "settings_option_llmTranslator_apiKey": {
+    "message": "Ключ API"
+  },
+  "settings_option_llmTranslator_apiUrl": {
+    "message": "URL API"
+  },
+  "settings_option_llmTranslator_fetchModelsButton": {
+    "message": "Завантажити моделі"
+  },
+  "settings_option_llmTranslator_header": {
+    "message": "LLM-перекладач"
+  },
+  "settings_option_llmTranslator_manage": {
+    "message": "LLM-провайдери"
+  },
+  "settings_option_llmTranslator_manageButton": {
+    "message": "Керування провайдерами"
+  },
+  "settings_option_llmTranslator_manage_desc": {
+    "message": "Додавайте, редагуйте або видаляйте профілі LLM-провайдерів"
+  },
+  "settings_option_llmTranslator_model": {
+    "message": "Модель"
+  },
+  "settings_option_llmTranslator_test": {
+    "message": "Перевірити з'єднання"
+  },
+  "settings_option_llmTranslator_testButton": {
+    "message": "Перевірити"
+  },
+  "settings_option_llmTranslator_test_desc": {
+    "message": "Надішліть невеликий запит на переклад із активним профілем провайдера, щоб перевірити його налаштування"
+  },
   "settings_option_pageTranslation": {
     "message": "Повний переклад сторінки"
   },
@@ -329,6 +515,12 @@
   },
   "settings_option_pageTranslation_enableContextMenu_desc": {
     "message": "Додати кнопку для перемикання перекладу сторінки в контекстному меню сторінки"
+  },
+  "settings_option_pageTranslation_enableLogExport": {
+    "message": "Увімкнути експорт журналу перекладу"
+  },
+  "settings_option_pageTranslation_enableLogExport_desc": {
+    "message": "Дозволяє активному сеансу перекладу сторінки зберігати в пам'яті вихідний текст, перекладений текст, діагностику моделі та помилки для ручного експорту в JSON. Журнали ніколи не зберігаються на диск і можуть містити конфіденційний вміст сторінки"
   },
   "settings_option_pageTranslation_excludeSelectors": {
     "message": "Селектори для виключення з перекладу"
@@ -377,6 +569,12 @@
   },
   "settings_option_selectTranslation_disableWhileTranslatePage": {
     "message": "Вимкнути під час перекладу сторінки"
+  },
+  "settings_option_selectTranslation_draggablePopup": {
+    "message": "Дозволити перетягування спливаючого вікна перекладу"
+  },
+  "settings_option_selectTranslation_draggablePopup_desc": {
+    "message": "Дозволяє схопити спливаюче вікно перекладу за його тло й перемістити в будь-яке місце сторінки"
   },
   "settings_option_selectTranslation_enable": {
     "message": "Увімкнути переклад вибраного тексту"
@@ -463,6 +661,12 @@
   "settings_option_selectTranslation_zIndex_desc": {
     "message": "Збільшіть це значення, якщо елементи на деяких сторінках перекривають спливаюче вікно з перекладеним текстом"
   },
+  "settings_option_statistics_desc": {
+    "message": "Загальна кількість перекладів і витрачених токенів LLM."
+  },
+  "settings_option_statistics_title": {
+    "message": "Статистика використання"
+  },
   "settings_option_textTranslator": {
     "message": "Переклад тексту"
   },
@@ -532,6 +736,9 @@
   "settings_option_userLanguage_desc": {
     "message": "Мова, на яку будуть перекладатися тексти"
   },
+  "settings_pageDescription": {
+    "message": "Керування рушіями перекладу, кешем і налаштуваннями інтерфейсу"
+  },
   "settings_pageTitle": {
     "message": "Налаштування"
   },
@@ -540,6 +747,27 @@
   },
   "settings_section_popup": {
     "message": "Спливаюче вікно"
+  },
+  "settings_section_popupAndHistory": {
+    "message": "Спливаюче вікно та історія"
+  },
+  "settings_section_statistics": {
+    "message": "Статистика"
+  },
+  "statistics_llmInputTokens": {
+    "message": "Вхідні токени LLM"
+  },
+  "statistics_llmOutputTokens": {
+    "message": "Вихідні токени LLM"
+  },
+  "statistics_reset": {
+    "message": "Скинути статистику"
+  },
+  "statistics_resetConfirm": {
+    "message": "Скинути всю статистику використання?"
+  },
+  "statistics_translations": {
+    "message": "Переклади"
   },
   "textTranslator_suggestLanguage": {
     "message": "Схоже, мова тексту — <slot id=languageSuggest>$language_name$</slot>",

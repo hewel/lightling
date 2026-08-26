@@ -20,11 +20,20 @@
   "common_error": {
     "message": "오류"
   },
+  "common_listen": {
+    "message": "듣기"
+  },
+  "common_llmTranslator": {
+    "message": "LLM"
+  },
   "common_offlineTranslator": {
     "message": "$1 - 오프라인 번역기"
   },
   "common_retry": {
     "message": "다시 시도"
+  },
+  "common_search": {
+    "message": "검색"
   },
   "common_translate": {
     "message": "번역"
@@ -159,11 +168,137 @@
   "lang_detect": {
     "message": "자동 감지"
   },
+  "lang_searchPlaceholder": {
+    "message": "언어 검색"
+  },
   "lang_select": {
     "message": "언어 선택"
   },
   "lang_swap": {
     "message": "언어 전환"
+  },
+  "llmProfiles_active": {
+    "message": "활성"
+  },
+  "llmProfiles_add": {
+    "message": "추가"
+  },
+  "llmProfiles_addProvider": {
+    "message": "공급자 프리셋"
+  },
+  "llmProfiles_advancedExecution": {
+    "message": "고급 실행"
+  },
+  "llmProfiles_auto": {
+    "message": "자동"
+  },
+  "llmProfiles_contextWindowTokens": {
+    "message": "컨텍스트 윈도우"
+  },
+  "llmProfiles_contextWindowTokens_desc": {
+    "message": "모델 컨텍스트 윈도우의 총 토큰 수 (최소 512). 자동: $1 토큰"
+  },
+  "llmProfiles_delete": {
+    "message": "삭제"
+  },
+  "llmProfiles_deleteConfirm": {
+    "message": "\"$provider_name$\" 공급자를 삭제하시겠습니까?",
+    "placeholders": {
+      "provider_name": {
+        "content": "$1",
+        "example": "OpenAI"
+      }
+    }
+  },
+  "llmProfiles_duplicateName": {
+    "message": "이 이름의 공급자가 이미 존재합니다"
+  },
+  "llmProfiles_edit": {
+    "message": "편집"
+  },
+  "llmProfiles_editProfile": {
+    "message": "공급자 편집"
+  },
+  "llmProfiles_emptyList": {
+    "message": "아직 공급자가 없습니다. 아래 프리셋으로 추가하세요"
+  },
+  "llmProfiles_emptyName": {
+    "message": "공급자 이름을 입력하세요"
+  },
+  "llmProfiles_fallback": {
+    "message": "폴백 모델 프로필"
+  },
+  "llmProfiles_fallback_desc": {
+    "message": "구조적 유효성 검사가 반복적으로 실패한 후에만 사용됩니다"
+  },
+  "llmProfiles_fallback_none": {
+    "message": "폴백 없음"
+  },
+  "llmProfiles_managerTitle": {
+    "message": "LLM 공급자"
+  },
+  "llmProfiles_maxConcurrentRequests": {
+    "message": "병렬 요청"
+  },
+  "llmProfiles_maxConcurrentRequests_desc": {
+    "message": "동시 번역 요청의 최대 수 (1–8). 자동: $1개 요청"
+  },
+  "llmProfiles_maxOutputTokens": {
+    "message": "최대 출력 토큰"
+  },
+  "llmProfiles_maxOutputTokens_desc": {
+    "message": "번역 요청당 생성되는 최대 토큰 수 (최소 1). 자동: $1"
+  },
+  "llmProfiles_outputAutoDetected": {
+    "message": "최대 $1 토큰 (감지됨)"
+  },
+  "llmProfiles_outputAutoUncapped": {
+    "message": "배치별 크기 결정 (최소 256, 감지된 상한 없음)"
+  },
+  "llmProfiles_preferredInputTokens": {
+    "message": "선호 입력"
+  },
+  "llmProfiles_preferredInputTokens_desc": {
+    "message": "프롬프트 배치의 목표 토큰 수 (최소 1). 자동: $1 토큰"
+  },
+  "llmProfiles_profileName": {
+    "message": "이름"
+  },
+  "llmProfiles_provider": {
+    "message": "공급자"
+  },
+  "llmProfiles_quality": {
+    "message": "번역 품질"
+  },
+  "llmProfiles_quality_accurate": {
+    "message": "정확"
+  },
+  "llmProfiles_quality_balanced": {
+    "message": "균형"
+  },
+  "llmProfiles_quality_desc": {
+    "message": "프롬프트 깊이, 컨텍스트 사용, 배치 크기 및 재시도를 제어합니다"
+  },
+  "llmProfiles_quality_fast": {
+    "message": "빠름"
+  },
+  "llmProfiles_save": {
+    "message": "저장"
+  },
+  "llmProfiles_setActive": {
+    "message": "활성으로 설정"
+  },
+  "llmProfiles_unitRequests": {
+    "message": "요청"
+  },
+  "llmProfiles_unitTokens": {
+    "message": "토큰"
+  },
+  "llmProvider_custom": {
+    "message": "사용자 지정"
+  },
+  "llmProvider_openaiCompatible": {
+    "message": "OpenAI 호환"
   },
   "message_unknownError": {
     "message": "알 수 없는 오류"
@@ -182,6 +317,9 @@
   },
   "pageTranslator_commonPreferences_title": {
     "message": "이 언어에 대한 일반 설정"
+  },
+  "pageTranslator_exportLog": {
+    "message": "번역 로그보내기"
   },
   "pageTranslator_option_autoTranslate": {
     "message": "자동 번역"
@@ -264,6 +402,15 @@
   "settings_message_importConfig_success": {
     "message": "가져오기 완료"
   },
+  "settings_message_llmTranslator_modelsEmpty": {
+    "message": "API가 빈 모델 목록을 반환했습니다"
+  },
+  "settings_message_llmTranslator_modelsLoaded": {
+    "message": "모델 목록을 불러왔습니다"
+  },
+  "settings_message_llmTranslator_testSuccess": {
+    "message": "테스트 번역에 성공했습니다:"
+  },
   "settings_message_resetConfig_confirm": {
     "message": "설정을 기본값으로 재설정하시겠습니까?"
   },
@@ -315,6 +462,45 @@
   "settings_option_history_enable_desc": {
     "message": "활성화되면 번역이 기록되어 <slot id=historyPage>기록 페이지</slot>에 나타납니다."
   },
+  "settings_option_llmTranslator_activeProfile": {
+    "message": "활성 공급자"
+  },
+  "settings_option_llmTranslator_activeProfile_desc": {
+    "message": "LLM 번역 모듈이 사용하는 공급자 프로필"
+  },
+  "settings_option_llmTranslator_apiKey": {
+    "message": "API 키"
+  },
+  "settings_option_llmTranslator_apiUrl": {
+    "message": "API URL"
+  },
+  "settings_option_llmTranslator_fetchModelsButton": {
+    "message": "모델 가져오기"
+  },
+  "settings_option_llmTranslator_header": {
+    "message": "LLM 번역기"
+  },
+  "settings_option_llmTranslator_manage": {
+    "message": "LLM 공급자"
+  },
+  "settings_option_llmTranslator_manageButton": {
+    "message": "공급자 관리"
+  },
+  "settings_option_llmTranslator_manage_desc": {
+    "message": "LLM 공급자 프로필 추가, 편집 또는 제거"
+  },
+  "settings_option_llmTranslator_model": {
+    "message": "모델"
+  },
+  "settings_option_llmTranslator_test": {
+    "message": "연결 테스트"
+  },
+  "settings_option_llmTranslator_testButton": {
+    "message": "테스트"
+  },
+  "settings_option_llmTranslator_test_desc": {
+    "message": "활성 공급자 프로필로 작은 번역 요청을 보내 설정을 확인합니다"
+  },
   "settings_option_pageTranslation": {
     "message": "전체 페이지 번역"
   },
@@ -329,6 +515,12 @@
   },
   "settings_option_pageTranslation_enableContextMenu_desc": {
     "message": "페이지 컨텍스트 메뉴에 페이지 번역을 전환하는 버튼을 추가합니다."
+  },
+  "settings_option_pageTranslation_enableLogExport": {
+    "message": "번역 로그보내기 활성화"
+  },
+  "settings_option_pageTranslation_enableLogExport_desc": {
+    "message": "활성 페이지 번역 세션이 원본 텍스트, 번역된 텍스트, 모델 진단 및 오류를 메모리에 유지하여 JSON으로 수동보낼 수 있도록 합니다. 로그는 저장되지 않으며 민감한 페이지 콘텐츠가 포함될 수 있습니다"
   },
   "settings_option_pageTranslation_excludeSelectors": {
     "message": "번역에서 제외할 선택자"
@@ -377,6 +569,12 @@
   },
   "settings_option_selectTranslation_disableWhileTranslatePage": {
     "message": "페이지 번역 중 비활성화"
+  },
+  "settings_option_selectTranslation_draggablePopup": {
+    "message": "번역 팝업 드래그 허용"
+  },
+  "settings_option_selectTranslation_draggablePopup_desc": {
+    "message": "번역 팝업의 배경을 잡아 페이지 어디로든 이동할 수 있습니다"
   },
   "settings_option_selectTranslation_enable": {
     "message": "선택한 텍스트 번역 활성화"
@@ -463,6 +661,12 @@
   "settings_option_selectTranslation_zIndex_desc": {
     "message": "일부 페이지에서 요소가 번역된 텍스트가 있는 팝업을 겹치는 경우 이 값을 증가시키세요."
   },
+  "settings_option_statistics_desc": {
+    "message": "총 번역 수와 소비된 LLM 토큰 수."
+  },
+  "settings_option_statistics_title": {
+    "message": "사용 통계"
+  },
   "settings_option_textTranslator": {
     "message": "텍스트 번역"
   },
@@ -532,6 +736,9 @@
   "settings_option_userLanguage_desc": {
     "message": "텍스트가 번역될 언어"
   },
+  "settings_pageDescription": {
+    "message": "번역 엔진, 캐시 및 인터페이스 기본 설정 관리"
+  },
   "settings_pageTitle": {
     "message": "설정"
   },
@@ -540,6 +747,27 @@
   },
   "settings_section_popup": {
     "message": "팝업"
+  },
+  "settings_section_popupAndHistory": {
+    "message": "팝업 및 기록"
+  },
+  "settings_section_statistics": {
+    "message": "통계"
+  },
+  "statistics_llmInputTokens": {
+    "message": "LLM 입력 토큰"
+  },
+  "statistics_llmOutputTokens": {
+    "message": "LLM 출력 토큰"
+  },
+  "statistics_reset": {
+    "message": "통계 재설정"
+  },
+  "statistics_resetConfirm": {
+    "message": "모든 사용 통계를 재설정하시겠습니까?"
+  },
+  "statistics_translations": {
+    "message": "번역"
   },
   "textTranslator_suggestLanguage": {
     "message": "텍스트 언어가 <slot id=languageSuggest>$language_name$</slot>인 것 같습니다.",

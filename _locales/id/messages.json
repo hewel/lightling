@@ -20,11 +20,20 @@
   "common_error": {
     "message": "Kesalahan"
   },
+  "common_listen": {
+    "message": "Dengarkan"
+  },
+  "common_llmTranslator": {
+    "message": "LLM"
+  },
   "common_offlineTranslator": {
     "message": "$1 - Penerjemah offline"
   },
   "common_retry": {
     "message": "Coba lagi"
+  },
+  "common_search": {
+    "message": "Cari"
   },
   "common_translate": {
     "message": "Terjemahkan"
@@ -159,11 +168,137 @@
   "lang_detect": {
     "message": "Deteksi otomatis"
   },
+  "lang_searchPlaceholder": {
+    "message": "Cari bahasa"
+  },
   "lang_select": {
     "message": "Pilih bahasa"
   },
   "lang_swap": {
     "message": "Tukar bahasa"
+  },
+  "llmProfiles_active": {
+    "message": "Aktif"
+  },
+  "llmProfiles_add": {
+    "message": "Tambahkan"
+  },
+  "llmProfiles_addProvider": {
+    "message": "Preset penyedia"
+  },
+  "llmProfiles_advancedExecution": {
+    "message": "Eksekusi lanjutan"
+  },
+  "llmProfiles_auto": {
+    "message": "Otomatis"
+  },
+  "llmProfiles_contextWindowTokens": {
+    "message": "Jendela konteks"
+  },
+  "llmProfiles_contextWindowTokens_desc": {
+    "message": "Total jendela konteks model dalam token (minimum 512). Otomatis: $1 token"
+  },
+  "llmProfiles_delete": {
+    "message": "Hapus"
+  },
+  "llmProfiles_deleteConfirm": {
+    "message": "Apakah Anda yakin ingin menghapus penyedia \"$provider_name$\"?",
+    "placeholders": {
+      "provider_name": {
+        "content": "$1",
+        "example": "OpenAI"
+      }
+    }
+  },
+  "llmProfiles_duplicateName": {
+    "message": "Penyedia dengan nama ini sudah ada"
+  },
+  "llmProfiles_edit": {
+    "message": "Edit"
+  },
+  "llmProfiles_editProfile": {
+    "message": "Edit penyedia"
+  },
+  "llmProfiles_emptyList": {
+    "message": "Belum ada penyedia. Tambahkan dengan preset di bawah"
+  },
+  "llmProfiles_emptyName": {
+    "message": "Masukkan nama penyedia"
+  },
+  "llmProfiles_fallback": {
+    "message": "Profil model cadangan"
+  },
+  "llmProfiles_fallback_desc": {
+    "message": "Hanya digunakan setelah kegagalan validasi struktural berulang"
+  },
+  "llmProfiles_fallback_none": {
+    "message": "Tanpa cadangan"
+  },
+  "llmProfiles_managerTitle": {
+    "message": "Penyedia LLM"
+  },
+  "llmProfiles_maxConcurrentRequests": {
+    "message": "Permintaan paralel"
+  },
+  "llmProfiles_maxConcurrentRequests_desc": {
+    "message": "Jumlah maksimum permintaan terjemahan bersamaan (1–8). Otomatis: $1 permintaan"
+  },
+  "llmProfiles_maxOutputTokens": {
+    "message": "Token output maksimum"
+  },
+  "llmProfiles_maxOutputTokens_desc": {
+    "message": "Token maksimum yang dihasilkan per permintaan terjemahan (minimum 1). Otomatis: $1"
+  },
+  "llmProfiles_outputAutoDetected": {
+    "message": "Hingga $1 token (terdeteksi)"
+  },
+  "llmProfiles_outputAutoUncapped": {
+    "message": "Ukuran per batch (minimum 256; tidak ada batas terdeteksi)"
+  },
+  "llmProfiles_preferredInputTokens": {
+    "message": "Input yang diutamakan"
+  },
+  "llmProfiles_preferredInputTokens_desc": {
+    "message": "Ukuran batch prompt target dalam token (minimum 1). Otomatis: $1 token"
+  },
+  "llmProfiles_profileName": {
+    "message": "Nama"
+  },
+  "llmProfiles_provider": {
+    "message": "Penyedia"
+  },
+  "llmProfiles_quality": {
+    "message": "Kualitas terjemahan"
+  },
+  "llmProfiles_quality_accurate": {
+    "message": "Akurat"
+  },
+  "llmProfiles_quality_balanced": {
+    "message": "Seimbang"
+  },
+  "llmProfiles_quality_desc": {
+    "message": "Mengontrol kedalaman prompt, penggunaan konteks, ukuran batch, dan percobaan ulang"
+  },
+  "llmProfiles_quality_fast": {
+    "message": "Cepat"
+  },
+  "llmProfiles_save": {
+    "message": "Simpan"
+  },
+  "llmProfiles_setActive": {
+    "message": "Jadikan aktif"
+  },
+  "llmProfiles_unitRequests": {
+    "message": "permintaan"
+  },
+  "llmProfiles_unitTokens": {
+    "message": "token"
+  },
+  "llmProvider_custom": {
+    "message": "Kustom"
+  },
+  "llmProvider_openaiCompatible": {
+    "message": "Kompatibel dengan OpenAI"
   },
   "message_unknownError": {
     "message": "Kesalahan tidak diketahui"
@@ -182,6 +317,9 @@
   },
   "pageTranslator_commonPreferences_title": {
     "message": "Preferensi umum untuk bahasa ini"
+  },
+  "pageTranslator_exportLog": {
+    "message": "Ekspor log terjemahan"
   },
   "pageTranslator_option_autoTranslate": {
     "message": "Terjemahkan otomatis"
@@ -264,6 +402,15 @@
   "settings_message_importConfig_success": {
     "message": "Impor selesai"
   },
+  "settings_message_llmTranslator_modelsEmpty": {
+    "message": "API mengembalikan daftar model kosong"
+  },
+  "settings_message_llmTranslator_modelsLoaded": {
+    "message": "Daftar model dimuat"
+  },
+  "settings_message_llmTranslator_testSuccess": {
+    "message": "Terjemahan uji berhasil:"
+  },
   "settings_message_resetConfig_confirm": {
     "message": "Konfirmasi untuk mengatur ulang pengaturan ke nilai default"
   },
@@ -315,6 +462,45 @@
   "settings_option_history_enable_desc": {
     "message": "Ketika diaktifkan, terjemahan akan direkam dan muncul di <slot id=historyPage>halaman riwayat</slot>"
   },
+  "settings_option_llmTranslator_activeProfile": {
+    "message": "Penyedia aktif"
+  },
+  "settings_option_llmTranslator_activeProfile_desc": {
+    "message": "Profil penyedia yang digunakan oleh modul terjemahan LLM"
+  },
+  "settings_option_llmTranslator_apiKey": {
+    "message": "Kunci API"
+  },
+  "settings_option_llmTranslator_apiUrl": {
+    "message": "URL API"
+  },
+  "settings_option_llmTranslator_fetchModelsButton": {
+    "message": "Ambil model"
+  },
+  "settings_option_llmTranslator_header": {
+    "message": "Penerjemah LLM"
+  },
+  "settings_option_llmTranslator_manage": {
+    "message": "Penyedia LLM"
+  },
+  "settings_option_llmTranslator_manageButton": {
+    "message": "Kelola penyedia"
+  },
+  "settings_option_llmTranslator_manage_desc": {
+    "message": "Tambah, edit, atau hapus profil penyedia LLM"
+  },
+  "settings_option_llmTranslator_model": {
+    "message": "Model"
+  },
+  "settings_option_llmTranslator_test": {
+    "message": "Uji koneksi"
+  },
+  "settings_option_llmTranslator_testButton": {
+    "message": "Uji"
+  },
+  "settings_option_llmTranslator_test_desc": {
+    "message": "Kirim permintaan terjemahan kecil dengan profil penyedia aktif untuk memverifikasi pengaturannya"
+  },
   "settings_option_pageTranslation": {
     "message": "Terjemahan halaman penuh"
   },
@@ -329,6 +515,12 @@
   },
   "settings_option_pageTranslation_enableContextMenu_desc": {
     "message": "Tambahkan tombol untuk mengaktifkan terjemahan halaman di menu konteks halaman"
+  },
+  "settings_option_pageTranslation_enableLogExport": {
+    "message": "Aktifkan ekspor log terjemahan"
+  },
+  "settings_option_pageTranslation_enableLogExport_desc": {
+    "message": "Izinkan sesi terjemahan halaman aktif menyimpan teks sumber, teks terjemahan, diagnostik model, dan kesalahan dalam memori untuk ekspor JSON manual. Log tidak pernah disimpan dan dapat berisi konten halaman sensitif"
   },
   "settings_option_pageTranslation_excludeSelectors": {
     "message": "Selector yang dikecualikan dari terjemahan"
@@ -377,6 +569,12 @@
   },
   "settings_option_selectTranslation_disableWhileTranslatePage": {
     "message": "Nonaktifkan saat menerjemahkan halaman"
+  },
+  "settings_option_selectTranslation_draggablePopup": {
+    "message": "Izinkan menyeret popup terjemahan"
+  },
+  "settings_option_selectTranslation_draggablePopup_desc": {
+    "message": "Memungkinkan Anda menyeret popup terjemahan pada latar belakangnya dan memindahkannya ke mana saja di halaman"
   },
   "settings_option_selectTranslation_enable": {
     "message": "Aktifkan terjemahan teks yang dipilih"
@@ -463,6 +661,12 @@
   "settings_option_selectTranslation_zIndex_desc": {
     "message": "Tingkatkan nilai ini jika elemen pada beberapa halaman menutupi popup dengan teks terjemahan"
   },
+  "settings_option_statistics_desc": {
+    "message": "Jumlah total terjemahan dan token LLM yang digunakan."
+  },
+  "settings_option_statistics_title": {
+    "message": "Statistik penggunaan"
+  },
   "settings_option_textTranslator": {
     "message": "Terjemahan teks"
   },
@@ -532,6 +736,9 @@
   "settings_option_userLanguage_desc": {
     "message": "Bahasa yang akan diterjemahkan teks"
   },
+  "settings_pageDescription": {
+    "message": "Kelola mesin terjemahan, cache, dan preferensi antarmuka"
+  },
   "settings_pageTitle": {
     "message": "Pengaturan"
   },
@@ -540,6 +747,27 @@
   },
   "settings_section_popup": {
     "message": "Popup"
+  },
+  "settings_section_popupAndHistory": {
+    "message": "Popup dan riwayat"
+  },
+  "settings_section_statistics": {
+    "message": "Statistik"
+  },
+  "statistics_llmInputTokens": {
+    "message": "Token input LLM"
+  },
+  "statistics_llmOutputTokens": {
+    "message": "Token output LLM"
+  },
+  "statistics_reset": {
+    "message": "Atur ulang statistik"
+  },
+  "statistics_resetConfirm": {
+    "message": "Atur ulang semua statistik penggunaan?"
+  },
+  "statistics_translations": {
+    "message": "Terjemahan"
   },
   "textTranslator_suggestLanguage": {
     "message": "Sepertinya bahasa teks adalah <slot id=languageSuggest>$language_name$</slot>",

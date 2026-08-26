@@ -26,110 +26,14 @@
   "common_llmTranslator": {
     "message": "LLM"
   },
-  "llmProvider_openaiCompatible": {
-    "message": "OpenAI 兼容"
-  },
-  "llmProvider_custom": {
-    "message": "自定义"
-  },
-  "llmProfiles_managerTitle": {
-    "message": "LLM 提供商"
-  },
-  "llmProfiles_emptyList": {
-    "message": "暂无提供商。使用下方预设添加一个。"
-  },
-  "llmProfiles_addProvider": {
-    "message": "提供商预设"
-  },
-  "llmProfiles_add": {
-    "message": "添加"
-  },
-  "llmProfiles_edit": {
-    "message": "编辑"
-  },
-  "llmProfiles_delete": {
-    "message": "删除"
-  },
-  "llmProfiles_deleteConfirm": {
-    "message": "确定要删除“$provider_name$”提供商吗？",
-    "placeholders": {
-      "provider_name": {
-        "content": "$1",
-        "example": "OpenAI"
-      }
-    }
-  },
-  "llmProfiles_active": {
-    "message": "使用中"
-  },
-  "llmProfiles_setActive": {
-    "message": "设为使用中"
-  },
-  "llmProfiles_editProfile": {
-    "message": "编辑提供商"
-  },
-  "llmProfiles_profileName": {
-    "message": "名称"
-  },
-  "llmProfiles_provider": {
-    "message": "提供商"
-  },
-  "llmProfiles_save": {
-    "message": "保存"
-  },
-  "llmProfiles_emptyName": {
-    "message": "请输入提供商名称"
-  },
-  "llmProfiles_duplicateName": {
-    "message": "已存在同名提供商"
-  },
-  "llmProfiles_advancedExecution": {
-    "message": "高级执行"
-  },
-  "llmProfiles_contextWindowTokens": {
-    "message": "上下文窗口"
-  },
-  "llmProfiles_contextWindowTokens_desc": {
-    "message": "模型上下文窗口的总 Token 数（最小 512）。自动：$1 Token"
-  },
-  "llmProfiles_preferredInputTokens": {
-    "message": "首选输入"
-  },
-  "llmProfiles_preferredInputTokens_desc": {
-    "message": "提示词批量的目标 Token 数（最小 1）。自动：$1 Token"
-  },
-  "llmProfiles_maxOutputTokens": {
-    "message": "最大输出 Token 数"
-  },
-  "llmProfiles_maxOutputTokens_desc": {
-    "message": "每次翻译请求生成的最大 Token 数（最小 1）。自动：$1"
-  },
-  "llmProfiles_maxConcurrentRequests": {
-    "message": "并行请求数"
-  },
-  "llmProfiles_maxConcurrentRequests_desc": {
-    "message": "并发翻译请求的最大数量（1–8）。自动：$1 个请求"
-  },
-  "llmProfiles_auto": {
-    "message": "自动"
-  },
-  "llmProfiles_outputAutoUncapped": {
-    "message": "按批量大小确定（最小 256；未检测到上限）"
-  },
-  "llmProfiles_outputAutoDetected": {
-    "message": "最多 $1 Token（已检测）"
-  },
-  "llmProfiles_unitTokens": {
-    "message": "Token"
-  },
-  "llmProfiles_unitRequests": {
-    "message": "请求"
-  },
   "common_offlineTranslator": {
     "message": "$1 - 离线翻译器"
   },
   "common_retry": {
     "message": "重试"
+  },
+  "common_search": {
+    "message": "搜索"
   },
   "common_translate": {
     "message": "翻译"
@@ -273,6 +177,129 @@
   "lang_swap": {
     "message": "交换语言"
   },
+  "llmProfiles_active": {
+    "message": "使用中"
+  },
+  "llmProfiles_add": {
+    "message": "添加"
+  },
+  "llmProfiles_addProvider": {
+    "message": "提供商预设"
+  },
+  "llmProfiles_advancedExecution": {
+    "message": "高级执行"
+  },
+  "llmProfiles_auto": {
+    "message": "自动"
+  },
+  "llmProfiles_contextWindowTokens": {
+    "message": "上下文窗口"
+  },
+  "llmProfiles_contextWindowTokens_desc": {
+    "message": "模型上下文窗口的总 Token 数（最小 512）。自动：$1 Token"
+  },
+  "llmProfiles_delete": {
+    "message": "删除"
+  },
+  "llmProfiles_deleteConfirm": {
+    "message": "确定要删除“$provider_name$”提供商吗？",
+    "placeholders": {
+      "provider_name": {
+        "content": "$1",
+        "example": "OpenAI"
+      }
+    }
+  },
+  "llmProfiles_duplicateName": {
+    "message": "已存在同名提供商"
+  },
+  "llmProfiles_edit": {
+    "message": "编辑"
+  },
+  "llmProfiles_editProfile": {
+    "message": "编辑提供商"
+  },
+  "llmProfiles_emptyList": {
+    "message": "暂无提供商。使用下方预设添加一个。"
+  },
+  "llmProfiles_emptyName": {
+    "message": "请输入提供商名称"
+  },
+  "llmProfiles_fallback": {
+    "message": "回退模型配置"
+  },
+  "llmProfiles_fallback_desc": {
+    "message": "仅在结构校验反复失败后使用。"
+  },
+  "llmProfiles_fallback_none": {
+    "message": "无回退"
+  },
+  "llmProfiles_managerTitle": {
+    "message": "LLM 提供商"
+  },
+  "llmProfiles_maxConcurrentRequests": {
+    "message": "并行请求数"
+  },
+  "llmProfiles_maxConcurrentRequests_desc": {
+    "message": "并发翻译请求的最大数量（1–8）。自动：$1 个请求"
+  },
+  "llmProfiles_maxOutputTokens": {
+    "message": "最大输出 Token 数"
+  },
+  "llmProfiles_maxOutputTokens_desc": {
+    "message": "每次翻译请求生成的最大 Token 数（最小 1）。自动：$1"
+  },
+  "llmProfiles_outputAutoDetected": {
+    "message": "最多 $1 Token（已检测）"
+  },
+  "llmProfiles_outputAutoUncapped": {
+    "message": "按批量大小确定（最小 256；未检测到上限）"
+  },
+  "llmProfiles_preferredInputTokens": {
+    "message": "首选输入"
+  },
+  "llmProfiles_preferredInputTokens_desc": {
+    "message": "提示词批量的目标 Token 数（最小 1）。自动：$1 Token"
+  },
+  "llmProfiles_profileName": {
+    "message": "名称"
+  },
+  "llmProfiles_provider": {
+    "message": "提供商"
+  },
+  "llmProfiles_quality": {
+    "message": "翻译质量"
+  },
+  "llmProfiles_quality_accurate": {
+    "message": "精确"
+  },
+  "llmProfiles_quality_balanced": {
+    "message": "均衡"
+  },
+  "llmProfiles_quality_desc": {
+    "message": "控制提示词深度、上下文使用、批量大小和重试次数。"
+  },
+  "llmProfiles_quality_fast": {
+    "message": "快速"
+  },
+  "llmProfiles_save": {
+    "message": "保存"
+  },
+  "llmProfiles_setActive": {
+    "message": "设为使用中"
+  },
+  "llmProfiles_unitRequests": {
+    "message": "请求"
+  },
+  "llmProfiles_unitTokens": {
+    "message": "Token"
+  },
+  "llmProvider_custom": {
+    "message": "自定义"
+  },
+  "llmProvider_openaiCompatible": {
+    "message": "OpenAI 兼容"
+  },
   "message_unknownError": {
     "message": "未知错误"
   },
@@ -290,6 +317,9 @@
   },
   "pageTranslator_commonPreferences_title": {
     "message": "此语言的通用偏好"
+  },
+  "pageTranslator_exportLog": {
+    "message": "导出翻译日志"
   },
   "pageTranslator_option_autoTranslate": {
     "message": "自动翻译"
@@ -432,29 +462,32 @@
   "settings_option_history_enable_desc": {
     "message": "启用后，翻译将被记录并显示在<slot id=historyPage>历史页面</slot>上"
   },
-  "settings_option_llmTranslator_header": {
-    "message": "LLM 翻译器"
-  },
   "settings_option_llmTranslator_activeProfile": {
     "message": "当前提供商"
   },
   "settings_option_llmTranslator_activeProfile_desc": {
     "message": "LLM 翻译模块使用的提供商配置"
   },
-  "settings_option_llmTranslator_manage": {
-    "message": "LLM 提供商"
-  },
-  "settings_option_llmTranslator_manage_desc": {
-    "message": "添加、编辑或移除 LLM 提供商配置"
-  },
-  "settings_option_llmTranslator_manageButton": {
-    "message": "管理提供商"
+  "settings_option_llmTranslator_apiKey": {
+    "message": "API 密钥"
   },
   "settings_option_llmTranslator_apiUrl": {
     "message": "API URL"
   },
-  "settings_option_llmTranslator_apiKey": {
-    "message": "API 密钥"
+  "settings_option_llmTranslator_fetchModelsButton": {
+    "message": "获取模型列表"
+  },
+  "settings_option_llmTranslator_header": {
+    "message": "LLM 翻译器"
+  },
+  "settings_option_llmTranslator_manage": {
+    "message": "LLM 提供商"
+  },
+  "settings_option_llmTranslator_manageButton": {
+    "message": "管理提供商"
+  },
+  "settings_option_llmTranslator_manage_desc": {
+    "message": "添加、编辑或移除 LLM 提供商配置"
   },
   "settings_option_llmTranslator_model": {
     "message": "模型"
@@ -462,14 +495,11 @@
   "settings_option_llmTranslator_test": {
     "message": "测试连接"
   },
-  "settings_option_llmTranslator_test_desc": {
-    "message": "使用当前提供商配置发送一个小型翻译请求，以验证其设置"
-  },
   "settings_option_llmTranslator_testButton": {
     "message": "测试"
   },
-  "settings_option_llmTranslator_fetchModelsButton": {
-    "message": "获取模型列表"
+  "settings_option_llmTranslator_test_desc": {
+    "message": "使用当前提供商配置发送一个小型翻译请求，以验证其设置"
   },
   "settings_option_pageTranslation": {
     "message": "整页翻译"
@@ -485,6 +515,12 @@
   },
   "settings_option_pageTranslation_enableContextMenu_desc": {
     "message": "在页面上下文菜单中添加一个按钮以切换页面翻译"
+  },
+  "settings_option_pageTranslation_enableLogExport": {
+    "message": "启用翻译日志导出"
+  },
+  "settings_option_pageTranslation_enableLogExport_desc": {
+    "message": "允许当前页面翻译会话在内存中保留源文本、译文、模型诊断和错误，以便手动导出为 JSON。日志不会被持久保存，且可能包含敏感的页面内容"
   },
   "settings_option_pageTranslation_excludeSelectors": {
     "message": "排除翻译的选择器"
@@ -533,6 +569,12 @@
   },
   "settings_option_selectTranslation_disableWhileTranslatePage": {
     "message": "翻译页面时禁用"
+  },
+  "settings_option_selectTranslation_draggablePopup": {
+    "message": "允许拖动翻译弹窗"
+  },
+  "settings_option_selectTranslation_draggablePopup_desc": {
+    "message": "允许你抓住翻译弹窗的背景，将其移动到页面上的任意位置"
   },
   "settings_option_selectTranslation_enable": {
     "message": "启用选中文本翻译"

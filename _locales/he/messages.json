@@ -20,11 +20,20 @@
   "common_error": {
     "message": "שגיאה"
   },
+  "common_listen": {
+    "message": "האזן"
+  },
+  "common_llmTranslator": {
+    "message": "LLM"
+  },
   "common_offlineTranslator": {
     "message": "$1 - מתרגם לא מקוון"
   },
   "common_retry": {
     "message": "נסה שוב"
+  },
+  "common_search": {
+    "message": "חיפוש"
   },
   "common_translate": {
     "message": "תרגם"
@@ -159,11 +168,137 @@
   "lang_detect": {
     "message": "זיהוי אוטומטי"
   },
+  "lang_searchPlaceholder": {
+    "message": "חפש שפה"
+  },
   "lang_select": {
     "message": "בחר שפה"
   },
   "lang_swap": {
     "message": "החלף שפות"
+  },
+  "llmProfiles_active": {
+    "message": "פעיל"
+  },
+  "llmProfiles_add": {
+    "message": "הוסף"
+  },
+  "llmProfiles_addProvider": {
+    "message": "תבנית ספק מוכנה"
+  },
+  "llmProfiles_advancedExecution": {
+    "message": "ביצוע מתקדם"
+  },
+  "llmProfiles_auto": {
+    "message": "אוטומטי"
+  },
+  "llmProfiles_contextWindowTokens": {
+    "message": "חלון הקשר"
+  },
+  "llmProfiles_contextWindowTokens_desc": {
+    "message": "חלון ההקשר הכולל של המודל באסימונים (מינימום 512). אוטומטי: $1 אסימונים"
+  },
+  "llmProfiles_delete": {
+    "message": "מחק"
+  },
+  "llmProfiles_deleteConfirm": {
+    "message": "האם אתה בטוח שברצונך למחוק את הספק \"$provider_name$\"?",
+    "placeholders": {
+      "provider_name": {
+        "content": "$1",
+        "example": "OpenAI"
+      }
+    }
+  },
+  "llmProfiles_duplicateName": {
+    "message": "ספק בשם זה כבר קיים"
+  },
+  "llmProfiles_edit": {
+    "message": "ערוך"
+  },
+  "llmProfiles_editProfile": {
+    "message": "ערוך ספק"
+  },
+  "llmProfiles_emptyList": {
+    "message": "עדיין אין ספקים. הוסף אחד באמצעות תבנית מוכנה למטה."
+  },
+  "llmProfiles_emptyName": {
+    "message": "הזן שם ספק"
+  },
+  "llmProfiles_fallback": {
+    "message": "פרופיל מודל גיבוי"
+  },
+  "llmProfiles_fallback_desc": {
+    "message": "משמש רק לאחר כשלים חוזרים באימות המבני."
+  },
+  "llmProfiles_fallback_none": {
+    "message": "ללא גיבוי"
+  },
+  "llmProfiles_managerTitle": {
+    "message": "ספקי LLM"
+  },
+  "llmProfiles_maxConcurrentRequests": {
+    "message": "בקשות מקבילות"
+  },
+  "llmProfiles_maxConcurrentRequests_desc": {
+    "message": "מספר מרבי של בקשות תרגום בו-זמניות (1–8). אוטומטי: $1 בקשות"
+  },
+  "llmProfiles_maxOutputTokens": {
+    "message": "מקסימום אסימוני פלט"
+  },
+  "llmProfiles_maxOutputTokens_desc": {
+    "message": "מקסימום אסימונים שנוצרים לכל בקשת תרגום (מינימום 1). אוטומטי: $1"
+  },
+  "llmProfiles_outputAutoDetected": {
+    "message": "עד $1 אסימונים (זוהה)"
+  },
+  "llmProfiles_outputAutoUncapped": {
+    "message": "גודל לפי אצווה (מינימום 256; לא זוהתה תקרה)"
+  },
+  "llmProfiles_preferredInputTokens": {
+    "message": "קלט מועדף"
+  },
+  "llmProfiles_preferredInputTokens_desc": {
+    "message": "גודל אצוות ההנחיה היעד באסימונים (מינימום 1). אוטומטי: $1 אסימונים"
+  },
+  "llmProfiles_profileName": {
+    "message": "שם"
+  },
+  "llmProfiles_provider": {
+    "message": "ספק"
+  },
+  "llmProfiles_quality": {
+    "message": "איכות התרגום"
+  },
+  "llmProfiles_quality_accurate": {
+    "message": "מדויק"
+  },
+  "llmProfiles_quality_balanced": {
+    "message": "מאוזן"
+  },
+  "llmProfiles_quality_desc": {
+    "message": "שולט בעומק ההנחיה, בשימוש בהקשר, בגודל האצווה ובניסיונות החוזרים."
+  },
+  "llmProfiles_quality_fast": {
+    "message": "מהיר"
+  },
+  "llmProfiles_save": {
+    "message": "שמור"
+  },
+  "llmProfiles_setActive": {
+    "message": "הגדר כפעיל"
+  },
+  "llmProfiles_unitRequests": {
+    "message": "בקשות"
+  },
+  "llmProfiles_unitTokens": {
+    "message": "אסימונים"
+  },
+  "llmProvider_custom": {
+    "message": "מותאם אישית"
+  },
+  "llmProvider_openaiCompatible": {
+    "message": "תואם OpenAI"
   },
   "message_unknownError": {
     "message": "שגיאה לא ידועה"
@@ -182,6 +317,9 @@
   },
   "pageTranslator_commonPreferences_title": {
     "message": "העדפות כלליות לשפה זו"
+  },
+  "pageTranslator_exportLog": {
+    "message": "ייצוא יומן התרגום"
   },
   "pageTranslator_option_autoTranslate": {
     "message": "תרגום אוטומטי"
@@ -264,6 +402,15 @@
   "settings_message_importConfig_success": {
     "message": "ייבוא הושלם"
   },
+  "settings_message_llmTranslator_modelsEmpty": {
+    "message": "ה-API החזיר רשימת מודלים ריקה"
+  },
+  "settings_message_llmTranslator_modelsLoaded": {
+    "message": "רשימת המודלים נטענה"
+  },
+  "settings_message_llmTranslator_testSuccess": {
+    "message": "תרגום הבדיקה הצליח:"
+  },
   "settings_message_resetConfig_confirm": {
     "message": "אשר לאיפוס ההגדרות לערכי ברירת מחדל"
   },
@@ -315,6 +462,45 @@
   "settings_option_history_enable_desc": {
     "message": "כאשר מופעל, תרגומים יירשמו ויופיעו ב<slot id=historyPage>דף ההיסטוריה</slot>"
   },
+  "settings_option_llmTranslator_activeProfile": {
+    "message": "ספק פעיל"
+  },
+  "settings_option_llmTranslator_activeProfile_desc": {
+    "message": "פרופיל הספק בשימוש מודול התרגום של LLM"
+  },
+  "settings_option_llmTranslator_apiKey": {
+    "message": "מפתח API"
+  },
+  "settings_option_llmTranslator_apiUrl": {
+    "message": "API URL"
+  },
+  "settings_option_llmTranslator_fetchModelsButton": {
+    "message": "שלוף מודלים"
+  },
+  "settings_option_llmTranslator_header": {
+    "message": "מתרגם LLM"
+  },
+  "settings_option_llmTranslator_manage": {
+    "message": "ספקי LLM"
+  },
+  "settings_option_llmTranslator_manageButton": {
+    "message": "נהל ספקים"
+  },
+  "settings_option_llmTranslator_manage_desc": {
+    "message": "הוסף, ערוך או הסר פרופילי ספקי LLM"
+  },
+  "settings_option_llmTranslator_model": {
+    "message": "מודל"
+  },
+  "settings_option_llmTranslator_test": {
+    "message": "בדוק חיבור"
+  },
+  "settings_option_llmTranslator_testButton": {
+    "message": "בדוק"
+  },
+  "settings_option_llmTranslator_test_desc": {
+    "message": "שלח בקשת תרגום קטנה עם פרופיל הספק הפעיל כדי לאמת את ההגדרות שלו"
+  },
   "settings_option_pageTranslation": {
     "message": "תרגום עמוד מלא"
   },
@@ -329,6 +515,12 @@
   },
   "settings_option_pageTranslation_enableContextMenu_desc": {
     "message": "הוסף כפתור להחלפת תרגום עמוד בתפריט ההקשר של העמוד"
+  },
+  "settings_option_pageTranslation_enableLogExport": {
+    "message": "הפעל ייצוא יומן תרגום"
+  },
+  "settings_option_pageTranslation_enableLogExport_desc": {
+    "message": "אפשר לסשן תרגום העמוד הפעיל לשמור בזיכרון את טקסט המקור, הטקסט המתורגם, אבחוני המודל והשגיאות לייצוא ידני ב-JSON. היומנים לעולם אינם נשמרים ועשויים להכיל תוכן עמוד רגיש"
   },
   "settings_option_pageTranslation_excludeSelectors": {
     "message": "בוחרים להחרגה מהתרגום"
@@ -377,6 +569,12 @@
   },
   "settings_option_selectTranslation_disableWhileTranslatePage": {
     "message": "השבת בזמן תרגום הדף"
+  },
+  "settings_option_selectTranslation_draggablePopup": {
+    "message": "אפשר גרירת חלון התרגום הקופץ"
+  },
+  "settings_option_selectTranslation_draggablePopup_desc": {
+    "message": "מאפשר לתפוס את חלון התרגום הקופץ ברקע שלו ולהזיזו לכל מקום בעמוד"
   },
   "settings_option_selectTranslation_enable": {
     "message": "הפעל תרגום טקסט נבחר"
@@ -463,6 +661,12 @@
   "settings_option_selectTranslation_zIndex_desc": {
     "message": "הגדל ערך זה אם אלמנטים בדפים מסוימים חופפים את החלון הקופץ עם הטקסט המתורגם"
   },
+  "settings_option_statistics_desc": {
+    "message": "המספר הכולל של התרגומים ואסימוני LLM שנצרכו."
+  },
+  "settings_option_statistics_title": {
+    "message": "סטטיסטיקות שימוש"
+  },
   "settings_option_textTranslator": {
     "message": "תרגום טקסט"
   },
@@ -532,6 +736,9 @@
   "settings_option_userLanguage_desc": {
     "message": "השפה שאליה יתורגמו הטקסטים"
   },
+  "settings_pageDescription": {
+    "message": "נהל מנועי תרגום, מטמון והעדפות ממשק"
+  },
   "settings_pageTitle": {
     "message": "הגדרות"
   },
@@ -540,6 +747,27 @@
   },
   "settings_section_popup": {
     "message": "חלון קופץ"
+  },
+  "settings_section_popupAndHistory": {
+    "message": "חלון קופץ והיסטוריה"
+  },
+  "settings_section_statistics": {
+    "message": "סטטיסטיקה"
+  },
+  "statistics_llmInputTokens": {
+    "message": "אסימוני קלט של LLM"
+  },
+  "statistics_llmOutputTokens": {
+    "message": "אסימוני פלט של LLM"
+  },
+  "statistics_reset": {
+    "message": "אפס סטטיסטיקות"
+  },
+  "statistics_resetConfirm": {
+    "message": "לאפס את כל סטטיסטיקות השימוש?"
+  },
+  "statistics_translations": {
+    "message": "תרגומים"
   },
   "textTranslator_suggestLanguage": {
     "message": "נראה כי שפת הטקסט היא <slot id=languageSuggest>$language_name$</slot>",

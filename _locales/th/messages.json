@@ -20,11 +20,20 @@
   "common_error": {
     "message": "ข้อผิดพลาด"
   },
+  "common_listen": {
+    "message": "ฟัง"
+  },
+  "common_llmTranslator": {
+    "message": "LLM"
+  },
   "common_offlineTranslator": {
     "message": "$1 - นักแปลออฟไลน์"
   },
   "common_retry": {
     "message": "ลองใหม่"
+  },
+  "common_search": {
+    "message": "ค้นหา"
   },
   "common_translate": {
     "message": "แปล"
@@ -159,11 +168,137 @@
   "lang_detect": {
     "message": "ตรวจจับอัตโนมัติ"
   },
+  "lang_searchPlaceholder": {
+    "message": "ค้นหาภาษา"
+  },
   "lang_select": {
     "message": "เลือกภาษา"
   },
   "lang_swap": {
     "message": "สลับภาษา"
+  },
+  "llmProfiles_active": {
+    "message": "ใช้งานอยู่"
+  },
+  "llmProfiles_add": {
+    "message": "เพิ่ม"
+  },
+  "llmProfiles_addProvider": {
+    "message": "ค่าตั้งต้นผู้ให้บริการ"
+  },
+  "llmProfiles_advancedExecution": {
+    "message": "การทำงานขั้นสูง"
+  },
+  "llmProfiles_auto": {
+    "message": "อัตโนมัติ"
+  },
+  "llmProfiles_contextWindowTokens": {
+    "message": "หน้าต่างบริบท"
+  },
+  "llmProfiles_contextWindowTokens_desc": {
+    "message": "หน้าต่างบริบททั้งหมดของโมเดลหน่วยเป็นโทเคน (ขั้นต่ำ 512) อัตโนมัติ: $1 โทเคน"
+  },
+  "llmProfiles_delete": {
+    "message": "ลบ"
+  },
+  "llmProfiles_deleteConfirm": {
+    "message": "คุณแน่ใจหรือไม่ว่าต้องการลบผู้ให้บริการ \"$provider_name$\"?",
+    "placeholders": {
+      "provider_name": {
+        "content": "$1",
+        "example": "OpenAI"
+      }
+    }
+  },
+  "llmProfiles_duplicateName": {
+    "message": "มีผู้ให้บริการชื่อนี้อยู่แล้ว"
+  },
+  "llmProfiles_edit": {
+    "message": "แก้ไข"
+  },
+  "llmProfiles_editProfile": {
+    "message": "แก้ไขผู้ให้บริการ"
+  },
+  "llmProfiles_emptyList": {
+    "message": "ยังไม่มีผู้ให้บริการ เพิ่มโดยใช้ค่าตั้งต้นด้านล่าง"
+  },
+  "llmProfiles_emptyName": {
+    "message": "ป้อนชื่อผู้ให้บริการ"
+  },
+  "llmProfiles_fallback": {
+    "message": "โปรไฟล์โมเดลสำรอง"
+  },
+  "llmProfiles_fallback_desc": {
+    "message": "ใช้เฉพาะเมื่อการตรวจสอบโครงสร้างล้มเหลวซ้ำๆ"
+  },
+  "llmProfiles_fallback_none": {
+    "message": "ไม่มีตัวสำรอง"
+  },
+  "llmProfiles_managerTitle": {
+    "message": "ผู้ให้บริการ LLM"
+  },
+  "llmProfiles_maxConcurrentRequests": {
+    "message": "คำขอแบบขนาน"
+  },
+  "llmProfiles_maxConcurrentRequests_desc": {
+    "message": "จำนวนคำขอแปลพร้อมกันสูงสุด (1–8) อัตโนมัติ: $1 คำขอ"
+  },
+  "llmProfiles_maxOutputTokens": {
+    "message": "โทเคนเอาต์พุตสูงสุด"
+  },
+  "llmProfiles_maxOutputTokens_desc": {
+    "message": "โทเคนสูงสุดที่สร้างต่อคำขอแปล (ขั้นต่ำ 1) อัตโนมัติ: $1"
+  },
+  "llmProfiles_outputAutoDetected": {
+    "message": "สูงสุด $1 โทเคน (ตรวจพบ)"
+  },
+  "llmProfiles_outputAutoUncapped": {
+    "message": "กำหนดขนาดตามชุด (ขั้นต่ำ 256; ไม่พบขีดจำกัด)"
+  },
+  "llmProfiles_preferredInputTokens": {
+    "message": "อินพุตที่ต้องการ"
+  },
+  "llmProfiles_preferredInputTokens_desc": {
+    "message": "ขนาดชุดพรอมป์เป้าหมายหน่วยเป็นโทเคน (ขั้นต่ำ 1) อัตโนมัติ: $1 โทเคน"
+  },
+  "llmProfiles_profileName": {
+    "message": "ชื่อ"
+  },
+  "llmProfiles_provider": {
+    "message": "ผู้ให้บริการ"
+  },
+  "llmProfiles_quality": {
+    "message": "คุณภาพการแปล"
+  },
+  "llmProfiles_quality_accurate": {
+    "message": "แม่นยำ"
+  },
+  "llmProfiles_quality_balanced": {
+    "message": "สมดุล"
+  },
+  "llmProfiles_quality_desc": {
+    "message": "ควบคุมความลึกของพรอมป์ การใช้บริบท ขนาดชุด และการลองใหม่"
+  },
+  "llmProfiles_quality_fast": {
+    "message": "เร็ว"
+  },
+  "llmProfiles_save": {
+    "message": "บันทึก"
+  },
+  "llmProfiles_setActive": {
+    "message": "ตั้งเป็นตัวที่ใช้งาน"
+  },
+  "llmProfiles_unitRequests": {
+    "message": "คำขอ"
+  },
+  "llmProfiles_unitTokens": {
+    "message": "โทเคน"
+  },
+  "llmProvider_custom": {
+    "message": "กำหนดเอง"
+  },
+  "llmProvider_openaiCompatible": {
+    "message": "เข้ากันได้กับ OpenAI"
   },
   "message_unknownError": {
     "message": "ข้อผิดพลาดที่ไม่รู้จัก"
@@ -182,6 +317,9 @@
   },
   "pageTranslator_commonPreferences_title": {
     "message": "การตั้งค่าทั่วไปสำหรับภาษานี้"
+  },
+  "pageTranslator_exportLog": {
+    "message": "ส่งออกบันทึกการแปล"
   },
   "pageTranslator_option_autoTranslate": {
     "message": "แปลอัตโนมัติ"
@@ -264,6 +402,15 @@
   "settings_message_importConfig_success": {
     "message": "นำเข้าเสร็จสิ้น"
   },
+  "settings_message_llmTranslator_modelsEmpty": {
+    "message": "API ส่งคืนรายการโมเดลว่างเปล่า"
+  },
+  "settings_message_llmTranslator_modelsLoaded": {
+    "message": "โหลดรายการโมเดลแล้ว"
+  },
+  "settings_message_llmTranslator_testSuccess": {
+    "message": "การแปลทดสอบสำเร็จ:"
+  },
   "settings_message_resetConfig_confirm": {
     "message": "ยืนยันการรีเซ็ตการตั้งค่าเป็นค่าเริ่มต้น"
   },
@@ -315,6 +462,45 @@
   "settings_option_history_enable_desc": {
     "message": "เมื่อเปิดใช้งาน การแปลจะถูกบันทึกและปรากฏใน <slot id=historyPage>หน้าประวัติ</slot>"
   },
+  "settings_option_llmTranslator_activeProfile": {
+    "message": "ผู้ให้บริการที่ใช้งาน"
+  },
+  "settings_option_llmTranslator_activeProfile_desc": {
+    "message": "โปรไฟล์ผู้ให้บริการที่โมดูลการแปล LLM ใช้"
+  },
+  "settings_option_llmTranslator_apiKey": {
+    "message": "คีย์ API"
+  },
+  "settings_option_llmTranslator_apiUrl": {
+    "message": "URL ของ API"
+  },
+  "settings_option_llmTranslator_fetchModelsButton": {
+    "message": "ดึงโมเดล"
+  },
+  "settings_option_llmTranslator_header": {
+    "message": "ตัวแปล LLM"
+  },
+  "settings_option_llmTranslator_manage": {
+    "message": "ผู้ให้บริการ LLM"
+  },
+  "settings_option_llmTranslator_manageButton": {
+    "message": "จัดการผู้ให้บริการ"
+  },
+  "settings_option_llmTranslator_manage_desc": {
+    "message": "เพิ่ม แก้ไข หรือลบโปรไฟล์ผู้ให้บริการ LLM"
+  },
+  "settings_option_llmTranslator_model": {
+    "message": "โมเดล"
+  },
+  "settings_option_llmTranslator_test": {
+    "message": "ทดสอบการเชื่อมต่อ"
+  },
+  "settings_option_llmTranslator_testButton": {
+    "message": "ทดสอบ"
+  },
+  "settings_option_llmTranslator_test_desc": {
+    "message": "ส่งคำขอแปลขนาดเล็กด้วยโปรไฟล์ผู้ให้บริการที่ใช้งานเพื่อตรวจสอบการตั้งค่า"
+  },
   "settings_option_pageTranslation": {
     "message": "การแปลหน้าเต็ม"
   },
@@ -329,6 +515,12 @@
   },
   "settings_option_pageTranslation_enableContextMenu_desc": {
     "message": "เพิ่มปุ่มเพื่อสลับการแปลหน้าในเมนูบริบทของหน้า"
+  },
+  "settings_option_pageTranslation_enableLogExport": {
+    "message": "เปิดใช้งานการส่งออกบันทึกการแปล"
+  },
+  "settings_option_pageTranslation_enableLogExport_desc": {
+    "message": "อนุญาตให้เซสชันการแปลหน้าที่ใช้งานเก็บข้อความต้นฉบับ ข้อความที่แปล การวินิจฉัยโมเดล และข้อผิดพลาดไว้ในหน่วยความจำเพื่อส่งออก JSON ด้วยตนเอง บันทึกจะไม่ถูกจัดเก็บถาวรและอาจมีเนื้อหาหน้าที่ละเอียดอ่อน"
   },
   "settings_option_pageTranslation_excludeSelectors": {
     "message": "ตัวเลือกที่ไม่รวมในการแปล"
@@ -377,6 +569,12 @@
   },
   "settings_option_selectTranslation_disableWhileTranslatePage": {
     "message": "ปิดใช้งานขณะกำลังแปลหน้า"
+  },
+  "settings_option_selectTranslation_draggablePopup": {
+    "message": "อนุญาตให้ลากป๊อปอัปการแปล"
+  },
+  "settings_option_selectTranslation_draggablePopup_desc": {
+    "message": "ให้คุณจับที่พื้นหลังของป๊อปอัปการแปลและย้ายไปยังตำแหน่งใดก็ได้บนหน้า"
   },
   "settings_option_selectTranslation_enable": {
     "message": "เปิดใช้งานการแปลข้อความที่เลือก"
@@ -463,6 +661,12 @@
   "settings_option_selectTranslation_zIndex_desc": {
     "message": "เพิ่มค่านี้หากองค์ประกอบในบางหน้าทับซ้อนกับป๊อปอัพที่มีข้อความแปล"
   },
+  "settings_option_statistics_desc": {
+    "message": "จำนวนการแปลทั้งหมดและโทเคน LLM ที่ใช้ไป"
+  },
+  "settings_option_statistics_title": {
+    "message": "สถิติการใช้งาน"
+  },
   "settings_option_textTranslator": {
     "message": "การแปลข้อความ"
   },
@@ -532,6 +736,9 @@
   "settings_option_userLanguage_desc": {
     "message": "ภาษาที่ข้อความจะถูกแปลเป็น"
   },
+  "settings_pageDescription": {
+    "message": "จัดการกลไกการแปล แคช และการตั้งค่าอินเทอร์เฟซ"
+  },
   "settings_pageTitle": {
     "message": "การตั้งค่า"
   },
@@ -540,6 +747,27 @@
   },
   "settings_section_popup": {
     "message": "ป๊อปอัพ"
+  },
+  "settings_section_popupAndHistory": {
+    "message": "ป๊อปอัปและประวัติ"
+  },
+  "settings_section_statistics": {
+    "message": "สถิติ"
+  },
+  "statistics_llmInputTokens": {
+    "message": "โทเคนอินพุต LLM"
+  },
+  "statistics_llmOutputTokens": {
+    "message": "โทเคนเอาต์พุต LLM"
+  },
+  "statistics_reset": {
+    "message": "รีเซ็ตสถิติ"
+  },
+  "statistics_resetConfirm": {
+    "message": "รีเซ็ตสถิติการใช้งานทั้งหมด?"
+  },
+  "statistics_translations": {
+    "message": "การแปล"
   },
   "textTranslator_suggestLanguage": {
     "message": "ดูเหมือนว่าภาษาของข้อความคือ <slot id=languageSuggest>$language_name$</slot>",

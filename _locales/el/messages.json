@@ -20,11 +20,20 @@
   "common_error": {
     "message": "Σφάλμα"
   },
+  "common_listen": {
+    "message": "Ακρόαση"
+  },
+  "common_llmTranslator": {
+    "message": "LLM"
+  },
   "common_offlineTranslator": {
     "message": "$1 - Μεταφραστής εκτός σύνδεσης"
   },
   "common_retry": {
     "message": "Επανάληψη"
+  },
+  "common_search": {
+    "message": "Αναζήτηση"
   },
   "common_translate": {
     "message": "Μετάφραση"
@@ -159,11 +168,137 @@
   "lang_detect": {
     "message": "Αυτόματη ανίχνευση"
   },
+  "lang_searchPlaceholder": {
+    "message": "Αναζήτηση γλώσσας"
+  },
   "lang_select": {
     "message": "Επιλογή γλώσσας"
   },
   "lang_swap": {
     "message": "Αντιστροφή γλωσσών"
+  },
+  "llmProfiles_active": {
+    "message": "Ενεργό"
+  },
+  "llmProfiles_add": {
+    "message": "Προσθήκη"
+  },
+  "llmProfiles_addProvider": {
+    "message": "Προεπιλογή παρόχου"
+  },
+  "llmProfiles_advancedExecution": {
+    "message": "Σύνθετη εκτέλεση"
+  },
+  "llmProfiles_auto": {
+    "message": "Αυτόματο"
+  },
+  "llmProfiles_contextWindowTokens": {
+    "message": "Παράθυρο πλαισίου"
+  },
+  "llmProfiles_contextWindowTokens_desc": {
+    "message": "Συνολικό παράθυρο πλαισίου του μοντέλου σε tokens (ελάχιστο 512). Αυτόματο: $1 tokens"
+  },
+  "llmProfiles_delete": {
+    "message": "Διαγραφή"
+  },
+  "llmProfiles_deleteConfirm": {
+    "message": "Είστε βέβαιοι ότι θέλετε να διαγράψετε τον πάροχο \"$provider_name$\";",
+    "placeholders": {
+      "provider_name": {
+        "content": "$1",
+        "example": "OpenAI"
+      }
+    }
+  },
+  "llmProfiles_duplicateName": {
+    "message": "Υπάρχει ήδη πάροχος με αυτό το όνομα"
+  },
+  "llmProfiles_edit": {
+    "message": "Επεξεργασία"
+  },
+  "llmProfiles_editProfile": {
+    "message": "Επεξεργασία παρόχου"
+  },
+  "llmProfiles_emptyList": {
+    "message": "Δεν υπάρχουν ακόμη πάροχοι. Προσθέστε έναν με μια προεπιλογή παρακάτω."
+  },
+  "llmProfiles_emptyName": {
+    "message": "Εισαγάγετε ένα όνομα παρόχου"
+  },
+  "llmProfiles_fallback": {
+    "message": "Εφεδρικό προφίλ μοντέλου"
+  },
+  "llmProfiles_fallback_desc": {
+    "message": "Χρησιμοποιείται μόνο μετά από επαναλαμβανόμενες αποτυχίες δομικής επικύρωσης."
+  },
+  "llmProfiles_fallback_none": {
+    "message": "Χωρίς εφεδρικό"
+  },
+  "llmProfiles_managerTitle": {
+    "message": "Πάροχοι LLM"
+  },
+  "llmProfiles_maxConcurrentRequests": {
+    "message": "Παράλληλα αιτήματα"
+  },
+  "llmProfiles_maxConcurrentRequests_desc": {
+    "message": "Μέγιστος αριθμός ταυτόχρονων αιτημάτων μετάφρασης (1–8). Αυτόματο: $1 αιτήματα"
+  },
+  "llmProfiles_maxOutputTokens": {
+    "message": "Μέγιστα tokens εξόδου"
+  },
+  "llmProfiles_maxOutputTokens_desc": {
+    "message": "Μέγιστα tokens που παράγονται ανά αίτημα μετάφρασης (ελάχιστο 1). Αυτόματο: $1"
+  },
+  "llmProfiles_outputAutoDetected": {
+    "message": "Έως $1 tokens (εντοπίστηκε)"
+  },
+  "llmProfiles_outputAutoUncapped": {
+    "message": "Προσαρμοσμένο ανά δέσμη (ελάχιστο 256· δεν εντοπίστηκε όριο)"
+  },
+  "llmProfiles_preferredInputTokens": {
+    "message": "Προτιμώμενη είσοδος"
+  },
+  "llmProfiles_preferredInputTokens_desc": {
+    "message": "Στοχευόμενο μέγεθος δέσμης προτροπής σε tokens (ελάχιστο 1). Αυτόματο: $1 tokens"
+  },
+  "llmProfiles_profileName": {
+    "message": "Όνομα"
+  },
+  "llmProfiles_provider": {
+    "message": "Πάροχος"
+  },
+  "llmProfiles_quality": {
+    "message": "Ποιότητα μετάφρασης"
+  },
+  "llmProfiles_quality_accurate": {
+    "message": "Ακριβής"
+  },
+  "llmProfiles_quality_balanced": {
+    "message": "Ισορροπημένη"
+  },
+  "llmProfiles_quality_desc": {
+    "message": "Ελέγχει το βάθος της προτροπής, τη χρήση πλαισίου, το μέγεθος δέσμης και τις επαναλήψεις."
+  },
+  "llmProfiles_quality_fast": {
+    "message": "Γρήγορη"
+  },
+  "llmProfiles_save": {
+    "message": "Αποθήκευση"
+  },
+  "llmProfiles_setActive": {
+    "message": "Ορισμός ως ενεργό"
+  },
+  "llmProfiles_unitRequests": {
+    "message": "αιτήματα"
+  },
+  "llmProfiles_unitTokens": {
+    "message": "tokens"
+  },
+  "llmProvider_custom": {
+    "message": "Προσαρμοσμένο"
+  },
+  "llmProvider_openaiCompatible": {
+    "message": "Συμβατό με OpenAI"
   },
   "message_unknownError": {
     "message": "Άγνωστο σφάλμα"
@@ -182,6 +317,9 @@
   },
   "pageTranslator_commonPreferences_title": {
     "message": "Κοινές προτιμήσεις για αυτή τη γλώσσα"
+  },
+  "pageTranslator_exportLog": {
+    "message": "Εξαγωγή αρχείου καταγραφής μεταφράσεων"
   },
   "pageTranslator_option_autoTranslate": {
     "message": "Αυτόματη μετάφραση"
@@ -264,6 +402,15 @@
   "settings_message_importConfig_success": {
     "message": "Η εισαγωγή ολοκληρώθηκε"
   },
+  "settings_message_llmTranslator_modelsEmpty": {
+    "message": "Το API επέστρεψε κενή λίστα μοντέλων"
+  },
+  "settings_message_llmTranslator_modelsLoaded": {
+    "message": "Η λίστα μοντέλων φορτώθηκε"
+  },
+  "settings_message_llmTranslator_testSuccess": {
+    "message": "Η δοκιμαστική μετάφραση πέτυχε:"
+  },
   "settings_message_resetConfig_confirm": {
     "message": "Επιβεβαιώστε την επαναφορά των ρυθμίσεων στις προεπιλεγμένες τιμές"
   },
@@ -315,6 +462,45 @@
   "settings_option_history_enable_desc": {
     "message": "Όταν είναι ενεργοποιημένο, οι μεταφράσεις θα καταγράφονται και θα εμφανίζονται στη <slot id=historyPage>σελίδα ιστορικού</slot>"
   },
+  "settings_option_llmTranslator_activeProfile": {
+    "message": "Ενεργός πάροχος"
+  },
+  "settings_option_llmTranslator_activeProfile_desc": {
+    "message": "Προφίλ παρόχου που χρησιμοποιεί η μονάδα μετάφρασης LLM"
+  },
+  "settings_option_llmTranslator_apiKey": {
+    "message": "Κλειδί API"
+  },
+  "settings_option_llmTranslator_apiUrl": {
+    "message": "URL API"
+  },
+  "settings_option_llmTranslator_fetchModelsButton": {
+    "message": "Ανάκτηση μοντέλων"
+  },
+  "settings_option_llmTranslator_header": {
+    "message": "Μεταφραστής LLM"
+  },
+  "settings_option_llmTranslator_manage": {
+    "message": "Πάροχοι LLM"
+  },
+  "settings_option_llmTranslator_manageButton": {
+    "message": "Διαχείριση παρόχων"
+  },
+  "settings_option_llmTranslator_manage_desc": {
+    "message": "Προσθήκη, επεξεργασία ή αφαίρεση προφίλ παρόχων LLM"
+  },
+  "settings_option_llmTranslator_model": {
+    "message": "Μοντέλο"
+  },
+  "settings_option_llmTranslator_test": {
+    "message": "Δοκιμή σύνδεσης"
+  },
+  "settings_option_llmTranslator_testButton": {
+    "message": "Δοκιμή"
+  },
+  "settings_option_llmTranslator_test_desc": {
+    "message": "Στείλτε ένα μικρό αίτημα μετάφρασης με το ενεργό προφίλ παρόχου για να επαληθεύσετε τις ρυθμίσεις του"
+  },
   "settings_option_pageTranslation": {
     "message": "Η πλήρης μετάφραση σελίδας"
   },
@@ -329,6 +515,12 @@
   },
   "settings_option_pageTranslation_enableContextMenu_desc": {
     "message": "Προσθήκη κουμπιού για εναλλαγή μετάφρασης σελίδας στο μενού περιβάλλοντος της σελίδας"
+  },
+  "settings_option_pageTranslation_enableLogExport": {
+    "message": "Ενεργοποίηση εξαγωγής αρχείου καταγραφής μεταφράσεων"
+  },
+  "settings_option_pageTranslation_enableLogExport_desc": {
+    "message": "Επιτρέπει στην ενεργή συνεδρία μετάφρασης σελίδας να διατηρεί στη μνήμη το κείμενο πηγής, το μεταφρασμένο κείμενο, τα διαγνωστικά του μοντέλου και τα σφάλματα για χειροκίνητη εξαγωγή JSON. Τα αρχεία καταγραφής δεν αποθηκεύονται ποτέ και ενδέχεται να περιέχουν ευαίσθητο περιεχόμενο σελίδας"
   },
   "settings_option_pageTranslation_excludeSelectors": {
     "message": "Επιλογείς για εξαίρεση από τη μετάφραση"
@@ -377,6 +569,12 @@
   },
   "settings_option_selectTranslation_disableWhileTranslatePage": {
     "message": "Απενεργοποίηση κατά τη μετάφραση της σελίδας"
+  },
+  "settings_option_selectTranslation_draggablePopup": {
+    "message": "Να επιτρέπεται η μετακίνηση του αναδυόμενου παραθύρου μετάφρασης"
+  },
+  "settings_option_selectTranslation_draggablePopup_desc": {
+    "message": "Σας επιτρέπει να πιάσετε το αναδυόμενο παράθυρο μετάφρασης από το φόντο του και να το μετακινήσετε οπουδήποτε στη σελίδα"
   },
   "settings_option_selectTranslation_enable": {
     "message": "Ενεργοποίηση μετάφρασης επιλεγμένου κειμένου"
@@ -463,6 +661,12 @@
   "settings_option_selectTranslation_zIndex_desc": {
     "message": "Αυξήστε αυτήν την τιμή εάν στοιχεία σε ορισμένες σελίδες επικαλύπτουν το αναδυόμενο παράθυρο με το μεταφρασμένο κείμενο"
   },
+  "settings_option_statistics_desc": {
+    "message": "Συνολικός αριθμός μεταφράσεων και tokens LLM που καταναλώθηκαν."
+  },
+  "settings_option_statistics_title": {
+    "message": "Στατιστικά χρήσης"
+  },
   "settings_option_textTranslator": {
     "message": "Μετάφραση κειμένου"
   },
@@ -532,6 +736,9 @@
   "settings_option_userLanguage_desc": {
     "message": "Η γλώσσα στην οποία θα μεταφραστούν τα κείμενα"
   },
+  "settings_pageDescription": {
+    "message": "Διαχείριση μηχανών μετάφρασης, προσωρινής μνήμης και προτιμήσεων διεπαφής"
+  },
   "settings_pageTitle": {
     "message": "Ρυθμίσεις"
   },
@@ -540,6 +747,27 @@
   },
   "settings_section_popup": {
     "message": "Αναδυόμενο"
+  },
+  "settings_section_popupAndHistory": {
+    "message": "Αναδυόμενο παράθυρο και ιστορικό"
+  },
+  "settings_section_statistics": {
+    "message": "Στατιστικά"
+  },
+  "statistics_llmInputTokens": {
+    "message": "Tokens εισόδου LLM"
+  },
+  "statistics_llmOutputTokens": {
+    "message": "Tokens εξόδου LLM"
+  },
+  "statistics_reset": {
+    "message": "Επαναφορά στατιστικών"
+  },
+  "statistics_resetConfirm": {
+    "message": "Επαναφορά όλων των στατιστικών χρήσης;"
+  },
+  "statistics_translations": {
+    "message": "Μεταφράσεις"
   },
   "textTranslator_suggestLanguage": {
     "message": "Φαίνεται ότι η γλώσσα του κειμένου είναι <slot id=languageSuggest>$language_name$</slot>",

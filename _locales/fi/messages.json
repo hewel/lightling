@@ -20,11 +20,20 @@
   "common_error": {
     "message": "Virhe"
   },
+  "common_listen": {
+    "message": "Kuuntele"
+  },
+  "common_llmTranslator": {
+    "message": "LLM"
+  },
   "common_offlineTranslator": {
     "message": "$1 - Offline-kääntäjä"
   },
   "common_retry": {
     "message": "Yritä uudelleen"
+  },
+  "common_search": {
+    "message": "Hae"
   },
   "common_translate": {
     "message": "Käännä"
@@ -159,11 +168,137 @@
   "lang_detect": {
     "message": "Automaattinen tunnistus"
   },
+  "lang_searchPlaceholder": {
+    "message": "Hae kieltä"
+  },
   "lang_select": {
     "message": "Valitse kieli"
   },
   "lang_swap": {
     "message": "Vaihda kieliä"
+  },
+  "llmProfiles_active": {
+    "message": "Aktiivinen"
+  },
+  "llmProfiles_add": {
+    "message": "Lisää"
+  },
+  "llmProfiles_addProvider": {
+    "message": "Palveluntarjoajan esiasetus"
+  },
+  "llmProfiles_advancedExecution": {
+    "message": "Edistynyt suoritus"
+  },
+  "llmProfiles_auto": {
+    "message": "Automaattinen"
+  },
+  "llmProfiles_contextWindowTokens": {
+    "message": "Konteksti-ikkuna"
+  },
+  "llmProfiles_contextWindowTokens_desc": {
+    "message": "Mallin kokonaiskonteksti-ikkuna tokeneina (vähintään 512). Automaattinen: $1 tokenia"
+  },
+  "llmProfiles_delete": {
+    "message": "Poista"
+  },
+  "llmProfiles_deleteConfirm": {
+    "message": "Haluatko varmasti poistaa palveluntarjoajan \"$provider_name$\"?",
+    "placeholders": {
+      "provider_name": {
+        "content": "$1",
+        "example": "OpenAI"
+      }
+    }
+  },
+  "llmProfiles_duplicateName": {
+    "message": "Samanniminen palveluntarjoaja on jo olemassa"
+  },
+  "llmProfiles_edit": {
+    "message": "Muokkaa"
+  },
+  "llmProfiles_editProfile": {
+    "message": "Muokkaa palveluntarjoajaa"
+  },
+  "llmProfiles_emptyList": {
+    "message": "Ei vielä palveluntarjoajia. Lisää yksi alla olevalla esiasetuksella."
+  },
+  "llmProfiles_emptyName": {
+    "message": "Anna palveluntarjoajan nimi"
+  },
+  "llmProfiles_fallback": {
+    "message": "Varamalliprofiili"
+  },
+  "llmProfiles_fallback_desc": {
+    "message": "Käytetään vain toistuvien rakenteellisten vahvistusvirheiden jälkeen."
+  },
+  "llmProfiles_fallback_none": {
+    "message": "Ei varaprofiilia"
+  },
+  "llmProfiles_managerTitle": {
+    "message": "LLM-palveluntarjoajat"
+  },
+  "llmProfiles_maxConcurrentRequests": {
+    "message": "Rinnakkaiset pyynnöt"
+  },
+  "llmProfiles_maxConcurrentRequests_desc": {
+    "message": "Samanaikaisten käännöspyyntöjen enimmäismäärä (1–8). Automaattinen: $1 pyyntöä"
+  },
+  "llmProfiles_maxOutputTokens": {
+    "message": "Suurin tulostetokenmäärä"
+  },
+  "llmProfiles_maxOutputTokens_desc": {
+    "message": "Suurin määrä tokeneita, jotka luodaan käännöspyyntöä kohden (vähintään 1). Automaattinen: $1"
+  },
+  "llmProfiles_outputAutoDetected": {
+    "message": "Enintään $1 tokenia (havaittu)"
+  },
+  "llmProfiles_outputAutoUncapped": {
+    "message": "Mitoitetaan erän mukaan (vähintään 256; ei havaittua ylärajaa)"
+  },
+  "llmProfiles_preferredInputTokens": {
+    "message": "Ensisijainen syöte"
+  },
+  "llmProfiles_preferredInputTokens_desc": {
+    "message": "Kehotteen tavoite-eräkoko tokeneina (vähintään 1). Automaattinen: $1 tokenia"
+  },
+  "llmProfiles_profileName": {
+    "message": "Nimi"
+  },
+  "llmProfiles_provider": {
+    "message": "Palveluntarjoaja"
+  },
+  "llmProfiles_quality": {
+    "message": "Käännöksen laatu"
+  },
+  "llmProfiles_quality_accurate": {
+    "message": "Tarkka"
+  },
+  "llmProfiles_quality_balanced": {
+    "message": "Tasapainoinen"
+  },
+  "llmProfiles_quality_desc": {
+    "message": "Ohjaa kehotteen syvyyttä, kontekstin käyttöä, eräkokoa ja uudelleenyrityksiä."
+  },
+  "llmProfiles_quality_fast": {
+    "message": "Nopea"
+  },
+  "llmProfiles_save": {
+    "message": "Tallenna"
+  },
+  "llmProfiles_setActive": {
+    "message": "Aseta aktiiviseksi"
+  },
+  "llmProfiles_unitRequests": {
+    "message": "pyyntöä"
+  },
+  "llmProfiles_unitTokens": {
+    "message": "tokenia"
+  },
+  "llmProvider_custom": {
+    "message": "Mukautettu"
+  },
+  "llmProvider_openaiCompatible": {
+    "message": "OpenAI-yhteensopiva"
   },
   "message_unknownError": {
     "message": "Tuntematon virhe"
@@ -182,6 +317,9 @@
   },
   "pageTranslator_commonPreferences_title": {
     "message": "Yleiset asetukset tälle kielelle"
+  },
+  "pageTranslator_exportLog": {
+    "message": "Vie käännösloki"
   },
   "pageTranslator_option_autoTranslate": {
     "message": "Automaattinen käännös"
@@ -264,6 +402,15 @@
   "settings_message_importConfig_success": {
     "message": "Tuonti valmis"
   },
+  "settings_message_llmTranslator_modelsEmpty": {
+    "message": "API palautti tyhjän malliluettelon"
+  },
+  "settings_message_llmTranslator_modelsLoaded": {
+    "message": "Malliluettelo ladattu"
+  },
+  "settings_message_llmTranslator_testSuccess": {
+    "message": "Testikäännös onnistui:"
+  },
   "settings_message_resetConfig_confirm": {
     "message": "Vahvista asetusten palauttaminen oletusarvoihin"
   },
@@ -315,6 +462,45 @@
   "settings_option_history_enable_desc": {
     "message": "Kun käytössä, käännökset tallennetaan ja näkyvät <slot id=historyPage>historia-sivulla</slot>"
   },
+  "settings_option_llmTranslator_activeProfile": {
+    "message": "Aktiivinen palveluntarjoaja"
+  },
+  "settings_option_llmTranslator_activeProfile_desc": {
+    "message": "LLM-käännösmoduulin käyttämä palveluntarjoajaprofiili"
+  },
+  "settings_option_llmTranslator_apiKey": {
+    "message": "API-avain"
+  },
+  "settings_option_llmTranslator_apiUrl": {
+    "message": "API-URL"
+  },
+  "settings_option_llmTranslator_fetchModelsButton": {
+    "message": "Hae mallit"
+  },
+  "settings_option_llmTranslator_header": {
+    "message": "LLM-kääntäjä"
+  },
+  "settings_option_llmTranslator_manage": {
+    "message": "LLM-palveluntarjoajat"
+  },
+  "settings_option_llmTranslator_manageButton": {
+    "message": "Hallitse palveluntarjoajia"
+  },
+  "settings_option_llmTranslator_manage_desc": {
+    "message": "Lisää, muokkaa tai poista LLM-palveluntarjoajaprofiileja"
+  },
+  "settings_option_llmTranslator_model": {
+    "message": "Malli"
+  },
+  "settings_option_llmTranslator_test": {
+    "message": "Testaa yhteys"
+  },
+  "settings_option_llmTranslator_testButton": {
+    "message": "Testaa"
+  },
+  "settings_option_llmTranslator_test_desc": {
+    "message": "Lähetä pieni käännöspyyntö aktiivisella palveluntarjoajaprofiililla asetusten varmistamiseksi"
+  },
   "settings_option_pageTranslation": {
     "message": "Koko sivun käännös"
   },
@@ -329,6 +515,12 @@
   },
   "settings_option_pageTranslation_enableContextMenu_desc": {
     "message": "Lisää painike sivun käännöksen vaihtamiseen sivun kontekstivalikkoon"
+  },
+  "settings_option_pageTranslation_enableLogExport": {
+    "message": "Ota käännöslokin vienti käyttöön"
+  },
+  "settings_option_pageTranslation_enableLogExport_desc": {
+    "message": "Salli aktiivisen sivunkäännösistunnon säilyttää lähdeteksti, käännetty teksti, mallin diagnostiikka ja virheet muistissa manuaalista JSON-vientiä varten. Lokeja ei koskaan tallenneta pysyvästi, ja ne voivat sisältää arkaluonteista sivun sisältöä"
   },
   "settings_option_pageTranslation_excludeSelectors": {
     "message": "Valitsimet, jotka jätetään kääntämättä"
@@ -377,6 +569,12 @@
   },
   "settings_option_selectTranslation_disableWhileTranslatePage": {
     "message": "Poista käytöstä sivua käännettäessä"
+  },
+  "settings_option_selectTranslation_draggablePopup": {
+    "message": "Salli käännösponnahdusikkunan vetäminen"
+  },
+  "settings_option_selectTranslation_draggablePopup_desc": {
+    "message": "Voit tarttua käännösponnahdusikkunaan sen taustasta ja siirtää sen mihin tahansa kohtaan sivulla"
   },
   "settings_option_selectTranslation_enable": {
     "message": "Ota käyttöön valitun tekstin käännös"
@@ -463,6 +661,12 @@
   "settings_option_selectTranslation_zIndex_desc": {
     "message": "Lisää tätä arvoa, jos joidenkin sivujen elementit peittävät käännetyn tekstin ponnahdusikkunan"
   },
+  "settings_option_statistics_desc": {
+    "message": "Käännösten kokonaismäärä ja kulutetut LLM-tokenit."
+  },
+  "settings_option_statistics_title": {
+    "message": "Käyttötilastot"
+  },
   "settings_option_textTranslator": {
     "message": "Tekstin käännös"
   },
@@ -532,6 +736,9 @@
   "settings_option_userLanguage_desc": {
     "message": "Kieli, jolle tekstit käännetään"
   },
+  "settings_pageDescription": {
+    "message": "Hallitse käännösmoottoreita, välimuistia ja käyttöliittymän asetuksia"
+  },
   "settings_pageTitle": {
     "message": "Asetukset"
   },
@@ -540,6 +747,27 @@
   },
   "settings_section_popup": {
     "message": "Ponnahdusikkuna"
+  },
+  "settings_section_popupAndHistory": {
+    "message": "Ponnahdusikkuna ja historia"
+  },
+  "settings_section_statistics": {
+    "message": "Tilastot"
+  },
+  "statistics_llmInputTokens": {
+    "message": "LLM-syötetokenit"
+  },
+  "statistics_llmOutputTokens": {
+    "message": "LLM-tulostetokenit"
+  },
+  "statistics_reset": {
+    "message": "Nollaa tilastot"
+  },
+  "statistics_resetConfirm": {
+    "message": "Nollataanko kaikki käyttötilastot?"
+  },
+  "statistics_translations": {
+    "message": "Käännökset"
   },
   "textTranslator_suggestLanguage": {
     "message": "Näyttää siltä, että tekstin kieli on <slot id=languageSuggest>$language_name$</slot>",

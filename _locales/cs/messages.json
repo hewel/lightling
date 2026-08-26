@@ -20,11 +20,20 @@
   "common_error": {
     "message": "Chyba"
   },
+  "common_listen": {
+    "message": "Poslouchat"
+  },
+  "common_llmTranslator": {
+    "message": "LLM"
+  },
   "common_offlineTranslator": {
     "message": "$1 - Offline překladač"
   },
   "common_retry": {
     "message": "Zkusit znovu"
+  },
+  "common_search": {
+    "message": "Hledat"
   },
   "common_translate": {
     "message": "Přeložit"
@@ -159,11 +168,137 @@
   "lang_detect": {
     "message": "Automatická detekce"
   },
+  "lang_searchPlaceholder": {
+    "message": "Hledat jazyk"
+  },
   "lang_select": {
     "message": "Vybrat jazyk"
   },
   "lang_swap": {
     "message": "Prohodit jazyky"
+  },
+  "llmProfiles_active": {
+    "message": "Aktivní"
+  },
+  "llmProfiles_add": {
+    "message": "Přidat"
+  },
+  "llmProfiles_addProvider": {
+    "message": "Předvolba poskytovatele"
+  },
+  "llmProfiles_advancedExecution": {
+    "message": "Pokročilé provádění"
+  },
+  "llmProfiles_auto": {
+    "message": "Auto"
+  },
+  "llmProfiles_contextWindowTokens": {
+    "message": "Kontextové okno"
+  },
+  "llmProfiles_contextWindowTokens_desc": {
+    "message": "Celková velikost kontextového okna modelu v tokenech (minimum 512). Auto: $1 tokenů"
+  },
+  "llmProfiles_delete": {
+    "message": "Odstranit"
+  },
+  "llmProfiles_deleteConfirm": {
+    "message": "Opravdu chcete odstranit poskytovatele \"$provider_name$\"?",
+    "placeholders": {
+      "provider_name": {
+        "content": "$1",
+        "example": "OpenAI"
+      }
+    }
+  },
+  "llmProfiles_duplicateName": {
+    "message": "Poskytovatel s tímto názvem již existuje"
+  },
+  "llmProfiles_edit": {
+    "message": "Upravit"
+  },
+  "llmProfiles_editProfile": {
+    "message": "Upravit poskytovatele"
+  },
+  "llmProfiles_emptyList": {
+    "message": "Zatím žádní poskytovatelé. Přidejte jednoho z předvoleb níže."
+  },
+  "llmProfiles_emptyName": {
+    "message": "Zadejte název poskytovatele"
+  },
+  "llmProfiles_fallback": {
+    "message": "Záložní profil modelu"
+  },
+  "llmProfiles_fallback_desc": {
+    "message": "Použije se pouze po opakovaných selháních strukturální validace."
+  },
+  "llmProfiles_fallback_none": {
+    "message": "Bez záložního"
+  },
+  "llmProfiles_managerTitle": {
+    "message": "Poskytovatelé LLM"
+  },
+  "llmProfiles_maxConcurrentRequests": {
+    "message": "Paralelní požadavky"
+  },
+  "llmProfiles_maxConcurrentRequests_desc": {
+    "message": "Maximální počet souběžných požadavků na překlad (1–8). Auto: $1 požadavků"
+  },
+  "llmProfiles_maxOutputTokens": {
+    "message": "Maximum výstupních tokenů"
+  },
+  "llmProfiles_maxOutputTokens_desc": {
+    "message": "Maximum tokenů generovaných na jeden požadavek na překlad (minimum 1). Auto: $1"
+  },
+  "llmProfiles_outputAutoDetected": {
+    "message": "Až $1 tokenů (zjištěno)"
+  },
+  "llmProfiles_outputAutoUncapped": {
+    "message": "Podle velikosti dávky (minimum 256; nebyl zjištěn limit)"
+  },
+  "llmProfiles_preferredInputTokens": {
+    "message": "Preferovaný vstup"
+  },
+  "llmProfiles_preferredInputTokens_desc": {
+    "message": "Cílová velikost dávky promptu v tokenech (minimum 1). Auto: $1 tokenů"
+  },
+  "llmProfiles_profileName": {
+    "message": "Název"
+  },
+  "llmProfiles_provider": {
+    "message": "Poskytovatel"
+  },
+  "llmProfiles_quality": {
+    "message": "Kvalita překladu"
+  },
+  "llmProfiles_quality_accurate": {
+    "message": "Přesný"
+  },
+  "llmProfiles_quality_balanced": {
+    "message": "Vyvážený"
+  },
+  "llmProfiles_quality_desc": {
+    "message": "Řídí hloubku promptu, využití kontextu, velikost dávky a opakované pokusy."
+  },
+  "llmProfiles_quality_fast": {
+    "message": "Rychlý"
+  },
+  "llmProfiles_save": {
+    "message": "Uložit"
+  },
+  "llmProfiles_setActive": {
+    "message": "Nastavit jako aktivní"
+  },
+  "llmProfiles_unitRequests": {
+    "message": "požadavků"
+  },
+  "llmProfiles_unitTokens": {
+    "message": "tokenů"
+  },
+  "llmProvider_custom": {
+    "message": "Vlastní"
+  },
+  "llmProvider_openaiCompatible": {
+    "message": "Kompatibilní s OpenAI"
   },
   "message_unknownError": {
     "message": "Neznámá chyba"
@@ -182,6 +317,9 @@
   },
   "pageTranslator_commonPreferences_title": {
     "message": "Obecné preference pro tento jazyk"
+  },
+  "pageTranslator_exportLog": {
+    "message": "Exportovat protokol překladů"
   },
   "pageTranslator_option_autoTranslate": {
     "message": "Automatický překlad"
@@ -264,6 +402,15 @@
   "settings_message_importConfig_success": {
     "message": "Import dokončen"
   },
+  "settings_message_llmTranslator_modelsEmpty": {
+    "message": "API vrátilo prázdný seznam modelů"
+  },
+  "settings_message_llmTranslator_modelsLoaded": {
+    "message": "Seznam modelů byl načten"
+  },
+  "settings_message_llmTranslator_testSuccess": {
+    "message": "Testovací překlad proběhl úspěšně:"
+  },
   "settings_message_resetConfig_confirm": {
     "message": "Potvrďte reset nastavení na výchozí hodnoty"
   },
@@ -315,6 +462,45 @@
   "settings_option_history_enable_desc": {
     "message": "Když je povoleno, překlady budou zaznamenány a zobrazeny na <slot id=historyPage>stránce historie</slot>"
   },
+  "settings_option_llmTranslator_activeProfile": {
+    "message": "Aktivní poskytovatel"
+  },
+  "settings_option_llmTranslator_activeProfile_desc": {
+    "message": "Profil poskytovatele používaný modulem překladu LLM"
+  },
+  "settings_option_llmTranslator_apiKey": {
+    "message": "Klíč API"
+  },
+  "settings_option_llmTranslator_apiUrl": {
+    "message": "URL API"
+  },
+  "settings_option_llmTranslator_fetchModelsButton": {
+    "message": "Načíst modely"
+  },
+  "settings_option_llmTranslator_header": {
+    "message": "LLM překladač"
+  },
+  "settings_option_llmTranslator_manage": {
+    "message": "Poskytovatelé LLM"
+  },
+  "settings_option_llmTranslator_manageButton": {
+    "message": "Spravovat poskytovatele"
+  },
+  "settings_option_llmTranslator_manage_desc": {
+    "message": "Přidávejte, upravujte nebo odstraňujte profily poskytovatelů LLM"
+  },
+  "settings_option_llmTranslator_model": {
+    "message": "Model"
+  },
+  "settings_option_llmTranslator_test": {
+    "message": "Otestovat připojení"
+  },
+  "settings_option_llmTranslator_testButton": {
+    "message": "Otestovat"
+  },
+  "settings_option_llmTranslator_test_desc": {
+    "message": "Odešlete malý požadavek na překlad s aktivním profilem poskytovatele k ověření jeho nastavení"
+  },
   "settings_option_pageTranslation": {
     "message": "Překlad celé stránky"
   },
@@ -329,6 +515,12 @@
   },
   "settings_option_pageTranslation_enableContextMenu_desc": {
     "message": "Přidat tlačítko pro přepínání překladu stránky v kontextovém menu stránky"
+  },
+  "settings_option_pageTranslation_enableLogExport": {
+    "message": "Povolit export protokolu překladů"
+  },
+  "settings_option_pageTranslation_enableLogExport_desc": {
+    "message": "Umožňuje aktivní relaci překladu stránky uchovávat v paměti zdrojový text, přeložený text, diagnostiku modelu a chyby pro ruční export do JSON. Protokoly se nikdy neukládají a mohou obsahovat citlivý obsah stránky"
   },
   "settings_option_pageTranslation_excludeSelectors": {
     "message": "Selektory k vyloučení z překladu"
@@ -377,6 +569,12 @@
   },
   "settings_option_selectTranslation_disableWhileTranslatePage": {
     "message": "Zakázat při překladu stránky"
+  },
+  "settings_option_selectTranslation_draggablePopup": {
+    "message": "Povolit přetahování vyskakovacího okna překladu"
+  },
+  "settings_option_selectTranslation_draggablePopup_desc": {
+    "message": "Umožňuje uchopit vyskakovací okno překladu za jeho pozadí a přesunout ho kamkoli na stránce"
   },
   "settings_option_selectTranslation_enable": {
     "message": "Povolit překlad vybraného textu"
@@ -463,6 +661,12 @@
   "settings_option_selectTranslation_zIndex_desc": {
     "message": "Zvyšte tuto hodnotu, pokud prvky na některých stránkách překrývají vyskakovací okno s přeloženým textem"
   },
+  "settings_option_statistics_desc": {
+    "message": "Celkový počet překladů a spotřebovaných tokenů LLM."
+  },
+  "settings_option_statistics_title": {
+    "message": "Statistiky používání"
+  },
   "settings_option_textTranslator": {
     "message": "Překlad textu"
   },
@@ -532,6 +736,9 @@
   "settings_option_userLanguage_desc": {
     "message": "Jazyk, do kterého budou texty přeloženy"
   },
+  "settings_pageDescription": {
+    "message": "Spravujte překladové moduly, mezipaměť a předvolby rozhraní"
+  },
   "settings_pageTitle": {
     "message": "Nastavení"
   },
@@ -540,6 +747,27 @@
   },
   "settings_section_popup": {
     "message": "Vyskakovací okno"
+  },
+  "settings_section_popupAndHistory": {
+    "message": "Vyskakovací okno a historie"
+  },
+  "settings_section_statistics": {
+    "message": "Statistiky"
+  },
+  "statistics_llmInputTokens": {
+    "message": "Vstupní tokeny LLM"
+  },
+  "statistics_llmOutputTokens": {
+    "message": "Výstupní tokeny LLM"
+  },
+  "statistics_reset": {
+    "message": "Resetovat statistiky"
+  },
+  "statistics_resetConfirm": {
+    "message": "Resetovat všechny statistiky používání?"
+  },
+  "statistics_translations": {
+    "message": "Překlady"
   },
   "textTranslator_suggestLanguage": {
     "message": "Zdá se, že jazyk textu je <slot id=languageSuggest>$language_name$</slot>",

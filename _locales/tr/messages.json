@@ -20,11 +20,20 @@
   "common_error": {
     "message": "Hata"
   },
+  "common_listen": {
+    "message": "Dinle"
+  },
+  "common_llmTranslator": {
+    "message": "LLM"
+  },
   "common_offlineTranslator": {
     "message": "$1 - Çevrimdışı çevirici"
   },
   "common_retry": {
     "message": "Tekrar dene"
+  },
+  "common_search": {
+    "message": "Ara"
   },
   "common_translate": {
     "message": "Çevir"
@@ -159,11 +168,137 @@
   "lang_detect": {
     "message": "Otomatik algıla"
   },
+  "lang_searchPlaceholder": {
+    "message": "Dil ara"
+  },
   "lang_select": {
     "message": "Dili seç"
   },
   "lang_swap": {
     "message": "Dilleri değiştir"
+  },
+  "llmProfiles_active": {
+    "message": "Etkin"
+  },
+  "llmProfiles_add": {
+    "message": "Ekle"
+  },
+  "llmProfiles_addProvider": {
+    "message": "Sağlayıcı hazır ayarı"
+  },
+  "llmProfiles_advancedExecution": {
+    "message": "Gelişmiş yürütme"
+  },
+  "llmProfiles_auto": {
+    "message": "Otomatik"
+  },
+  "llmProfiles_contextWindowTokens": {
+    "message": "Bağlam penceresi"
+  },
+  "llmProfiles_contextWindowTokens_desc": {
+    "message": "Belirteç cinsinden toplam model bağlam penceresi (en az 512). Otomatik: $1 belirteç"
+  },
+  "llmProfiles_delete": {
+    "message": "Sil"
+  },
+  "llmProfiles_deleteConfirm": {
+    "message": "\"$provider_name$\" sağlayıcısını silmek istediğinizden emin misiniz?",
+    "placeholders": {
+      "provider_name": {
+        "content": "$1",
+        "example": "OpenAI"
+      }
+    }
+  },
+  "llmProfiles_duplicateName": {
+    "message": "Bu ada sahip bir sağlayıcı zaten var"
+  },
+  "llmProfiles_edit": {
+    "message": "Düzenle"
+  },
+  "llmProfiles_editProfile": {
+    "message": "Sağlayıcıyı düzenle"
+  },
+  "llmProfiles_emptyList": {
+    "message": "Henüz sağlayıcı yok. Aşağıdaki hazır ayarlarla bir tane ekleyin."
+  },
+  "llmProfiles_emptyName": {
+    "message": "Bir sağlayıcı adı girin"
+  },
+  "llmProfiles_fallback": {
+    "message": "Yedek model profili"
+  },
+  "llmProfiles_fallback_desc": {
+    "message": "Yalnızca tekrarlanan yapısal doğrulama hatalarından sonra kullanılır."
+  },
+  "llmProfiles_fallback_none": {
+    "message": "Yedek yok"
+  },
+  "llmProfiles_managerTitle": {
+    "message": "LLM sağlayıcıları"
+  },
+  "llmProfiles_maxConcurrentRequests": {
+    "message": "Paralel istekler"
+  },
+  "llmProfiles_maxConcurrentRequests_desc": {
+    "message": "Eşzamanlı çeviri isteklerinin maksimum sayısı (1–8). Otomatik: $1 istek"
+  },
+  "llmProfiles_maxOutputTokens": {
+    "message": "Maksimum çıktı belirteci"
+  },
+  "llmProfiles_maxOutputTokens_desc": {
+    "message": "Çeviri isteği başına üretilen maksimum belirteç (en az 1). Otomatik: $1"
+  },
+  "llmProfiles_outputAutoDetected": {
+    "message": "$1 belirtece kadar (algılandı)"
+  },
+  "llmProfiles_outputAutoUncapped": {
+    "message": "Yığın başına boyutlandırılır (en az 256; algılanan üst sınır yok)"
+  },
+  "llmProfiles_preferredInputTokens": {
+    "message": "Tercih edilen girdi"
+  },
+  "llmProfiles_preferredInputTokens_desc": {
+    "message": "Belirteç cinsinden hedef istem yığını boyutu (en az 1). Otomatik: $1 belirteç"
+  },
+  "llmProfiles_profileName": {
+    "message": "Ad"
+  },
+  "llmProfiles_provider": {
+    "message": "Sağlayıcı"
+  },
+  "llmProfiles_quality": {
+    "message": "Çeviri kalitesi"
+  },
+  "llmProfiles_quality_accurate": {
+    "message": "Doğru"
+  },
+  "llmProfiles_quality_balanced": {
+    "message": "Dengeli"
+  },
+  "llmProfiles_quality_desc": {
+    "message": "İstem derinliğini, bağlam kullanımını, yığın boyutunu ve yeniden denemeleri kontrol eder."
+  },
+  "llmProfiles_quality_fast": {
+    "message": "Hızlı"
+  },
+  "llmProfiles_save": {
+    "message": "Kaydet"
+  },
+  "llmProfiles_setActive": {
+    "message": "Etkin olarak ayarla"
+  },
+  "llmProfiles_unitRequests": {
+    "message": "istek"
+  },
+  "llmProfiles_unitTokens": {
+    "message": "belirteç"
+  },
+  "llmProvider_custom": {
+    "message": "Özel"
+  },
+  "llmProvider_openaiCompatible": {
+    "message": "OpenAI uyumlu"
   },
   "message_unknownError": {
     "message": "Bilinmeyen hata"
@@ -182,6 +317,9 @@
   },
   "pageTranslator_commonPreferences_title": {
     "message": "Bu dil için genel tercihleri"
+  },
+  "pageTranslator_exportLog": {
+    "message": "Çeviri günlüğünü dışa aktar"
   },
   "pageTranslator_option_autoTranslate": {
     "message": "Otomatik çeviri"
@@ -264,6 +402,15 @@
   "settings_message_importConfig_success": {
     "message": "İçe aktarma tamamlandı"
   },
+  "settings_message_llmTranslator_modelsEmpty": {
+    "message": "API boş bir model listesi döndürdü"
+  },
+  "settings_message_llmTranslator_modelsLoaded": {
+    "message": "Model listesi yüklendi"
+  },
+  "settings_message_llmTranslator_testSuccess": {
+    "message": "Test çevirisi başarılı:"
+  },
   "settings_message_resetConfig_confirm": {
     "message": "Ayarları varsayılan değerlere sıfırlamayı onaylayın"
   },
@@ -315,6 +462,45 @@
   "settings_option_history_enable_desc": {
     "message": "Etkinleştirildiğinde, çeviriler kaydedilecek ve <slot id=historyPage>geçmiş sayfasında</slot> görünecektir"
   },
+  "settings_option_llmTranslator_activeProfile": {
+    "message": "Etkin sağlayıcı"
+  },
+  "settings_option_llmTranslator_activeProfile_desc": {
+    "message": "LLM çeviri modülü tarafından kullanılan sağlayıcı profili"
+  },
+  "settings_option_llmTranslator_apiKey": {
+    "message": "API anahtarı"
+  },
+  "settings_option_llmTranslator_apiUrl": {
+    "message": "API URL'si"
+  },
+  "settings_option_llmTranslator_fetchModelsButton": {
+    "message": "Modelleri getir"
+  },
+  "settings_option_llmTranslator_header": {
+    "message": "LLM çevirmeni"
+  },
+  "settings_option_llmTranslator_manage": {
+    "message": "LLM sağlayıcıları"
+  },
+  "settings_option_llmTranslator_manageButton": {
+    "message": "Sağlayıcıları yönet"
+  },
+  "settings_option_llmTranslator_manage_desc": {
+    "message": "LLM sağlayıcı profilleri ekleyin, düzenleyin veya kaldırın"
+  },
+  "settings_option_llmTranslator_model": {
+    "message": "Model"
+  },
+  "settings_option_llmTranslator_test": {
+    "message": "Bağlantıyı test et"
+  },
+  "settings_option_llmTranslator_testButton": {
+    "message": "Test et"
+  },
+  "settings_option_llmTranslator_test_desc": {
+    "message": "Ayarlarını doğrulamak için etkin sağlayıcı profiliyle küçük bir çeviri isteği gönderin"
+  },
   "settings_option_pageTranslation": {
     "message": "Tam sayfa çevirisi"
   },
@@ -329,6 +515,12 @@
   },
   "settings_option_pageTranslation_enableContextMenu_desc": {
     "message": "Sayfa bağlam menüsüne sayfa çevirisini açıp kapatma düğmesi ekleyin"
+  },
+  "settings_option_pageTranslation_enableLogExport": {
+    "message": "Çeviri günlüğü dışa aktarmayı etkinleştir"
+  },
+  "settings_option_pageTranslation_enableLogExport_desc": {
+    "message": "Etkin sayfa çevirisi oturumunun kaynak metni, çevrilmiş metni, model tanılamalarını ve hataları elle JSON dışa aktarımı için bellekte tutmasına izin ver. Günlükler asla kalıcı olarak saklanmaz ve hassas sayfa içeriği içerebilir"
   },
   "settings_option_pageTranslation_excludeSelectors": {
     "message": "Çeviriden hariç tutulacak seçiciler"
@@ -377,6 +569,12 @@
   },
   "settings_option_selectTranslation_disableWhileTranslatePage": {
     "message": "Sayfa çevrilirken devre dışı bırak"
+  },
+  "settings_option_selectTranslation_draggablePopup": {
+    "message": "Çeviri açılır penceresinin sürüklenmesine izin ver"
+  },
+  "settings_option_selectTranslation_draggablePopup_desc": {
+    "message": "Çeviri açılır penceresini arka planından tutup sayfada istediğiniz yere taşımanızı sağlar"
   },
   "settings_option_selectTranslation_enable": {
     "message": "Seçili metin çevirisini etkinleştir"
@@ -463,6 +661,12 @@
   "settings_option_selectTranslation_zIndex_desc": {
     "message": "Bazı sayfalardaki öğeler, çevrilmiş metin içeren açılır pencerenin üzerine biniyorsa bu değeri artırın"
   },
+  "settings_option_statistics_desc": {
+    "message": "Gerçekleştirilen toplam çeviri sayısı ve tüketilen LLM belirteçleri."
+  },
+  "settings_option_statistics_title": {
+    "message": "Kullanım istatistikleri"
+  },
   "settings_option_textTranslator": {
     "message": "Metin çevirisi"
   },
@@ -532,6 +736,9 @@
   "settings_option_userLanguage_desc": {
     "message": "Metinlerin çevrileceği dil"
   },
+  "settings_pageDescription": {
+    "message": "Çeviri motorlarını, önbelleği ve arayüz tercihlerini yönetin"
+  },
   "settings_pageTitle": {
     "message": "Ayarlar"
   },
@@ -540,6 +747,27 @@
   },
   "settings_section_popup": {
     "message": "Açılır Pencere"
+  },
+  "settings_section_popupAndHistory": {
+    "message": "Açılır pencere ve geçmiş"
+  },
+  "settings_section_statistics": {
+    "message": "İstatistikler"
+  },
+  "statistics_llmInputTokens": {
+    "message": "LLM girdi belirteçleri"
+  },
+  "statistics_llmOutputTokens": {
+    "message": "LLM çıktı belirteçleri"
+  },
+  "statistics_reset": {
+    "message": "İstatistikleri sıfırla"
+  },
+  "statistics_resetConfirm": {
+    "message": "Tüm kullanım istatistikleri sıfırlansın mı?"
+  },
+  "statistics_translations": {
+    "message": "Çeviriler"
   },
   "textTranslator_suggestLanguage": {
     "message": "Görünüşe göre metin dili <slot id=languageSuggest>$language_name$</slot>",
