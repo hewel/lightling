@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process';
-import { cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { cp, mkdir, rename, rm } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -8,22 +8,21 @@ import { prepareExtensionAssets } from './prepareExtensionAssets.mjs';
 const scriptsDirectory = dirname(fileURLToPath(import.meta.url));
 const projectDirectory = resolve(scriptsDirectory, '..');
 const extensionBinary = resolve(projectDirectory, 'node_modules/.bin/extension');
-const chromiumUpdateUrl = 'https://hewel.github.io/lightling/chromium_updates.xml';
-const firefoxStandaloneId = '{33b518c2-1f65-4090-8d94-e0a432ebbfd4}';
-const variantBrowsers = new Map([
+export const extensionVariants = new Map([
   ['chrome', 'chrome'],
   ['chromium', 'chromium'],
   ['firefox', 'firefox'],
   ['firefox-standalone', 'firefox'],
 ]);
 
-function runExtensionBuild(browser) {
+function runExtensionBuild(variant, browser) {
   return new Promise((resolvePromise, reject) => {
     const child = spawn(
       extensionBinary,
-      ['build', `--browser=${browser}`, '--mode=production'],
+      ['build', `--browser=${browser}`, '--zip', `--zip-filename=${variant}.zip`],
       {
         cwd: projectDirectory,
+        env: { ...process.env, LIGHTLING_BUILD_VARIANT: variant },
         stdio: 'inherit',
       },
     );
@@ -41,47 +40,50 @@ function runExtensionBuild(browser) {
   });
 }
 
-async function patchGeneratedManifest(variant, outputDirectory) {
-  const generatedManifestPath = resolve(outputDirectory, 'manifest.json');
-  const manifest = JSON.parse(await readFile(generatedManifestPath, 'utf8'));
+async function buildPreparedExtensionVariant(variant, browser) {
+  const sourceDirectory = resolve(projectDirectory, 'dist', browser);
+  const sourceArchive = resolve(sourceDirectory, `${variant}.zip`);
+  const outputDirectory = resolve(projectDirectory, 'build', variant);
+  const outputArchive = resolve(projectDirectory, 'build', `${variant}.zip`);
 
-  if (variant === 'chromium') {
-    manifest['update_url'] = chromiumUpdateUrl;
-  }
-
-  if (variant === 'firefox-standalone') {
-    manifest['browser_specific_settings'] = {
-      ...manifest['browser_specific_settings'],
-      gecko: {
-        ...manifest['browser_specific_settings']?.gecko,
-        id: firefoxStandaloneId,
-      },
-    };
-  }
-
-  await writeFile(generatedManifestPath, `${JSON.stringify(manifest, null, '\t')}\n`);
+  await Promise.all([
+    rm(sourceDirectory, { recursive: true, force: true }),
+    rm(outputDirectory, { recursive: true, force: true }),
+    rm(outputArchive, { force: true }),
+  ]);
+  await runExtensionBuild(variant, browser);
+  await mkdir(dirname(outputDirectory), { recursive: true });
+  await cp(sourceDirectory, outputDirectory, {
+    recursive: true,
+    filter: (path) => path !== sourceArchive,
+  });
+  await rename(sourceArchive, outputArchive);
 }
 
 export async function buildExtensionVariant(variant) {
-  const browser = variantBrowsers.get(variant);
+  const browser = extensionVariants.get(variant);
 
   if (!browser) {
     throw new Error(
       `Invalid extension variant ${JSON.stringify(variant)}. ` +
-        `Expected one of: ${[...variantBrowsers.keys()].join(', ')}`,
+        `Expected one of: ${[...extensionVariants.keys()].join(', ')}`,
     );
   }
 
   await prepareExtensionAssets({ requireThirdparty: true });
-  await runExtensionBuild(browser);
+  await buildPreparedExtensionVariant(variant, browser);
+}
 
-  const sourceDirectory = resolve(projectDirectory, 'dist', browser);
-  const outputDirectory = resolve(projectDirectory, 'build', variant);
+export async function buildAllExtensionVariants() {
+  await Promise.all([
+    rm(resolve(projectDirectory, 'build'), { recursive: true, force: true }),
+    rm(resolve(projectDirectory, 'dist'), { recursive: true, force: true }),
+  ]);
+  await prepareExtensionAssets({ requireThirdparty: true });
 
-  await rm(outputDirectory, { recursive: true, force: true });
-  await mkdir(dirname(outputDirectory), { recursive: true });
-  await cp(sourceDirectory, outputDirectory, { recursive: true });
-  await patchGeneratedManifest(variant, outputDirectory);
+  for (const [variant, browser] of extensionVariants) {
+    await buildPreparedExtensionVariant(variant, browser);
+  }
 }
 
 export default buildExtensionVariant;
@@ -92,14 +94,19 @@ const isMainModule =
 if (isMainModule) {
   const argumentsList = process.argv.slice(2);
 
-  if (argumentsList.length !== 1) {
+  const build =
+    argumentsList.length === 0
+      ? buildAllExtensionVariants
+      : () => buildExtensionVariant(argumentsList[0]);
+
+  if (argumentsList.length > 1) {
     console.error(
       'Usage: node scripts/buildExtensionVariant.mjs ' +
-        '<chrome|chromium|firefox|firefox-standalone>',
+        '[chrome|chromium|firefox|firefox-standalone]',
     );
     process.exitCode = 1;
   } else {
-    buildExtensionVariant(argumentsList[0]).catch((error) => {
+    build().catch((error) => {
       console.error(error);
       process.exitCode = 1;
     });

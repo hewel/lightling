@@ -508,6 +508,19 @@ async function validateVariant(variant, packageVersion) {
 
     return [`could not inspect ${relativeOutputDirectory}: ${error.message}`];
   }
+  const archivePath = resolve(projectDirectory, 'build', `${variant.name}.zip`);
+  try {
+    const archiveStats = await stat(archivePath);
+    if (!archiveStats.isFile() || archiveStats.size === 0) {
+      problems.push(`build/${variant.name}.zip must be a non-empty file`);
+    }
+  } catch (error) {
+    if (error.code === 'ENOENT' || error.code === 'ENOTDIR') {
+      problems.push(`build/${variant.name}.zip is missing`);
+    } else {
+      problems.push(`could not inspect build/${variant.name}.zip: ${error.message}`);
+    }
+  }
 
   problems.push(...(await findAstryxThemeArtifactProblems(outputDirectory)));
 

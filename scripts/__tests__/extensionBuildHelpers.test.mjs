@@ -1,13 +1,5 @@
 import { execFile } from 'node:child_process';
-import {
-  chmod,
-  copyFile,
-  mkdir,
-  mkdtemp,
-  readFile,
-  rm,
-  writeFile,
-} from 'node:fs/promises';
+import { copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -15,7 +7,10 @@ import { promisify } from 'node:util';
 
 import { afterEach, describe, expect, test } from 'vitest';
 
-import { withoutInjectedContentStyles } from '../../extension.config.mjs';
+import {
+  withoutInjectedContentStyles,
+  withBuildVariantMetadata,
+} from '../../extension.config.mjs';
 
 import { findAstryxThemeArtifactProblems } from '../validateExtensionBuilds.mjs';
 
@@ -61,49 +56,6 @@ await module[exportName](...serializedArguments.map(JSON.parse));
     ],
     { cwd: projectDirectory },
   );
-}
-
-async function createVariantBuildProject(sourceManifest) {
-  const projectDirectory = await createTemporaryProject('buildExtensionVariant.mjs');
-  const extensionBinary = resolve(projectDirectory, 'node_modules/.bin/extension');
-
-  await mkdir(dirname(extensionBinary), { recursive: true });
-  await writeFile(
-    resolve(projectDirectory, 'scripts/prepareExtensionAssets.mjs'),
-    'export async function prepareExtensionAssets() {}\n',
-  );
-  await writeFile(
-    resolve(projectDirectory, 'fixture-manifest.json'),
-    JSON.stringify(sourceManifest),
-  );
-  await writeFile(
-    extensionBinary,
-    `#!/usr/bin/env node
-const { mkdir, readFile, writeFile } = require('node:fs/promises');
-const { resolve } = require('node:path');
-
-(async () => {
-	const browserArgument = process.argv.find((argument) =>
-		argument.startsWith('--browser='),
-	);
-	const browser = browserArgument.split('=', 2)[1];
-	const outputDirectory = resolve(process.cwd(), 'dist', browser);
-	const manifest = await readFile(
-		resolve(process.cwd(), 'fixture-manifest.json'),
-		'utf8',
-	);
-
-	await mkdir(outputDirectory, { recursive: true });
-	await writeFile(resolve(outputDirectory, 'manifest.json'), manifest);
-})().catch((error) => {
-	console.error(error);
-	process.exitCode = 1;
-});
-`,
-  );
-  await chmod(extensionBinary, 0o755);
-
-  return projectDirectory;
 }
 
 afterEach(async () => {
@@ -261,35 +213,21 @@ describe('extension build helpers', () => {
     });
   });
 
-  test('adds the update URL only to the copied Chromium manifest', async () => {
+  test('adds the update URL only to Chromium release metadata', () => {
     const sourceManifest = {
       manifest_version: 3,
       name: '__MSG_appName__',
       version: '7.1.0',
     };
-    const projectDirectory = await createVariantBuildProject(sourceManifest);
-    await invokeProjectExport(
-      projectDirectory,
-      'buildExtensionVariant.mjs',
-      'buildExtensionVariant',
-      'chromium',
-    );
 
-    const sourceBuildManifest = JSON.parse(
-      await readFile(resolve(projectDirectory, 'dist/chromium/manifest.json'), 'utf8'),
-    );
-    const variantManifest = JSON.parse(
-      await readFile(resolve(projectDirectory, 'build/chromium/manifest.json'), 'utf8'),
-    );
-
-    expect(sourceBuildManifest).toEqual(sourceManifest);
-    expect(variantManifest).toEqual({
+    expect(withBuildVariantMetadata(sourceManifest, 'chromium')).toEqual({
       ...sourceManifest,
       update_url: 'https://hewel.github.io/lightling/chromium_updates.xml',
     });
+    expect(withBuildVariantMetadata(sourceManifest, 'chrome')).toBe(sourceManifest);
   });
 
-  test('sets the standalone Firefox ID while preserving other settings', async () => {
+  test('sets the standalone Firefox ID while preserving other settings', () => {
     const sourceManifest = {
       manifest_version: 2,
       name: '__MSG_appName__',
@@ -299,27 +237,16 @@ describe('extension build helpers', () => {
         safari: { strict_min_version: '17.0' },
       },
     };
-    const projectDirectory = await createVariantBuildProject(sourceManifest);
-    await invokeProjectExport(
-      projectDirectory,
-      'buildExtensionVariant.mjs',
-      'buildExtensionVariant',
-      'firefox-standalone',
-    );
 
-    const variantManifest = JSON.parse(
-      await readFile(
-        resolve(projectDirectory, 'build/firefox-standalone/manifest.json'),
-        'utf8',
-      ),
-    );
-
-    expect(variantManifest.browser_specific_settings).toEqual({
-      gecko: {
-        strict_min_version: '109.0',
-        id: '{33b518c2-1f65-4090-8d94-e0a432ebbfd4}',
+    expect(withBuildVariantMetadata(sourceManifest, 'firefox-standalone')).toEqual({
+      ...sourceManifest,
+      browser_specific_settings: {
+        gecko: {
+          strict_min_version: '109.0',
+          id: '{33b518c2-1f65-4090-8d94-e0a432ebbfd4}',
+        },
+        safari: { strict_min_version: '17.0' },
       },
-      safari: { strict_min_version: '17.0' },
     });
   });
 });

@@ -1,13 +1,4 @@
-version: "3"
 services:
-  lightling:
-    user: node
-    build:
-      context: .
-    volumes:
-      - ./build:/mnt/builder/build
-      - ./thirdparty/bergamot/build:/mnt/builder/thirdparty/bergamot/build
-
   bergamot:
     user: node
     platform: linux/amd64

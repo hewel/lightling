@@ -24,10 +24,8 @@ jobs:
       - name: Set variables
         run: echo "PROJECT_VERSION=$(jq -r .version package.json)" >> $GITHUB_ENV
 
-      - name: Build all targets
-        run: |
-          make build
-          sudo chown -R $(id -u):$(id -g) ./build
+      - name: Package all targets
+        run: npm run package
 
       - name: Build CRX file for chromium
         if: ${{ !contains(env.PROJECT_VERSION, '-') && env.CHROMIUM_CRX_PEM != '' }}

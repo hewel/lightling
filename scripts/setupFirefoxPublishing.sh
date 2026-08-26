@@ -209,21 +209,15 @@ fi
 if confirm "Build fresh Firefox and source archives now?"; then
   npm install
   if [[ ! -f thirdparty/bergamot/build/bergamot-translator-worker.wasm ]]; then
-    [[ -f .env ]] || cp .env.example .env
-    make buildThirdparty
+    npm run build:thirdparty
   fi
   npm run build:variant -- firefox-standalone
-  npx web-ext build \
-    --source-dir build/firefox-standalone \
-    --artifacts-dir build \
-    --filename firefox-standalone.zip \
-    --overwrite-dest
   rm -f build/lightling-source.zip
   git archive --format=zip --output=build/lightling-source.zip HEAD
   say "Created build/firefox-standalone.zip and build/lightling-source.zip."
 else
-  note "Build later with: npm run build:variant -- firefox-standalone"
-  note "Then package it with web-ext build and create a source archive with git archive."
+  note "Build later with: npm run build:thirdparty"
+  note "Then run: npm run build:variant -- firefox-standalone"
 fi
 pause "Confirm both ZIP files exist before continuing."
 

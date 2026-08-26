@@ -4,8 +4,3 @@ runs:
   using: composite
   steps:
     - uses: ./.github/actions/init
-
-    - name: Configure files
-      shell: bash
-      run: |
-        cp .env.example .env

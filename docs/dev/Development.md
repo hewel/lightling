@@ -1,6 +1,6 @@
 # Development and release builds
 
-The extension is developed and bundled with [Extension.js](https://extension.js.org/). The release workflow also uses Docker to build the embedded Bergamot translator and produce the browser-specific archives.
+The extension is developed, bundled, and packaged with [Extension.js](https://extension.js.org/). Docker is used only to compile the embedded Bergamot translator.
 
 ## Prerequisites
 
@@ -10,13 +10,7 @@ For local extension development, install:
 - npm
 - A supported browser
 
-The full release build additionally requires:
-
-- A Unix-like operating system (Linux, macOS, BSD, etc.)
-- make
-- Docker with Docker Compose
-
-Release builds currently target AMD64. ARM platforms are not tested and may require AMD64 emulation. With Docker, you can set `DOCKER_DEFAULT_PLATFORM=linux/amd64` or add `platform: linux/amd64` to `docker-compose.yml`.
+The full release build additionally requires Docker with Docker Compose. Bergamot release builds target AMD64; ARM hosts use Docker's AMD64 emulation configured in `docker-compose.yml`.
 
 ## Local development
 
@@ -32,19 +26,11 @@ Start the default Extension.js development server:
 npm run dev
 ```
 
-The equivalent Make target is `make dev`. To launch a specific browser, use one of the explicit targets:
+To launch another browser through the same asset-preparation flow:
 
 ```sh
-make devFirefox
-make devChromium
-make devChrome
-```
-
-Each browser-specific target prepares the extension assets and runs `extension dev` with the matching `--browser` option. The same flow can be run directly, for example:
-
-```sh
-npm run prepare:extension
-npx extension dev --browser=firefox
+npm run dev:firefox
+npm run dev:chromium
 ```
 
 The interface uses ASTRYX with the neutral theme. Before changing UI, use the
@@ -61,38 +47,38 @@ The generated conventions in `AGENTS.md` are the source of truth for new UI.
 `npm run prepare:extension` also refreshes the compiler-safe neutral theme CSS;
 do not edit `src/themes/astryx-neutral.css` directly.
 
-To debug on Android, first stage the Firefox variant with `make buildFirefox`, then run `make devAndroidFirefox`. The Android command loads the extension from `build/firefox`. See the [Android debugging instructions](./AndroidDebug.md) for device setup.
+To debug on Android, first stage the Firefox variant with `npm run build:variant -- firefox`, then run `npm run dev:android:firefox`. The Android command loads the extension from `build/firefox`. See the [Android debugging instructions](./AndroidDebug.md) for device setup.
 
 To make a custom translator, see the [translator API](../CustomTranslator.md).
 
 ## Production builds
 
-Create a `.env` file by copying `.env.example` and configure it as needed. Then run:
+Build and package every release target:
 
 ```sh
-make build
+npm run package
 ```
 
-This builds Bergamot in Docker, builds all extension variants in the Node builder container, packages the results, and validates the release archives. The staged extension directories retain the release layout expected by the packaging scripts:
+This compiles Bergamot in Docker, builds all extension variants with Extension.js, creates the ZIP archives, and validates the staged builds. The output contains both unpacked directories and store-ready archives:
 
-- `build/firefox`
-- `build/firefox-standalone`
-- `build/chromium`
-- `build/chrome`
+- `build/firefox/` and `build/firefox.zip`
+- `build/firefox-standalone/` and `build/firefox-standalone.zip`
+- `build/chromium/` and `build/chromium.zip`
+- `build/chrome/` and `build/chrome.zip`
 
-To build only one variant after installing dependencies and building Bergamot, use its Make target. For example:
+When Bergamot is already available under `thirdparty/bergamot/build`, package only the extension targets:
 
 ```sh
-make prepare buildThirdparty buildFirefox
+npm run package:extensions
 ```
 
-The available production targets are `buildFirefox`, `buildFirefoxStandalone`, `buildChromium`, and `buildChrome`. Each delegates to the corresponding Extension.js variant build; the direct npm form is:
+To rebuild Bergamot independently, run `npm run build:thirdparty`. To build and package one browser variant:
 
 ```sh
 npm run build:variant -- firefox
 ```
 
-The supported variant arguments are `firefox`, `firefox-standalone`, `chromium`, and `chrome`.
+The supported variants are `firefox`, `firefox-standalone`, `chromium`, and `chrome`. Extension.js writes each variant archive directly; no separate Make or ZIP step is required.
 
 ## Tests
 

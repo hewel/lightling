@@ -38,18 +38,16 @@ Build requirements:
 
 - Node.js 22.12 or later
 - Docker with Docker Compose
-- GNU Make
 
 Build the submitted Firefox artifact from a clean checkout:
 
 ```sh
-cp .env.example .env
 npm install
-make buildThirdparty
+npm run build:thirdparty
 npm run build:variant -- firefox-standalone
 ```
 
-The resulting submission directory is `build/firefox-standalone/`. The build compiles the bundled Bergamot WebAssembly translator from the source under `thirdparty/bergamot` and bundles the TypeScript/React application with Extension.js.
+The resulting submission archive is `build/firefox-standalone.zip`; its unpacked contents remain under `build/firefox-standalone/`. The build compiles the bundled Bergamot WebAssembly translator from `thirdparty/bergamot` and packages the TypeScript/React application with Extension.js.
 
 Lightling telemetry is disabled in `src/lib/telemetry/singleton.ts`. The website analytics inherited from upstream are also disabled.
 

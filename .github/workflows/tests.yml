@@ -50,7 +50,7 @@ jobs:
       - name: Compile third party artifacts with docker
         if: steps.cache-thirdparty-restore.outputs.cache-hit != 'true'
         shell: bash
-        run: make buildThirdparty
+        run: npm run build:thirdparty
 
       - name: Save third party artifacts
         id: cache-thirdparty-save
@@ -59,8 +59,8 @@ jobs:
           path: ./thirdparty/bergamot/build
           key: ${{ steps.cache-thirdparty-restore.outputs.cache-primary-key }}
 
-      - name: Build extension targets
-        run: make prepare buildFirefox buildFirefoxStandalone buildChromium buildChrome packAll lintBuilds
+      - name: Package extension targets
+        run: npm run package:extensions
 
       - name: Archive build files
         uses: actions/upload-artifact@v4
