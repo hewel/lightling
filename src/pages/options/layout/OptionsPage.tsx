@@ -38,7 +38,7 @@ import { getSpeakers } from '@/requests/backend/tts/getSpeakers';
 import { updateConfig as updateConfigReq } from '@/requests/backend/updateConfig';
 import type { AppConfigType } from '@/types/runtime';
 
-import { OptionsNav } from './OptionsNav/OptionsNav';
+import { OptionsNav, SECTION_ICONS } from './OptionsNav/OptionsNav';
 import {
   getLLMProfilesError,
   normalizeLLMTranslatorConfig,
@@ -458,6 +458,7 @@ export const OptionsPage: FC<OptionsPageProps> = () => {
                     options={sections.map(({ id, title }) => ({
                       value: id,
                       label: title,
+                      icon: SECTION_ICONS[id],
                     }))}
                     value={activeSection ?? undefined}
                     width="100%"
