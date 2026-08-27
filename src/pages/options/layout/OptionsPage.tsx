@@ -21,6 +21,7 @@ import { useToast } from '@astryxdesign/core/Toast';
 import { Page } from '@/components/layouts/Page/Page';
 import { Button } from '@/components/primitives/Button/Button.bundle/universal';
 import { isMobileBrowser } from '@/lib/browser';
+import { obfuscateConfigSecrets, revealConfigSecrets } from '@/lib/configObfuscation';
 import { openFileDialog, readAsText, saveFile } from '@/lib/files';
 import { getMessage } from '@/lib/language';
 import { TELEMETRY_EVENT_NAME } from '@/lib/telemetry';
@@ -166,7 +167,7 @@ export const OptionsPage: FC<OptionsPageProps> = () => {
         if (rawData === null) return;
 
         try {
-          const configData = JSON.parse(rawData);
+          const configData = revealConfigSecrets(JSON.parse(rawData));
 
           setConfigReq(configData)
             .then(updateConfig)
@@ -186,7 +187,9 @@ export const OptionsPage: FC<OptionsPageProps> = () => {
   }, [handleError, showToast, updateConfig]);
 
   const exportConfig = useCallback(() => {
-    const dump = JSON.stringify(config);
+    if (config === undefined) return;
+
+    const dump = JSON.stringify(obfuscateConfigSecrets(config));
     const file = new Blob([dump], { type: 'application/json' });
 
     saveFile(file, `lightling-config_${new Date().getTime()}.json`);
@@ -424,23 +427,30 @@ export const OptionsPage: FC<OptionsPageProps> = () => {
             <Text as="p" color="secondary" xstyle={optionsPageStyles.headerSubtitle}>
               {getMessage('settings_pageDescription')}
             </Text>
-            <ActionsStack gap={3}>
-              <Button onPress={importConfig} width={isMobile ? 'max' : undefined}>
-                {getMessage('settings_button_import')}
-              </Button>
-              {!isMobile && (
-                <Button onPress={exportConfig} width={isMobile ? 'max' : undefined}>
-                  {getMessage('settings_button_export')}
+            <VStack gap={2}>
+              <ActionsStack gap={3}>
+                <Button onPress={importConfig} width={isMobile ? 'max' : undefined}>
+                  {getMessage('settings_button_import')}
                 </Button>
+                {!isMobile && (
+                  <Button onPress={exportConfig} width={isMobile ? 'max' : undefined}>
+                    {getMessage('settings_button_export')}
+                  </Button>
+                )}
+                <Button
+                  view="action"
+                  onPress={resetConfig}
+                  width={isMobile ? 'max' : undefined}
+                >
+                  {getMessage('settings_button_reset')}
+                </Button>
+              </ActionsStack>
+              {!isMobile && (
+                <Text as="p" color="secondary">
+                  {getMessage('settings_message_exportConfig_obfuscationNotice')}
+                </Text>
               )}
-              <Button
-                view="action"
-                onPress={resetConfig}
-                width={isMobile ? 'max' : undefined}
-              >
-                {getMessage('settings_button_reset')}
-              </Button>
-            </ActionsStack>
+            </VStack>
 
             <HStack gap={6} align="start" xstyle={optionsPageStyles.optionsLayout}>
               <VStack gap={0} xstyle={optionsPageStyles.navColumn}>

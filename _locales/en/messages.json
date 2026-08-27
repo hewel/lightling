@@ -396,6 +396,9 @@
   "settings_message_common_invalidValueType": {
     "message": "Invalid value"
   },
+  "settings_message_exportConfig_obfuscationNotice": {
+    "message": "API keys in the exported file are obfuscated, not encrypted. Do not share the file publicly."
+  },
   "settings_message_importConfig_invalidFile": {
     "message": "The config file is invalid or corrupted and cannot be processed"
   },
